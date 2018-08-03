@@ -1,7 +1,7 @@
-# Traffic Lights and Signs Training
+# Haar Training
 
 ### Overview
-This repository contains all code for the training the of models that are responsible for all traffic light and sign detection in Zeus.
+This folder contains all code for the training the of models that are responsible for Haar cascade traffic light and sign detection in Zeus.
 
 ### Workflow
 #### Data

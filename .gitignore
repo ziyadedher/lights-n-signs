@@ -1,3 +1,4 @@
-# Exclude everything from the data folder except the download script (to not commit massive datasets)
-data/*
-!data/download.sh
+# === Haar ===
+# Exclude everything from the data folder except the download script
+haar/data/*
+!haar/data/download.sh
