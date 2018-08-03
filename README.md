@@ -1,49 +1,48 @@
-This will be the folder that all traffic light and sign detection happens in.
+# Traffic Lights and Signs Training
 
-The data folder has a script which will download and unpack all necessary data.
+### Overview
+This repository contains all code for the training the of models that are responsible for all traffic light and sign detection in Zeus.
 
-Be sure to install the python version of opencv before you try and do anything else.
+### Workflow
+#### Data
+Before anything can happen, the required data must be downloaded. The `data` subdirectory has a cross-platform script that will download and unpack our standard dataset for training. Be aware that this dataset is very large (22.5GB+ when unpacked).
 
-The data annotations are formatted like seen in a haar cascade annotation file.
-This means that they take on the following format in the positive annotation file (pos.txt):
-  - filespath numberOfInstancesInPhoto x y width height ...
+#### Preprocessing
+Before training can begin, the downloaded data must be preprocessed. The `preprocess` subdirectory has a script to do all the data preprocessing and generate the annotations required. The data annotations are formatted as in a regular Haar cascade annotation file.
 
-To run the haar cascade, first run the trainSetup.sh with the first argument being the
-type of light you want to train for out of the following options:
-  -Green
-  -Red
-  -Yellow
-  -GreenLeft
-  -RedLeft
-  -YellowLeft
-And the second argument being the size of the features (20 by 20 is standard)
+Changes can be made to what exactly is being trained on inside of the preprocessing script.
 
-Then run the haarTrain.sh with the type of light as the first argument, and the size of
-the features in the second layer and number of stages as the third (10-20 is standard)
+#### Training
+OpenCV is used for all Haar cascade training, so make sure that is installed before attempting any of the subsequent steps. In addition, the Python 3.6 bindings of OpenCV are required for everything to function normally.
 
-Link to a general tutorial can be found here:
-https://pythonprogramming.net/haar-cascade-object-detection-python-opencv-tutorial/
+Firstly, setup the dataset for training on a specific type of light by calling `trainSetup.sh` with first argument the type of light to train on and second argument the size of the features. The type of lights currently supported are `Green`, `Red`, `Yellow`, `GreenLeft`, `RedLeft`, and `YellowLeft`.
 
-NOTE:
-  The number of samples we can work will is limited to just below 6000. The current settings
-  should ensure that this is not a problem but modify the haarTrain.sh and the trainSetup.sh
-  if you want these values to be different.
+Then, run the the training script by calling `haarTrain.sh` with with first argument the type of light to train on, second argument the size of the features, and third argument the number of stages to train for.
 
-The cascades are saved only at the end of the training but a snapshot is saved at the end of
-each stage. The snapshots and final cascade can be found in the data folder.
+A general tutorial for Haar cascade in training in OpenCV using Python can be found [here](https://pythonprogramming.net/haar-cascade-object-detection-python-opencv-tutorial/).
 
-The video test file will automatically test the detection on your computer camera video feed.
-Change the running parameters (neighbours and scale) in the file
+The full `cascade.xml` file is only saved at the end of training for the number of stages you specified; however, snapshots are saved for every stage.
 
-NOTE#2:
-  -in the preprocessing file you can change which types of lights you want to detect, and whether
-    you work with the greyscale of the entire image or just focus on one color of pixel. This change
-    help to detect traffic lights of a particular color
+#### Testing
+After training the cascade and aquiring a cascade file, it can be tested out. There are two types of testing currently available: live video testing and testing using the testing set. All testing is under the `testHaar` subdirectory. Neighbours and scaling can be changed from inside of each testing file.
 
-fileTest.py will validate the data after the test. It follows the following format
-  fileTest.py cascadepath.xml negFiles.txt posFiles.txt
+##### Live Video Testing
+To test using a live video feed from a webcam run `videoTest.py`. Bounding boxes will be displayed on the live feed.
 
-It also contains a file to visualize the bounding boxes on the images. Uncomment the commented
-  Line in the main section to run it. This will help validate the data itself.
+##### Testing Set
+To test using a testing set and validate the cascade with statistics run `fileTest.py` with first argument the path to the cascade file, second argument the negative annotations file, and third argument the positive annotations file.
 
-Have fun!
+This file can also visualize the bounding boxes on the images; this can be enabled from inside the file.
+
+#### Quickstart
+Here is a quickstart guide for getting this repository running; make sure to change the things between angled bracket (`<`, `>`) with their respective values.
+  1. Install OpenCV with Python 3.6 bindings.
+  1. Clone repository: `git clone git@gitlab.com:aUToronto/autonomy/lights-n-signs-training.git`.
+  1. Get data: `cd lights-n-signs-training/data && ./download.sh`.
+  1. Preprocess data: `cd ../preprocess && python3 processData.py`.
+  1. Setup for training `cd ../haar && ./trainSetup.sh <LIGHT_TYPE> <FEATURE_SIZE>`.
+  1. Train cascade: `./trainSetup.sh <LIGHT_TYPE> <FEATURE_SIZE> <NUM_STAGES>`.
+  1. Test cascade: `cd ../testHaar`
+    - Live video test: `python3 videoTest.py`.
+    - File test: `python3 fileTest.py <CASCADE_PATH> <NEGATIVE_ANNOTATIONS_PATH> <POSITIVE_ANNOTATIONS_PATH>`.
+  1. Rejoice.
