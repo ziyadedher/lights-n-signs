@@ -3,6 +3,12 @@
 ### Overview
 This folder contains all code for the training the of models that are responsible for Haar cascade traffic light and sign detection in Zeus.
 
+
+### Dependencies
+#### OpenCV with Python bindings
+OpenCV is used for all Haar cascade training, so make sure that is installed before attempting any of the subsequent steps. In addition, the Python3.6 bindings of OpenCV are required for everything to function normally. It is recommended to build, compile, and install OpenCV from source.
+
+
 ### Workflow
 #### Data
 Before anything can happen, the required data must be downloaded. The `data` subdirectory has a cross-platform script that will download and unpack our standard dataset for training. Be aware that this dataset is very large (22.5GB+ when unpacked).
@@ -13,8 +19,6 @@ Before training can begin, the downloaded data must be preprocessed. The `prepro
 Changes can be made to what exactly is being trained on inside of the preprocessing script.
 
 #### Training
-OpenCV is used for all Haar cascade training, so make sure that is installed before attempting any of the subsequent steps. In addition, the Python 3.6 bindings of OpenCV are required for everything to function normally.
-
 Firstly, setup the dataset for training on a specific type of light by calling `trainSetup.sh` with first argument the type of light to train on and second argument the size of the features. The type of lights currently supported are `Green`, `Red`, `Yellow`, `GreenLeft`, `RedLeft`, and `YellowLeft`.
 
 Then, run the the training script by calling `haarTrain.sh` with with first argument the type of light to train on, second argument the size of the features, and third argument the number of stages to train for.
