@@ -2,6 +2,9 @@
 # Exclude standard Python virtual environment
 .venv
 
+# Ignore PyCache
+__pycache__
+
 
 # === Haar ===
 # Exclude everything from the data folder except the download script
