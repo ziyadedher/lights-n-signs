@@ -179,13 +179,8 @@ def colorCycle(dataDir, outputDir):
         processFromDir(dataDir, outputDir, col)
 
     #greyImages(dataDir, outputDir)
-    processYolo(dataDir, outputDir)
+    #processYolo(dataDir, outputDir)
 
-def preprocessYolo(dataDir, outputDir):
-    files = os.listdir(outputDir)
-
-    for f in files:
-        if ".txt" in f
 
 if __name__=="__main__":
     colorCycle("../data/dayTrain", "../haar")
