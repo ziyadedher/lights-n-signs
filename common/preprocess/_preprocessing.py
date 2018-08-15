@@ -1,5 +1,4 @@
 import os
-import cv2
 import pickle
 
 colors = ["Green", "Yellow", "Red", "GreenLeft", "YellowLeft", "RedLeft"]
@@ -20,7 +19,7 @@ Final outputs:
         annotations come in the following format:
             class, x y w h
 
-    dataPickle.pkl: pickle file with all annotations in an organized dictionary. It has the following structure:
+    annotations.pkl: pickle file with all annotations in an organized dictionary. It has the following structure:
         Dict[imageFilePath]:
             Dict[classes]:
                 List[All annotations of this class in the image]:
@@ -35,8 +34,9 @@ def processFromDir(dataDir, typing, dataFile):
     typing - color that you are processing for
     dataFile - final file that will contain all of the annotations
     '''
+    print("processing from {}".format(dataDir))
+
     dirs = list(filter(lambda x: os.path.isdir(os.path.join(dataDir, x)), os.listdir(dataDir)))
-    print(dirs)
 
     for d in dirs:
         annoDir = "orginalAnnotations/trafficLightBox"
@@ -47,9 +47,7 @@ def processFromDir(dataDir, typing, dataFile):
 
         #processes and saves all annotation files
         for f in dataFiles:
-            print(f)
             if (typing + ".txt").lower() in f.lower():
-                print("This file meets typing specifications")
                 processData = process(open("{}/{}".format(path, f)).read(), d)
 
         annoDir = "frames"
@@ -66,7 +64,6 @@ def processFromDir(dataDir, typing, dataFile):
 
             index = int(f.split("--")[1].split(".")[0])
             val = processData.get(index, -1)
-            print(f)
             filePath = "{}/{}".format(mainPath, f)
 
             if val != -1:
@@ -187,7 +184,7 @@ def combineAnnotations(tempDir, outputDir):
             dataVal.append(line[4 + 4*i:8 + 4*i])
             dataDict[line[0]][classification] = dataVal
 
-    p = open("dataPickle.pkl", 'wb')
+    p = open("annotations.pkl", 'wb')
     pickle.dump(dataDict, p)
 
     for image in dataDict.keys():
