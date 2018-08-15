@@ -45,7 +45,7 @@ class PredictedObject2D:
 
 
 class Model:
-    """Abstract bounding-box prediction model class."""
+    """Abstract bounding-box prediction model."""
 
     def predict(self, image: np.ndarray) -> List[PredictedObject2D]:
         """Predict the required bounding boxes on the given <image>."""

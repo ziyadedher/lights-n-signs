@@ -10,9 +10,9 @@ import subprocess
 
 from haar.common import config
 from haar.common.model import Model
+from haar.model import HaarModel
 
-# Make sure OpenCV is installed
-config.get_opencv_bindings()
+cv2 = config.get_opencv_bindings()
 
 
 class TrainerNotSetupException(Exception):
@@ -97,10 +97,15 @@ class Trainer:
                         "-h", str(self._feature_size),
                         "-data", str(self.__cascade_folder_path)])
 
+        self.generate_model()
+
     def generate_model(self) -> None:
         """Generate and store the currently available prediction model.
 
         Stored model may be `None` if there is no currently available model.
         """
-        # TODO: implement
-        raise NotImplementedError
+        cascade_file = os.path.join(self.__cascade_folder_path, "cascade.xml")
+        if os.path.isfile(cascade_file):
+            self.model = HaarModel(cv2.CascadeClassifier(cascade_file))
+        else:
+            self.model = None
