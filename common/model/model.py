@@ -38,7 +38,8 @@ class PredictedObject2D:
     bounding_box: Bounds2D
     predicted_classes: List[str]
 
-    def __init__(self, bounding_box: Bounds2D, predicted_classes: List[str]):
+    def __init__(self, bounding_box: Bounds2D,
+                 predicted_classes: List[str]) -> None:
         """Initialize a two-dimensional predicted object."""
         self.bounding_box = bounding_box
         self.predicted_classes = predicted_classes

@@ -4,7 +4,7 @@ Use this file instead of hard-coding any directories or for any other general
 configuration of the package.
 """
 from types import ModuleType
-from typing import Optional, Union
+from typing import Optional, Union, List, Dict
 
 import os
 
@@ -19,26 +19,26 @@ class Data:
     """Stores information about available data."""
 
     # Absolute path to the data folder
-    __DEFAULT_DATA_ROOT = os.path.join(os.path.abspath(__file__), "data")
+    __DEFAULT_DATA_ROOT: str = os.path.join(os.path.abspath(__file__), "data")
 
     # Names of the dataset folders inside of the main data root
-    __DATASET_FOLDER_NAMES = ["LISA"]
+    __DATASET_FOLDER_NAMES: List[str] = ["LISA"]
 
     # Current data root and stored datsets
-    __DATA_ROOT = ""
-    __DATASETS = {}
+    __DATA_ROOT: str = __DEFAULT_DATA_ROOT
+    __DATASETS: Dict[str, str] = {}
 
     @staticmethod
-    def set_data_root(new_root: Union[str, os.PathLike]) -> None:
+    def set_data_root(new_root: Union[str, str]) -> None:
         """Set the data root folder.
 
         Raises `ValueError` if there is any discrepency in the new data root.
         """
         # Generate the proposed new data root and dataset paths
-        new_data_root = os.path.abspath(new_root)
-        new_datasets = {
+        new_data_root: str = os.path.abspath(new_root)
+        new_datasets: Dict[str, str] = {
             folder_name: os.path.join(new_data_root, folder_name)
-            for folder_name in Data.__DATASET_FOLDER_NAMES.keys()
+            for folder_name in Data.__DATASET_FOLDER_NAMES
         }
 
         # Ensure the new data root exists

@@ -9,8 +9,8 @@ import shutil
 import subprocess
 
 from haar.common import config
-from haar.common.model import Model
-from haar.model import HaarModel
+from haar.common.model.model import Model
+from haar.model.model import HaarModel
 
 cv2 = config.get_opencv_bindings()
 
@@ -32,8 +32,10 @@ class Trainer:
     _feature_size: int
     _light_types: List[str]
 
-    __is_setup: bool
     __name: str
+    __path: str
+    __vector_path: str
+    __cascade_folder_path: str
 
     def __init__(self, name: str) -> None:
         """Initialize a trainer with the given unique <name>."""
@@ -43,7 +45,7 @@ class Trainer:
         self._light_types = []
 
         self.__name = name
-        self.__path = os.path.abspath(os.path.join(__file__, self.__name))
+        self.__path = os.path.join(os.path.abspath(__file__), self.__name)
         self.__vector_path = os.path.join(self.__path, "positive.vec")
         self.__cascade_folder_path = os.path.join(self.__path, "cascade")
 
@@ -68,14 +70,17 @@ class Trainer:
         """
         self._feature_size = feature_size
         self._light_types = light_types
-        annotations = ""  # TODO: get annotations
+        annotations: str = ""  # TODO: get annotations
 
-        subprocess.run(["opencv_createsamples",
-                        "-info", str(annotations),
-                        "-w", str(self._feature_size),
-                        "-h", str(self._feature_size),
-                        "-num", str(num_samples),
-                        "-vec", str(self.__vector_path)])
+        command: List[str] = [
+            "opencv_createsamples",
+            "-info", str(annotations),
+            "-w", str(self._feature_size),
+            "-h", str(self._feature_size),
+            "-num", str(num_samples),
+            "-vec", str(self.__vector_path)
+        ]
+        subprocess.run(command)
 
     def train(self, num_stages: int,
               num_positive: int, num_negative: int) -> None:
@@ -87,17 +92,20 @@ class Trainer:
         """
         if self._feature_size < 0:
             raise TrainerNotSetupException
-        negative_annotations = ""  # TODO: get annotations
+        negative_annotations: str = ""  # TODO: get annotations
 
-        subprocess.run(["opencv_traincascade",
-                        "-numPos", str(num_positive),
-                        "-numNeg", str(num_negative),
-                        "-numStages", str(num_stages),
-                        "-vec", str(self.__vector_path),
-                        "-bg", str(negative_annotations),
-                        "-w", str(self._feature_size),
-                        "-h", str(self._feature_size),
-                        "-data", str(self.__cascade_folder_path)])
+        command: List[str] = [
+            "opencv_traincascade",
+            "-numPos", str(num_positive),
+            "-numNeg", str(num_negative),
+            "-numStages", str(num_stages),
+            "-vec", str(self.__vector_path),
+            "-bg", str(negative_annotations),
+            "-w", str(self._feature_size),
+            "-h", str(self._feature_size),
+            "-data", str(self.__cascade_folder_path)
+        ]
+        subprocess.run(command)
 
         self.generate_model()
 
@@ -106,7 +114,8 @@ class Trainer:
 
         Stored model may be `None` if there is no currently available model.
         """
-        cascade_file = os.path.join(self.__cascade_folder_path, "cascade.xml")
+        cascade_file: str = os.path.join(self.__cascade_folder_path,
+                                         "cascade.xml")
         if os.path.isfile(cascade_file):
             self.model = HaarModel(cv2.CascadeClassifier(cascade_file),
                                    self._light_types)
