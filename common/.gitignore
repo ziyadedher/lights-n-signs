@@ -1,0 +1,9 @@
+# Exclude all preprocessed annotation files
+preprocess/tempAnnotations/*
+preprocess/textAnnotations/*
+preprocess/dataPickle.pkl
+
+# Exclude everything from the data folder except the download script and init
+data/*
+!data/download.sh
+!data/__init__.py
