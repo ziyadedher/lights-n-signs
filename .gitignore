@@ -4,11 +4,11 @@
 
 # == Preprocessing Annotations ==
 # Exclude all preprocessed annotation files
-preprocess/tempAnnotations/*
-preprocess/textAnnotations/*
-preprocess/dataPickle.pkl
+common/preprocess/tempAnnotations/*
+common/preprocess/textAnnotations/*
+common/preprocess/dataPickle.pkl
 
 # === Haar ===
 # Exclude everything from the data folder except the download script
-data/*
-!data/download.sh
+common/data/*
+!common/data/download.sh
