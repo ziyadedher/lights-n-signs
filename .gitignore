@@ -7,3 +7,9 @@
 # Exclude everything from the data folder except the download script
 haar/data/*
 !haar/data/download.sh
+
+# == Preprocessing Annotations ==
+# Exclude all preprocessed annotation files
+preprocess/tempAnnotations
+preprocess/textAnnotations
+preprocess/dataPickle.pkl

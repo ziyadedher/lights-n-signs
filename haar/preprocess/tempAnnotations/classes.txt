@@ -1,0 +1,6 @@
+Green 0
+Yellow 1
+Red 2
+GreenLeft 3
+YellowLeft 4
+RedLeft 5
