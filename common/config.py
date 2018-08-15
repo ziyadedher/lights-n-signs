@@ -25,7 +25,7 @@ class NoSuchDatasetException(Exception):
 def get_opencv_bindings() -> ModuleType:
     """Get OpenCV bindings module if it exists.
 
-    Raises `ImportError` if the bindings could not be important.
+    Raises `ImportError` if the bindings could not be imported.
     """
     try:
         import cv2
