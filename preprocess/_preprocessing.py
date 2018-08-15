@@ -35,14 +35,7 @@ def processFromDir(dataDir, typing, dataFile):
     typing - color that you are processing for
     dataFile - final file that will contain all of the annotations
     '''
-    dirs = os.listdir(dataDir)
-
-    #Gets rid of all non directories
-    deleted = 0
-    for i in range(len(dirs)):
-        if "." in dirs[i - deleted]:
-            del dirs[i-deleted]
-            deleted += 1
+    dirs = list(filter(lambda x: os.path.isdir(x), os.listdir(dataDir)))
 
     for d in dirs:
         annoDir = "orginalAnnotations/trafficLightBox"
@@ -50,8 +43,6 @@ def processFromDir(dataDir, typing, dataFile):
         dataFiles = os.listdir(path)
 
         processData = {}
-
-        print("Processing annotations in directory {} for {}".format(d, typing))
 
         #processes and saves all annotation files
         for f in dataFiles:
@@ -126,15 +117,8 @@ def getAllImages(dataDir, outputDir):
     dataDir - directory that contains the original data
     outputDir - directory where you want the annotations to be
     '''
-    dirs = os.listdir(dataDir)
+    dirs = list(filter(lambda x: os.path.isdir(x), os.listdir(dataDir)))
     dataFile = open(os.path.join(outputDir, "allImages.txt"),'w')
-
-    #Gets rid of all non directories
-    deleted = 0
-    for i in range(len(dirs)):
-        if "." in dirs[i - deleted]:
-            del dirs[i-deleted]
-            deleted += 1
 
     for d in dirs:
         path = os.path.abspath(os.path.join(dataDir, d, "frames"))
@@ -155,20 +139,20 @@ def setupDirs(outputDir):
 
     try:
         os.mkdir(os.path.join(outputDir, "tempAnnotations"))
-    except:
+    except NameError:
         for files in os.listdir(os.path.join(outputDir, "tempAnnotations")):
             os.remove(os.path.join(outputDir, "tempAnnotations", files))
 
     try:
         os.mkdir(os.path.join(outputDir, "textAnnotations"))
-    except:
+    except NameError:
         for files in os.listdir(os.path.join(outputDir, "textAnnotations")):
             os.remove(os.path.join(outputDir, "textAnnotations", files))
 
 def combineAnnotations(tempDir, outputDir):
     '''This function will use the intermediary annotations to create firstly a
     pickle file that contains all the annotations information in a dictionary.
-    It also creates a new directory where there is a text file each image file
+    It also creates a new directory where there is a text file for each image file
     that contains the annotations for the corresponding image
 
     tempDir - directory where the temporary annotations are
