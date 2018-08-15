@@ -1,32 +1,44 @@
+"""Abstract model representation.
+
+This module consists of abstract and container classes that provide a
+common interface for every technique for light and sign detection.
+"""
 from typing import List
-from numpy
 
-'''Output object that will contain both the class and the bounding boxes for all objects
-'''
-class Output2D:
-    def __init__(self, bb=None, classes=None):
-        self.bb = bb
+import numpy as np
+
+
+class Bounds2D:
+    """Two-dimensional bounds object.
+
+    Represents two-dimensional bounding box coordinates.
+    """
+
+    def __init__(self, top: float, left: float,
+                 width: float, height: float) -> None:
+        """Initialize a two-dimensional bounds object."""
+        self.top = top
+        self.left = left
+        self.width = width
+        self.height = height
+
+
+class PredictedObject2D:
+    """Two-dimensional predicted object.
+
+    Consists of a two-dimensional bounding box and the classes of the object
+    predicted to be contained within that bounding box.
+    """
+
+    def __init__(self, bounding_box: Bounds2D, classes: List[str]):
+        """Initialize a two-dimensional predicted object."""
+        self.bounding_box = bounding_box
         self.classes = classes
 
-    def setBB(self, bb: numpy.ndarray):
-        self.bb = bb
 
-    def setClasses(self, classes: List[str]):
-        self.classes = classes
-
-    def getClasses(self) -> List[str]:
-        return self.classes
-
-    def getBB(self) -> numpy.ndarray:
-        return self.bb
-
-
-'''This is the abstract class that will be inherited by every python model so that it can be standardized
-'''
 class Model:
-    def __init__(self):
-        pass
+    """Abstract bounding-box prediction model class."""
 
-    def predict(self, image: List[List[int]]) -> Output2D:
-        '''This will be implemented to automatically calculate the bounding boxes
-        '''
+    def predict(self, image: np.ndarray) -> List[PredictedObject2D]:
+        """Predict the required bounding boxes on the given <image>."""
+        raise NotImplementedError
