@@ -2,8 +2,13 @@
 # Exclude standard Python virtual environment
 .venv
 
+# == Preprocessing Annotations ==
+# Exclude all preprocessed annotation files
+preprocess/tempAnnotations/*
+preprocess/textAnnotations/*
+preprocess/dataPickle.pkl
 
 # === Haar ===
 # Exclude everything from the data folder except the download script
-haar/data/*
-!haar/data/download.sh
+data/*
+!data/download.sh
