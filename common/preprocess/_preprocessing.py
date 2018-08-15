@@ -19,7 +19,7 @@ Final outputs:
         annotations come in the following format:
             class, x y w h
 
-    dataPickle.pkl: pickle file with all annotations in an organized dictionary. It has the following structure:
+    annotations.pkl: pickle file with all annotations in an organized dictionary. It has the following structure:
         Dict[imageFilePath]:
             Dict[classes]:
                 List[All annotations of this class in the image]:
@@ -184,7 +184,7 @@ def combineAnnotations(tempDir, outputDir):
             dataVal.append(line[4 + 4*i:8 + 4*i])
             dataDict[line[0]][classification] = dataVal
 
-    p = open("dataPickle.pkl", 'wb')
+    p = open("annotations.pkl", 'wb')
     pickle.dump(dataDict, p)
 
     for image in dataDict.keys():
