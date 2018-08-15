@@ -10,8 +10,7 @@ import os
 
 
 # Absolute path to the data folder
-__DEFAULT_DATA_ROOT = os.path.join(os.path.abspath(__file__),
-                                   "..", "..", "..", "data")
+__DEFAULT_DATA_ROOT = os.path.join(os.path.abspath(__file__), "data")
 
 # Names of the dataset folders inside of the main data root
 __DATASET_FOLDER_NAMES = ["LISA"]
