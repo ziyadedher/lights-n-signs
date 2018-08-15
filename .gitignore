@@ -10,6 +10,6 @@ haar/data/*
 
 # == Preprocessing Annotations ==
 # Exclude all preprocessed annotation files
-preprocess/tempAnnotations
-preprocess/textAnnotations
+preprocess/tempAnnotations/*
+preprocess/textAnnotations/*
 preprocess/dataPickle.pkl
