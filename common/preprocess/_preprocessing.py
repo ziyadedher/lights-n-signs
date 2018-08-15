@@ -35,7 +35,8 @@ def processFromDir(dataDir, typing, dataFile):
     typing - color that you are processing for
     dataFile - final file that will contain all of the annotations
     '''
-    dirs = list(filter(lambda x: os.path.isdir(x), os.listdir(dataDir)))
+    dirs = list(filter(lambda x: os.path.isdir(os.path.join(dataDir, x)), os.listdir(dataDir)))
+    print(dirs)
 
     for d in dirs:
         annoDir = "orginalAnnotations/trafficLightBox"
@@ -117,7 +118,7 @@ def getAllImages(dataDir, outputDir):
     dataDir - directory that contains the original data
     outputDir - directory where you want the annotations to be
     '''
-    dirs = list(filter(lambda x: os.path.isdir(x), os.listdir(dataDir)))
+    dirs = list(filter(lambda x: os.path.isdir(os.path.join(dataDir, x)), os.listdir(dataDir)))
     dataFile = open(os.path.join(outputDir, "allImages.txt"),'w')
 
     for d in dirs:
@@ -139,13 +140,13 @@ def setupDirs(outputDir):
 
     try:
         os.mkdir(os.path.join(outputDir, "tempAnnotations"))
-    except NameError:
+    except FileExistsError:
         for files in os.listdir(os.path.join(outputDir, "tempAnnotations")):
             os.remove(os.path.join(outputDir, "tempAnnotations", files))
 
     try:
         os.mkdir(os.path.join(outputDir, "textAnnotations"))
-    except NameError:
+    except FileExistsError:
         for files in os.listdir(os.path.join(outputDir, "textAnnotations")):
             os.remove(os.path.join(outputDir, "textAnnotations", files))
 
