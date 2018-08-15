@@ -14,16 +14,16 @@ class Bounds2D:
     Represents two-dimensional bounding box coordinates.
     """
 
-    top: float
     left: float
+    top: float
     width: float
     height: float
 
-    def __init__(self, top: float, left: float,
+    def __init__(self, left: float, top: float,
                  width: float, height: float) -> None:
         """Initialize a two-dimensional bounds object."""
-        self.top = top
         self.left = left
+        self.top = top
         self.width = width
         self.height = height
 

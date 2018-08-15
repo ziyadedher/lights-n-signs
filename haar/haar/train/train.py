@@ -30,6 +30,7 @@ class Trainer:
     model: Optional[Model]
 
     _feature_size: int
+    _light_types: List[str]
 
     __is_setup: bool
     __name: str
@@ -66,6 +67,7 @@ class Trainer:
         <feature_size>.
         """
         self._feature_size = feature_size
+        self._light_types = light_types
         annotations = ""  # TODO: get annotations
 
         subprocess.run(["opencv_createsamples",
@@ -106,6 +108,7 @@ class Trainer:
         """
         cascade_file = os.path.join(self.__cascade_folder_path, "cascade.xml")
         if os.path.isfile(cascade_file):
-            self.model = HaarModel(cv2.CascadeClassifier(cascade_file))
+            self.model = HaarModel(cv2.CascadeClassifier(cascade_file),
+                                   self._light_types)
         else:
             self.model = None
