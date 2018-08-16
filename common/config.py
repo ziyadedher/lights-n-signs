@@ -4,7 +4,7 @@ Use this file instead of hard-coding any directories or for any other general
 configuration of the package.
 """
 from types import ModuleType
-from typing import Optional, Union, List, Dict
+from typing import Optional, Union, Dict, List
 
 import os
 
@@ -23,8 +23,8 @@ class Data:
         os.path.join(__file__, "..", "data")
     )
 
-    # Names of the dataset folders inside of the main data root
-    _DATASET_FOLDER_NAMES: List[str] = ["LISA"]
+    # Possible datasets available
+    _POSSIBLE_DATASET_FOLDERS: List[str] = ["LISA"]
 
     # Current data root and stored datsets
     _DATA_ROOT: str = _DEFAULT_DATA_ROOT
@@ -36,28 +36,21 @@ class Data:
 
         Raises `ValueError` if there is any discrepency in the new data root.
         """
-        # Generate the proposed new data root and dataset paths
-        new_data_root: str = os.path.abspath(new_root)
-        new_datasets: Dict[str, str] = {
-            folder_name: os.path.join(new_data_root, folder_name)
-            for folder_name in Data._DATASET_FOLDER_NAMES
-        }
-
         # Ensure the new data root exists
+        new_data_root: str = os.path.abspath(new_root)
         if not os.path.isdir(new_data_root):
             raise ValueError(
                 f"Proposed data root `{new_data_root}` \
                 is not a valid directory."
             )
 
-        # Ensure all datasets are present in the new data root
-        for folder_name in Data._DATASET_FOLDER_NAMES:
-            path = os.path.join(new_data_root, folder_name)
-            if not os.path.isdir(path):
-                raise ValueError(
-                    f"Dataset folder `{folder_name}` \
-                    is not in the proposed data root `{new_data_root}`."
-                )
+        # Populate the new datasets available in this data root
+        new_datasets: Dict[str, str] = {
+            folder_name: os.path.join(new_data_root, folder_name)
+            for folder_name in os.listdir(new_data_root)
+            if os.path.isdir(os.path.join(new_data_root, folder_name))
+            and folder_name in Data._POSSIBLE_DATASET_FOLDERS
+        }
 
         # Assign the proposed data root and datasets
         Data._DATA_ROOT = new_data_root
