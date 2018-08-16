@@ -8,7 +8,7 @@ from typing import List, Tuple
 import numpy as np
 
 from haar.common import config
-from haar.common.model.model import Model, PredictedObject2D, Bounds2D
+from haar.common.model import Model, PredictedObject2D, Bounds2D
 
 cv2 = config.get_opencv_bindings()
 

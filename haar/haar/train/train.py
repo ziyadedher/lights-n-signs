@@ -9,8 +9,8 @@ import shutil
 import subprocess
 
 from haar.common import config
-from haar.common.model.model import Model
-from haar.model.model import HaarModel
+from haar.common.model import Model
+from haar.model import HaarModel
 
 cv2 = config.get_opencv_bindings()
 
