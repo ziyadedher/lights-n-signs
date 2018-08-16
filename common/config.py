@@ -19,14 +19,16 @@ class Data:
     """Stores information about available data."""
 
     # Absolute path to the data folder
-    __DEFAULT_DATA_ROOT: str = os.path.join(os.path.abspath(__file__), "data")
+    _DEFAULT_DATA_ROOT: str = os.path.abspath(
+        os.path.join(__file__, "..", "data")
+    )
 
     # Names of the dataset folders inside of the main data root
-    __DATASET_FOLDER_NAMES: List[str] = ["LISA"]
+    _DATASET_FOLDER_NAMES: List[str] = ["LISA"]
 
     # Current data root and stored datsets
-    __DATA_ROOT: str = __DEFAULT_DATA_ROOT
-    __DATASETS: Dict[str, str] = {}
+    _DATA_ROOT: str = _DEFAULT_DATA_ROOT
+    _DATASETS: Dict[str, str] = {}
 
     @staticmethod
     def set_data_root(new_root: Union[str, str]) -> None:
@@ -38,7 +40,7 @@ class Data:
         new_data_root: str = os.path.abspath(new_root)
         new_datasets: Dict[str, str] = {
             folder_name: os.path.join(new_data_root, folder_name)
-            for folder_name in Data.__DATASET_FOLDER_NAMES
+            for folder_name in Data._DATASET_FOLDER_NAMES
         }
 
         # Ensure the new data root exists
@@ -49,7 +51,7 @@ class Data:
             )
 
         # Ensure all datasets are present in the new data root
-        for folder_name in Data.__DATASET_FOLDER_NAMES:
+        for folder_name in Data._DATASET_FOLDER_NAMES:
             path = os.path.join(new_data_root, folder_name)
             if not os.path.isdir(path):
                 raise ValueError(
@@ -58,8 +60,8 @@ class Data:
                 )
 
         # Assign the proposed data root and datasets
-        Data.__DATA_ROOT = new_data_root
-        Data.__DATASETS = new_datasets
+        Data._DATA_ROOT = new_data_root
+        Data._DATASETS = new_datasets
 
     @staticmethod
     def get_dataset_path(dataset_name: str) -> Optional[str]:
@@ -68,7 +70,7 @@ class Data:
         Raises `NoSuchDatasetException` if no such dataset exists.
         """
         try:
-            return Data.__DATASETS[dataset_name]
+            return Data._DATASETS[dataset_name]
         except KeyError:
             raise NoSuchDatasetException(dataset_name)
 
@@ -87,4 +89,4 @@ def get_opencv_bindings() -> ModuleType:
         raise e
 
 
-Data.set_data_root(Data.__DEFAULT_DATA_ROOT)
+Data.set_data_root(Data._DEFAULT_DATA_ROOT)

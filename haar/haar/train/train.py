@@ -2,7 +2,7 @@
 
 This script manages model training and generation.
 """
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import os
 import shutil
@@ -33,9 +33,7 @@ class Trainer:
     _light_types: List[str]
 
     __name: str
-    __path: str
-    __vector_path: str
-    __cascade_folder_path: str
+    __paths: Dict[str, str]
 
     def __init__(self, name: str) -> None:
         """Initialize a trainer with the given unique <name>."""
@@ -45,16 +43,21 @@ class Trainer:
         self._light_types = []
 
         self.__name = name
-        self.__path = os.path.join(os.path.abspath(__file__), self.__name)
-        self.__vector_path = os.path.join(self.__path, "positive.vec")
-        self.__cascade_folder_path = os.path.join(self.__path, "cascade")
+
+        __base = os.path.abspath(os.path.join(__file__, "..", self.__name))
+        self.__paths = {
+            "base_folder": __base,
+            "vector_file": os.path.join(__base, "positive.vec"),
+            "cascade_folder": os.path.join(__base, "cascade"),
+            "cascade_file": os.path.join(__base, "cascade", "cascade.xml")
+        }
 
         # Remove the training directory with this name if it exists
         # and generate a new one
-        if os.path.isdir(self.__path):
-            shutil.rmtree(self.__path)
-        os.mkdir(self.__path)
-        os.mkdir(self.__cascade_folder_path)
+        if os.path.isdir(self.__paths["base_folder"]):
+            shutil.rmtree(self.__paths["base_folder"])
+        os.mkdir(self.__paths["base_folder"])
+        os.mkdir(self.__paths["cascade_folder"])
 
     @property
     def name(self) -> str:
@@ -68,19 +71,21 @@ class Trainer:
         Create <num_samples> positive samples of the <light_types> with given
         <feature_size>.
         """
-        self._feature_size = feature_size
-        self._light_types = light_types
-        annotations: str = ""  # TODO: get annotations
+        vector_file = self.__paths["vector_file"]
+        annotations_file = ""  # TODO: get annotations
 
-        command: List[str] = [
+        command = [
             "opencv_createsamples",
-            "-info", str(annotations),
-            "-w", str(self._feature_size),
-            "-h", str(self._feature_size),
+            "-info", str(annotations_file),
+            "-w", str(feature_size),
+            "-h", str(feature_size),
             "-num", str(num_samples),
-            "-vec", str(self.__vector_path)
+            "-vec", str(vector_file)
         ]
         subprocess.run(command)
+
+        self._feature_size = feature_size
+        self._light_types = light_types
 
     def train(self, num_stages: int,
               num_positive: int, num_negative: int) -> None:
@@ -92,18 +97,22 @@ class Trainer:
         """
         if self._feature_size < 0:
             raise TrainerNotSetupException
-        negative_annotations: str = ""  # TODO: get annotations
 
-        command: List[str] = [
+        vector_file = self.__paths["vector_file"]
+        cascade_folder = self.__paths["cascade_folder"]
+        negative_annotations_file = ""  # TODO: get annotations
+        feature_size = self._feature_size
+
+        command = [
             "opencv_traincascade",
             "-numPos", str(num_positive),
             "-numNeg", str(num_negative),
             "-numStages", str(num_stages),
-            "-vec", str(self.__vector_path),
-            "-bg", str(negative_annotations),
-            "-w", str(self._feature_size),
-            "-h", str(self._feature_size),
-            "-data", str(self.__cascade_folder_path)
+            "-vec", str(vector_file),
+            "-bg", str(negative_annotations_file),
+            "-w", str(feature_size),
+            "-h", str(feature_size),
+            "-data", str(cascade_folder)
         ]
         subprocess.run(command)
 
@@ -114,8 +123,8 @@ class Trainer:
 
         Stored model may be `None` if there is no currently available model.
         """
-        cascade_file: str = os.path.join(self.__cascade_folder_path,
-                                         "cascade.xml")
+        cascade_file = self.__paths["cascade_file"]
+
         if os.path.isfile(cascade_file):
             self.model = HaarModel(cv2.CascadeClassifier(cascade_file),
                                    self._light_types)
