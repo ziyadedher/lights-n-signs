@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Setup script for the haar part of the project.
 
 Reads metadata and binds from `setup.cfg` to build and generate entry points.
