@@ -5,12 +5,10 @@ training.
 """
 from typing import List, Tuple
 
-import numpy as np
+import cv2          # type: ignore
+import numpy as np  # type: ignore
 
-from haar.common import config
-from haar.common.model import Model, PredictedObject2D, Bounds2D
-
-cv2 = config.get_opencv_bindings()
+from common.model import Model, PredictedObject2D, Bounds2D
 
 
 class HaarModel(Model):
@@ -42,7 +40,7 @@ class HaarModel(Model):
         predictions: List[Tuple[int, int, int, int]] = \
             self.__cascade.detectMultiScale(
                 grayscale, self.scale_factor, self.min_neighbours
-            )
+        )
 
         return [
             PredictedObject2D(Bounds2D(*prediction), self.__classes)

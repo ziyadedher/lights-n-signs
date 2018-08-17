@@ -3,7 +3,6 @@
 Use this file instead of hard-coding any directories or for any other general
 configuration of the package.
 """
-from types import ModuleType
 from typing import Optional, Union, Dict, List
 
 import os
@@ -66,20 +65,6 @@ class Data:
             return Data._DATASETS[dataset_name]
         except KeyError:
             raise NoSuchDatasetException(dataset_name)
-
-
-def get_opencv_bindings() -> ModuleType:
-    """Get OpenCV bindings module if it exists.
-
-    Raises `ImportError` if the bindings could not be imported.
-    """
-    try:
-        import cv2
-        return cv2
-    except ImportError as e:
-        print("Could not import OpenCV Python bindings `cv2`, \
-              please ensure that OpenCV for Python is correctly installed.")
-        raise e
 
 
 Data.set_data_root(Data._DEFAULT_DATA_ROOT)

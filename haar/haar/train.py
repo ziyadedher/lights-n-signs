@@ -8,11 +8,10 @@ import os
 import shutil
 import subprocess
 
-from haar.common import config
-from haar.common.model import Model
-from haar.model import HaarModel
+import cv2  # type: ignore
 
-cv2 = config.get_opencv_bindings()
+from common.model import Model
+from haar.model import HaarModel
 
 
 class TrainerNotSetupException(Exception):
