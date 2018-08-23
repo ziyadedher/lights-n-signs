@@ -2,7 +2,7 @@
 
 This script manages model training and generation.
 """
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 
 import os
 import shutil
@@ -10,7 +10,9 @@ import subprocess
 
 import cv2  # type: ignore
 
+from common import config
 from haar.model import HaarModel
+from haar.process import HaarData, HaarProcessor
 
 
 class TrainerNotSetupException(Exception):
@@ -28,19 +30,30 @@ class Trainer:
     model: Optional[HaarModel]
 
     _feature_size: int
-    _light_types: List[str]
+    _light_type: Optional[str]
+    _data: HaarData
 
     __name: str
+    __dataset_name: str
     __paths: Dict[str, str]
 
-    def __init__(self, name: str) -> None:
-        """Initialize a trainer with the given unique <name>."""
+    def __init__(self, name: str, dataset_name: str) -> None:
+        """Initialize a trainer with the given unique <name>.
+
+        Sources data from the dataset with the given <dataset_name> and raises
+        `NoSuchDatasetException` if no such dataset exists.
+        """
         self.model = None
 
         self._feature_size = -1
-        self._light_types = []
+        self._light_type = None
+        try:
+            self._data = HaarProcessor.get_processed(self.__dataset_name)
+        except config.NoSuchDatasetException as e:
+            raise e
 
         self.__name = name
+        self.__dataset_name = dataset_name
 
         __base = os.path.abspath(
             os.path.join(__file__, os.pardir, self.__name)
@@ -65,14 +78,19 @@ class Trainer:
         return self.__name
 
     def setup_training(self, feature_size: int, num_samples: int,
-                       light_types: List[str]) -> None:
+                       light_type: str) -> None:
         """Generate and setup any files required for training.
 
-        Create <num_samples> positive samples of the <light_types> with given
+        Create <num_samples> positive samples of the <light_type> with given
         <feature_size>.
         """
         vector_file = self.__paths["vector_file"]
-        annotations_file = ""  # TODO: get annotations
+        try:
+            annotations_file = self._data.get_positive_annotation(light_type)
+        except KeyError:
+            print("No positive annotations for light type " +
+                  f"`{light_type}` available.")
+            return
 
         command = [
             "opencv_createsamples",
@@ -85,7 +103,7 @@ class Trainer:
         subprocess.run(command)
 
         self._feature_size = feature_size
-        self._light_types = light_types
+        self._light_type = light_type
 
     def train(self, num_stages: int,
               num_positive: int, num_negative: int) -> None:
@@ -95,13 +113,20 @@ class Trainer:
         generating the trained model. Train on <num_positive> positive samples
         and <num_negative> negative samples.
         """
-        if self._feature_size < 0:
+        if self._feature_size < 0 or self._light_type is None:
             raise TrainerNotSetupException
 
         vector_file = self.__paths["vector_file"]
         cascade_folder = self.__paths["cascade_folder"]
-        negative_annotations_file = ""  # TODO: get annotations
         feature_size = self._feature_size
+        try:
+            negative_annotations_file = self._data.get_negative_annotation(
+                self._light_type
+            )
+        except KeyError:
+            print("No positive annotations for light type " +
+                  f"`{self._light_type}` available.")
+            return
 
         command = [
             "opencv_traincascade",
@@ -128,7 +153,7 @@ class Trainer:
         if os.path.isfile(cascade_file):
             HaarModel(
                 cv2.CascadeClassifier(cascade_file),
-                self._light_types
+                [self._light_type] if self._light_type is not None else []
             )
         else:
             self.model = None

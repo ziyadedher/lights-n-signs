@@ -60,6 +60,15 @@ class Data:
         except KeyError:
             raise NoSuchDatasetException(dataset_name)
 
+    @classmethod
+    def has_dataset(cls, dataset_name: str) -> bool:
+        """Get whether or not a dataset with the given name is available."""
+        try:
+            cls.get_dataset_path(dataset_name)
+        except NoSuchDatasetException:
+            return False
+        return True
+
 
 class NoSuchDatasetException(Exception):
     """Raised when a dataset not in the data root is referenced."""
