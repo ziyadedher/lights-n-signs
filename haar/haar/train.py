@@ -1,4 +1,4 @@
-"""Main training script.
+"""Haar cascade training script.
 
 This script manages model training and generation.
 """
@@ -10,7 +10,6 @@ import subprocess
 
 import cv2  # type: ignore
 
-from common.model import Model
 from haar.model import HaarModel
 
 
@@ -26,7 +25,7 @@ class Trainer:
     Contains and encapsulates all training setup and files under one namespace.
     """
 
-    model: Optional[Model]
+    model: Optional[HaarModel]
 
     _feature_size: int
     _light_types: List[str]
@@ -43,7 +42,9 @@ class Trainer:
 
         self.__name = name
 
-        __base = os.path.abspath(os.path.join(__file__, "..", self.__name))
+        __base = os.path.abspath(
+            os.path.join(__file__, os.pardir, self.__name)
+        )
         self.__paths = {
             "base_folder": __base,
             "vector_file": os.path.join(__base, "positive.vec"),
@@ -117,15 +118,19 @@ class Trainer:
 
         self.generate_model()
 
-    def generate_model(self) -> None:
-        """Generate and store the currently available prediction model.
+    def generate_model(self) -> Optional[HaarModel]:
+        """Generate and return the currently available prediction model.
 
-        Stored model may be `None` if there is no currently available model.
+        Model may be `None` if there is no currently available model.
         """
         cascade_file = self.__paths["cascade_file"]
 
         if os.path.isfile(cascade_file):
-            self.model = HaarModel(cv2.CascadeClassifier(cascade_file),
-                                   self._light_types)
+            HaarModel(
+                cv2.CascadeClassifier(cascade_file),
+                self._light_types
+            )
         else:
             self.model = None
+
+        return self.model
