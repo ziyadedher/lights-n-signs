@@ -22,8 +22,13 @@ wheels/
 *.egg
 MANIFEST
 
-# Environments
+# Virtual environments
 .venv
+
+# Exclude all preprocessed annotation files
+common/preprocess/tempAnnotations/*
+common/preprocess/textAnnotations/*
+common/preprocess/annotations.pkl
 
 # MyPy
 .mypy_cache/
