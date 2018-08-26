@@ -28,7 +28,7 @@ MANIFEST
 # Exclude all preprocessed annotation files
 common/preprocess/tempAnnotations/*
 common/preprocess/textAnnotations/*
-common/preprocess/annotations.pkl
+common/preprocess/dataPickle.pkl
 
 # MyPy
 .mypy_cache/

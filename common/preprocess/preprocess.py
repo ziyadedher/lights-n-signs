@@ -207,7 +207,7 @@ def combineAnnotations(tempDir: str, outputDir: str) -> None:
             dataDict[line[0]][classification] = dataVal
 
     p = open("annotations.pkl", 'wb')
-    pickle.dump(dataDict, p, protocol=2)
+    pickle.dump(dataDict, p)
 
     for image in dataDict.keys():
         newPath = "{}.txt".format(image.split("/")[-1].split(".")[0])
