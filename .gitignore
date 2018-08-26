@@ -6,7 +6,7 @@
 # Exclude all preprocessed annotation files
 common/preprocess/tempAnnotations/*
 common/preprocess/textAnnotations/*
-common/preprocess/annotations.pkl
+common/preprocess/dataPickle.pkl
 
 # === Haar ===
 # Exclude everything from the data folder except the download script
