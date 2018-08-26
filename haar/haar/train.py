@@ -48,7 +48,7 @@ class Trainer:
         self._feature_size = -1
         self._light_type = None
         try:
-            self._data = HaarProcessor.get_processed(self.__dataset_name)
+            self._data = HaarProcessor.process(self.__dataset_name)
         except config.NoSuchDatasetException as e:
             raise e
 
