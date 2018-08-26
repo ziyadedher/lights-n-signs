@@ -24,9 +24,10 @@ class PreprocessingData:
         <classes> is an indexed list of classes
         <annotations> is a mapping of image path to a list of "detections"
         represented by a dictionary containing keys `class` corresponding
-        to the class index detected and `x`, `y`, `w`, `h` corresponding to the
-        x-coordinate, y-coordinate, width, and height of the bounding box
-        respectively.
+        to the class index detected, `x_min`, `y_min` corresponding to the
+        x-coordinate and y-coordinate of the top left corner of the bounding
+        box, and `x_max`, `y_max` corresponding to the x-coordinate and
+        y-coordinate of the bottom right corner of the bounding box.
         """
         self.__images = images
         self.__classes = classes
@@ -50,7 +51,8 @@ class PreprocessingData:
         (as given in `self.images`) to a list of detections. Each detection
         consists of a mapping from detection key to its respective information.
 
-        Available detection keys are `class`, `x`, `y`, `w`, `h`.
+        Available detection keys are
+        `class`, `x_min`, `y_min`, `x_max`, `y_max`.
         """
         return self.__annotations.copy()
 
@@ -63,7 +65,7 @@ def preprocess_LISA(LISA_path: str) -> PreprocessingData:
     is not found.
     """
     day_train_path = os.path.join(LISA_path, "dayTrain")
-    if not os.path.exists(day_train_path):
+    if not os.path.isdir(day_train_path):
         raise FileNotFoundError("Could not find `dayTrain` in LISA dataset.")
 
     images: List[str] = []
@@ -103,10 +105,10 @@ def preprocess_LISA(LISA_path: str) -> PreprocessingData:
                 detection_class = row[1]
 
                 # Calculate the position and dimensions of the bounding box
-                x = int(row[2])      # x-coordinate of top left corner
-                y = int(row[3])      # y-coordinate of top left corner
-                w = int(row[4]) - x  # width of bounding box
-                h = int(row[5]) - y  # height of bounding box
+                x_min = int(row[2])      # x-coordinate of top left corner
+                y_min = int(row[3])      # y-coordinate of top left corner
+                x_max = int(row[4])      # x-coordinate of bottom right corner
+                y_max = int(row[5])      # y-coordinate of bottom right corner
 
                 # Get the class index if it has already been registered
                 # otherwise register it and select the index
@@ -121,10 +123,10 @@ def preprocess_LISA(LISA_path: str) -> PreprocessingData:
                     annotations[image_path] = []
                 annotations[image_path].append({
                     "class": class_index,
-                    "x": x,
-                    "y": y,
-                    "w": w,
-                    "h": h
+                    "x_min": x_min,
+                    "y_min": y_min,
+                    "x_max": x_max,
+                    "y_max": y_max
                 })
 
     return PreprocessingData(images, detection_classes, annotations)

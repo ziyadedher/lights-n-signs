@@ -105,20 +105,27 @@ class HaarProcessor:
 
         # Read all annotations
         for image_path, annotations in preprocessed_data.annotations.items():
+            # Get the relative image path for storing in the file
+            image_relative = os.path.relpath(
+                image_path, start=os.path.join(annotations_folder_path)
+            )
+
             # Store the annotations in a way easier to represent for Haar
             light_detections: Dict[str, List[List[int]]] = {}
 
             # Go through each detection and populate the above dictionary
             for annotation in annotations:
                 class_name = preprocessed_data.classes[annotation["class"]]
-                x = annotation["x"]
-                y = annotation["y"]
-                w = annotation["w"]
-                h = annotation["h"]
+                x_min = annotation["x_min"]
+                y_min = annotation["y_min"]
+                width = annotation["x_max"] - x_min
+                height = annotation["y_max"] - y_min
 
                 if class_name not in light_detections:
                     light_detections[class_name] = []
-                light_detections[class_name].append([x, y, w, h])
+                light_detections[class_name].append(
+                    [x_min, y_min, width, height]
+                )
 
             # Append to the positive annotations file
             for light_type, detections in light_detections.items():
@@ -127,14 +134,14 @@ class HaarProcessor:
                     for detection in detections
                 )
                 positive_annotations_files[light_type].write(
-                    f"{image_path} {len(detections)} {detections_string}\n"
+                    f"{image_relative} {len(detections)} {detections_string}\n"
                 )
 
             # Append to the negative annotations file
             for light_type in preprocessed_data.classes:
                 if light_type not in light_detections.keys():
                     negative_annotations_files[light_type].write(
-                        f"{image_path}\n"
+                        f"{image_relative}\n"
                     )
 
         # Close the positive and negative annotation files

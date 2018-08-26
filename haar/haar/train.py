@@ -45,6 +45,9 @@ class Trainer:
         """
         self.model = None
 
+        self.__name = name
+        self.__dataset_name = dataset_name
+
         self._feature_size = -1
         self._light_type = None
         try:
@@ -52,24 +55,25 @@ class Trainer:
         except config.NoSuchDatasetException as e:
             raise e
 
-        self.__name = name
-        self.__dataset_name = dataset_name
-
-        __base = os.path.abspath(
-            os.path.join(__file__, os.pardir, self.__name)
-        )
+        __base = os.path.abspath(os.path.join(
+            __file__, os.pardir, "trainers"
+        ))
+        __trainer = os.path.join(__base, self.__name)
         self.__paths = {
             "base_folder": __base,
-            "vector_file": os.path.join(__base, "positive.vec"),
-            "cascade_folder": os.path.join(__base, "cascade"),
-            "cascade_file": os.path.join(__base, "cascade", "cascade.xml")
+            "trainer_folder": __trainer,
+            "vector_file": os.path.join(__trainer, "positive.vec"),
+            "cascade_folder": os.path.join(__trainer, "cascade"),
+            "cascade_file": os.path.join(__trainer, "cascade", "cascade.xml")
         }
 
         # Remove the training directory with this name if it exists
         # and generate a new one
-        if os.path.isdir(self.__paths["base_folder"]):
-            shutil.rmtree(self.__paths["base_folder"])
-        os.mkdir(self.__paths["base_folder"])
+        if not os.path.isdir(self.__paths["base_folder"]):
+            os.mkdir(self.__paths["base_folder"])
+        if os.path.isdir(self.__paths["trainer_folder"]):
+            shutil.rmtree(self.__paths["trainer_folder"])
+        os.mkdir(self.__paths["trainer_folder"])
         os.mkdir(self.__paths["cascade_folder"])
 
     @property
@@ -114,7 +118,9 @@ class Trainer:
         and <num_negative> negative samples.
         """
         if self._feature_size < 0 or self._light_type is None:
-            raise TrainerNotSetupException
+            raise TrainerNotSetupException(
+                "Trainer has not been set up using `setup_training`."
+            )
 
         vector_file = self.__paths["vector_file"]
         cascade_folder = self.__paths["cascade_folder"]

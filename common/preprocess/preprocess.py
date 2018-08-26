@@ -26,10 +26,10 @@ structure of the generated file is below.
         "/absolute/path/to/image.png": [
             {
                 "class": index_of_class,
-                "x": x_coordinate_of_left_side_of_bound,
-                "y": y_coordinate_of_top_of_bound,
-                "w": width_of_bound,
-                "h": height_of_bound
+                "x_min": x_coordinate_of_top_left_corner,
+                "y_min": y_coordinate_of_top_left_corner,
+                "x_max": x_coordinate_of_bottom_right_corner,
+                "y_max": y_coordinate_of_bottom_right_corner
             },
             ...
         ],

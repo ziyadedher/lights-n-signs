@@ -1,2 +1,5 @@
-# Ignore generated annotations
+# Generated annotations
 haar/annotations
+
+# Generate trainers
+haar/trainers
