@@ -8,6 +8,9 @@ from typing import List, Dict
 import os
 import shutil
 
+import cv2             # type: ignore
+from tqdm import tqdm  # type: ignore
+
 from common.config import NoSuchDatasetException
 from common.preprocess.preprocess import Preprocessor, NoPreprocessorException
 
@@ -67,6 +70,8 @@ class HaarProcessor:
         Raises `NoPreprocessorException` if a preprocessor for the dataset does
         not exist.
         """
+        # TODO: structure this function better
+        # TODO: read any data that exists on file as well
         # Uses memoization to speed up processing acquisition
         if not force and dataset_name in cls._processing_data:
             return cls._processing_data[dataset_name]
@@ -78,71 +83,102 @@ class HaarProcessor:
         except NoPreprocessorException as e:
             raise e
 
-        # Remove the annotations folder if it exists and create it
-        base_annotations_folder_path = os.path.abspath(os.path.join(
-            __file__, os.pardir, "annotations"
+        # Remove and generate required folders
+        base_data_folder = os.path.abspath(os.path.join(
+            __file__, os.pardir, "data"
         ))
-        annotations_folder_path = os.path.join(
-            base_annotations_folder_path, dataset_name
-        )
-        if not os.path.exists(base_annotations_folder_path):
-            os.mkdir(base_annotations_folder_path)
-        if os.path.exists(annotations_folder_path):
-            shutil.rmtree(annotations_folder_path)
-        os.mkdir(annotations_folder_path)
+        data_folder = os.path.join(base_data_folder, dataset_name)
+        annotations_folder = os.path.join(data_folder, "annotations")
+        images_folder = os.path.join(data_folder, "images")
+
+        # Create required folders if they do not exist
+        if not os.path.exists(base_data_folder):
+            os.mkdir(base_data_folder)
+        if not os.path.exists(data_folder):
+            os.mkdir(data_folder)
+        if not os.path.exists(images_folder):
+            os.mkdir(images_folder)
+
+        # Remove annotations folder to be regenerated
+        if os.path.exists(annotations_folder):
+            shutil.rmtree(annotations_folder)
+        os.mkdir(annotations_folder)
 
         # Open the positive and negative annotation files
         positive_annotations_files = {
             light_type: open(os.path.join(
-                annotations_folder_path, light_type + "_positive"
+                annotations_folder, light_type + "_positive"
             ), "w") for light_type in preprocessed_data.classes
         }
         negative_annotations_files = {
             light_type: open(os.path.join(
-                annotations_folder_path, light_type + "_negative"
+                annotations_folder, light_type + "_negative"
             ), "w") for light_type in preprocessed_data.classes
         }
 
+        # Set up for reading annotations
+        clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
+        enumeration = enumerate(preprocessed_data.annotations.items())
+
         # Read all annotations
-        for image_path, annotations in preprocessed_data.annotations.items():
-            # Get the relative image path for storing in the file
-            image_relative = os.path.relpath(
-                image_path, start=os.path.join(annotations_folder_path)
-            )
+        with tqdm(desc="Preprocessing",
+                  total=len(preprocessed_data.annotations.keys()),
+                  miniters=1) as bar:
+            for i, (image_path, labels) in enumeration:
+                # Update the progress bar
+                bar.update()
 
-            # Store the annotations in a way easier to represent for Haar
-            light_detections: Dict[str, List[List[int]]] = {}
+                # Create gray images
+                new_image_path = os.path.abspath(os.path.join(
+                    images_folder, f"{i}.png"
+                ))
+                # Skip image creation if force is not set to True and
+                # the image already exists
+                if not force and not os.path.exists(new_image_path):
+                    cv2.imwrite(new_image_path,
+                                clahe.apply(cv2.imread(image_path, 0)))
 
-            # Go through each detection and populate the above dictionary
-            for annotation in annotations:
-                class_name = preprocessed_data.classes[annotation["class"]]
-                x_min = annotation["x_min"]
-                y_min = annotation["y_min"]
-                width = annotation["x_max"] - x_min
-                height = annotation["y_max"] - y_min
-
-                if class_name not in light_detections:
-                    light_detections[class_name] = []
-                light_detections[class_name].append(
-                    [x_min, y_min, width, height]
+                # Get relative path to image
+                image_relative = os.path.relpath(
+                    os.path.join(images_folder, f"{i}.png"),
+                    start=annotations_folder
                 )
 
-            # Append to the positive annotations file
-            for light_type, detections in light_detections.items():
-                detections_string = " ".join(
-                    " ".join(str(item) for item in detection)
-                    for detection in detections
-                )
-                positive_annotations_files[light_type].write(
-                    f"{image_relative} {len(detections)} {detections_string}\n"
-                )
+                # Store the annotations in a way easier to represent for Haar
+                light_detections: Dict[str, List[List[int]]] = {}
 
-            # Append to the negative annotations file
-            for light_type in preprocessed_data.classes:
-                if light_type not in light_detections.keys():
-                    negative_annotations_files[light_type].write(
-                        f"{image_relative}\n"
+                # Go through each detection and populate the above dictionary
+                for label in labels:
+                    class_name = preprocessed_data.classes[label["class"]]
+                    x_min = label["x_min"]
+                    y_min = label["y_min"]
+                    width = label["x_max"] - x_min
+                    height = label["y_max"] - y_min
+
+                    if class_name not in light_detections:
+                        light_detections[class_name] = []
+                    light_detections[class_name].append(
+                        [x_min, y_min, width, height]
                     )
+
+                # Append to the positive annotations file
+                for light_type, detections in light_detections.items():
+                    detections_string = " ".join(
+                        " ".join(str(item) for item in detection)
+                        for detection in detections
+                    )
+                    positive_annotations_files[light_type].write(
+                        "{} {} {}\n".format(
+                            image_relative, len(detections), detections_string
+                        )
+                    )
+
+                # Append to the negative annotations file
+                for light_type in preprocessed_data.classes:
+                    if light_type not in light_detections.keys():
+                        negative_annotations_files[light_type].write(
+                            f"{new_image_path}\n"
+                        )
 
         # Close the positive and negative annotation files
         for file in positive_annotations_files.values():
@@ -152,11 +188,11 @@ class HaarProcessor:
 
         # Generate the light type to absolute annotations path mapping
         positive_annotations = {
-            light_type: os.path.join(annotations_folder_path, file.name)
+            light_type: os.path.join(annotations_folder, file.name)
             for light_type, file in positive_annotations_files.items()
         }
         negative_annotations = {
-            light_type: os.path.join(annotations_folder_path, file.name)
+            light_type: os.path.join(annotations_folder, file.name)
             for light_type, file in negative_annotations_files.items()
         }
 
