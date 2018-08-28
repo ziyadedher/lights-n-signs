@@ -55,9 +55,7 @@ class Trainer:
         except config.NoSuchDatasetException as e:
             raise e
 
-        __base = os.path.abspath(os.path.join(
-            __file__, os.pardir, "trainers"
-        ))
+        __base = os.path.join(config.RESOURCES_ROOT, "haar/trainers")
         __trainer = os.path.join(__base, self.__name)
         self.__paths = {
             "base_folder": __base,

@@ -11,7 +11,7 @@ import shutil
 import cv2             # type: ignore
 from tqdm import tqdm  # type: ignore
 
-from common.config import NoSuchDatasetException
+from common import config
 from common.preprocess.preprocess import Preprocessor, NoPreprocessorException
 
 
@@ -78,15 +78,13 @@ class HaarProcessor:
 
         try:
             preprocessed_data = Preprocessor.preprocess(dataset_name)
-        except NoSuchDatasetException as e:
+        except config.NoSuchDatasetException as e:
             raise e
         except NoPreprocessorException as e:
             raise e
 
         # Remove and generate required folders
-        base_data_folder = os.path.abspath(os.path.join(
-            __file__, os.pardir, "data"
-        ))
+        base_data_folder = os.path.join(config.RESOURCES_ROOT, "haar/data")
         data_folder = os.path.join(base_data_folder, dataset_name)
         annotations_folder = os.path.join(data_folder, "annotations")
         images_folder = os.path.join(data_folder, "images")

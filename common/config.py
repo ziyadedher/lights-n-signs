@@ -8,13 +8,16 @@ from typing import Dict, List
 import os
 
 
+RESOURCES_ROOT = os.path.abspath(
+    os.path.join(os.path.expanduser("~"), ".lns-training/resources")
+)
+
+
 class Data:
     """Stores information about available data."""
 
     # Absolute path to the data folder
-    _DEFAULT_DATA_ROOT: str = os.path.abspath(
-        os.path.join(__file__, os.pardir, "data")
-    )
+    _DEFAULT_DATA_ROOT: str = os.path.join(RESOURCES_ROOT, "data")
 
     # Possible datasets available
     _POSSIBLE_DATASET_FOLDERS: List[str] = ["LISA"]

@@ -25,10 +25,12 @@ MANIFEST
 # Virtual environments
 .venv
 
-# Exclude all preprocessed annotation files
-common/preprocess/tempAnnotations/*
-common/preprocess/textAnnotations/*
-common/preprocess/dataPickle.pkl
-
 # MyPy
 .mypy_cache/
+
+
+# === RESOURCES ===
+resources/
+!resource/data
+resources/data/**
+!resources/data/download.sh
