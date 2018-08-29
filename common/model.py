@@ -5,7 +5,7 @@ common interface for every technique for light and sign detection.
 """
 from typing import List
 
-import numpy as np
+import numpy as np  # type: ignore
 
 
 class Bounds2D:

@@ -39,7 +39,7 @@ structure of the generated file is below.
 """
 from typing import Dict
 
-from common.config import NoSuchDatasetException, Data
+from common.config import Data
 from common.preprocess import preprocessing
 from common.preprocess.preprocessing import PreprocessingData
 
@@ -62,7 +62,6 @@ class Preprocessor:
         Setting <force> to `True` will force a preprocessing even if the
         preprocessed data already exists in memory.
 
-        Raises `NoSuchDatasetException` if such a dataset does not exist.
         Raises `NoPreprocessorException` if a preprocessor for the dataset does
         not exist.
         """
@@ -70,10 +69,7 @@ class Preprocessor:
         if not force and dataset_name in cls._preprocessing_data:
             return cls._preprocessing_data[dataset_name]
 
-        try:
-            dataset_path = Data.get_dataset_path(dataset_name)
-        except NoSuchDatasetException as e:
-            raise e
+        dataset_path = Data.get_dataset_path(dataset_name)
 
         try:
             _preprocessor = cls._PREPROCESSORS[dataset_name]

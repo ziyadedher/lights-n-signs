@@ -40,8 +40,7 @@ class Trainer:
     def __init__(self, name: str, dataset_name: str) -> None:
         """Initialize a trainer with the given unique <name>.
 
-        Sources data from the dataset with the given <dataset_name> and raises
-        `NoSuchDatasetException` if no such dataset exists.
+        Sources data from the dataset with the given <dataset_name>.
         """
         self.model = None
 
@@ -50,16 +49,13 @@ class Trainer:
 
         self._feature_size = -1
         self._light_type = None
-        try:
-            self._data = HaarProcessor.process(self.__dataset_name)
-        except config.NoSuchDatasetException as e:
-            raise e
+        self._data = HaarProcessor.process(self.__dataset_name)
 
-        __base = os.path.join(config.RESOURCES_ROOT, "haar/trainers")
-        __trainer = os.path.join(__base, self.__name)
+        # Set up the required paths
+        __trainer = os.path.join(
+            config.RESOURCES_ROOT, "haar/trainers", self.__name
+        )
         self.__paths = {
-            "base_folder": __base,
-            "trainer_folder": __trainer,
             "vector_file": os.path.join(__trainer, "positive.vec"),
             "cascade_folder": os.path.join(__trainer, "cascade"),
             "cascade_file": os.path.join(__trainer, "cascade", "cascade.xml")
@@ -67,12 +63,10 @@ class Trainer:
 
         # Remove the training directory with this name if it exists
         # and generate a new one
-        if not os.path.isdir(self.__paths["base_folder"]):
-            os.mkdir(self.__paths["base_folder"])
-        if os.path.isdir(self.__paths["trainer_folder"]):
-            shutil.rmtree(self.__paths["trainer_folder"])
-        os.mkdir(self.__paths["trainer_folder"])
-        os.mkdir(self.__paths["cascade_folder"])
+        if os.path.isdir(__trainer):
+            shutil.rmtree(__trainer)
+        os.makedirs(__trainer)
+        os.makedirs(self.__paths["cascade_folder"])
 
     @property
     def name(self) -> str:

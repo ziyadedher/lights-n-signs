@@ -12,7 +12,7 @@ import cv2             # type: ignore
 from tqdm import tqdm  # type: ignore
 
 from common import config
-from common.preprocess.preprocess import Preprocessor, NoPreprocessorException
+from common.preprocess.preprocess import Preprocessor
 
 
 class HaarData:
@@ -66,7 +66,6 @@ class HaarProcessor:
         Setting <force> to `True` will force a preprocessing even if the
         preprocessed data already exists in memory.
 
-        Raises `NoSuchDatasetException` if such a dataset does not exist.
         Raises `NoPreprocessorException` if a preprocessor for the dataset does
         not exist.
         """
@@ -76,12 +75,7 @@ class HaarProcessor:
         if not force and dataset_name in cls._processing_data:
             return cls._processing_data[dataset_name]
 
-        try:
-            preprocessed_data = Preprocessor.preprocess(dataset_name)
-        except config.NoSuchDatasetException as e:
-            raise e
-        except NoPreprocessorException as e:
-            raise e
+        preprocessed_data = Preprocessor.preprocess(dataset_name)
 
         # Remove and generate required folders
         base_data_folder = os.path.join(config.RESOURCES_ROOT, "haar/data")

@@ -13,6 +13,12 @@ RESOURCES_ROOT = os.path.abspath(
 )
 
 
+def generate_resources_root() -> None:
+    """Generate the folder structure for the common resources."""
+    if not os.path.isdir(RESOURCES_ROOT):
+        os.makedirs(RESOURCES_ROOT)
+
+
 class Data:
     """Stores information about available data."""
 
@@ -27,11 +33,19 @@ class Data:
     _datasets: Dict[str, str] = {}
 
     @classmethod
-    def set_data_root(cls, new_root: str = _DEFAULT_DATA_ROOT) -> None:
+    def set_data_root(cls,
+                      new_root: str = _DEFAULT_DATA_ROOT,
+                      force_create: bool = False) -> None:
         """Set the data root folder.
 
-        Raises `ValueError` if there is any discrepency in the new data root.
+        Creates the data root if it does not exist if <force_create> is set to
+        be `True`, otherwise raises `ValueError` if there is any discrepency in
+        the new data root.
         """
+        # Create the data folder if the flag is set
+        if force_create and not os.path.exists(new_root):
+            os.makedirs(new_root)
+
         # Ensure the new data root exists
         new_data_root: str = os.path.abspath(new_root)
         if not os.path.isdir(new_data_root):
@@ -56,27 +70,22 @@ class Data:
     def get_dataset_path(cls, dataset_name: str) -> str:
         """Get the path to the dataset with the given <dataset_name>.
 
-        Raises `NoSuchDatasetException` if no such dataset exists.
+        Raises `KeyError` if no such dataset exists.
         """
         try:
             return cls._datasets[dataset_name]
-        except KeyError:
-            raise NoSuchDatasetException(dataset_name)
+        except KeyError as e:
+            raise e
 
     @classmethod
     def has_dataset(cls, dataset_name: str) -> bool:
         """Get whether or not a dataset with the given name is available."""
         try:
             cls.get_dataset_path(dataset_name)
-        except NoSuchDatasetException:
+        except KeyError:
             return False
         return True
 
 
-class NoSuchDatasetException(Exception):
-    """Raised when a dataset not in the data root is referenced."""
-
-    pass
-
-
-Data.set_data_root()
+generate_resources_root()
+Data.set_data_root(force_create=True)
