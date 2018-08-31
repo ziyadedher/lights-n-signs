@@ -40,37 +40,33 @@ class Trainer:
     def __init__(self, name: str, dataset_name: str) -> None:
         """Initialize a trainer with the given unique <name>.
 
-        Sources data from the dataset with the given <dataset_name> and raises
-        `NoSuchDatasetException` if no such dataset exists.
+        Sources data from the dataset with the given <dataset_name>.
         """
         self.model = None
-
-        self._feature_size = -1
-        self._light_type = None
-        try:
-            self._data = HaarProcessor.get_processed(self.__dataset_name)
-        except config.NoSuchDatasetException as e:
-            raise e
 
         self.__name = name
         self.__dataset_name = dataset_name
 
-        __base = os.path.abspath(
-            os.path.join(__file__, os.pardir, self.__name)
+        self._feature_size = -1
+        self._light_type = None
+        self._data = HaarProcessor.process(self.__dataset_name)
+
+        # Set up the required paths
+        __trainer = os.path.join(
+            config.RESOURCES_ROOT, "haar/trainers", self.__name
         )
         self.__paths = {
-            "base_folder": __base,
-            "vector_file": os.path.join(__base, "positive.vec"),
-            "cascade_folder": os.path.join(__base, "cascade"),
-            "cascade_file": os.path.join(__base, "cascade", "cascade.xml")
+            "vector_file": os.path.join(__trainer, "positive.vec"),
+            "cascade_folder": os.path.join(__trainer, "cascade"),
+            "cascade_file": os.path.join(__trainer, "cascade", "cascade.xml")
         }
 
         # Remove the training directory with this name if it exists
         # and generate a new one
-        if os.path.isdir(self.__paths["base_folder"]):
-            shutil.rmtree(self.__paths["base_folder"])
-        os.mkdir(self.__paths["base_folder"])
-        os.mkdir(self.__paths["cascade_folder"])
+        if os.path.isdir(__trainer):
+            shutil.rmtree(__trainer)
+        os.makedirs(__trainer)
+        os.makedirs(self.__paths["cascade_folder"])
 
     @property
     def name(self) -> str:
@@ -114,7 +110,9 @@ class Trainer:
         and <num_negative> negative samples.
         """
         if self._feature_size < 0 or self._light_type is None:
-            raise TrainerNotSetupException
+            raise TrainerNotSetupException(
+                "Trainer has not been set up using `setup_training`."
+            )
 
         vector_file = self.__paths["vector_file"]
         cascade_folder = self.__paths["cascade_folder"]
