@@ -16,14 +16,23 @@ if ! [ "${unmet}" -eq 0 ]; then
   exit 1;
 fi
 
-# Download files
+
+# Create main directories
+mkdir -p raw
+
+
+# === LISA ===
+mkdir -p raw/LISA
+mkdir -p LISA
+
+cd raw/LISA
 curl http://cvrr.ucsd.edu/vivachallenge/data/Lights_Detection/LISA_TL_dayTrain.zip --output LISA_TL_dayTrain.zip
 curl http://cvrr.ucsd.edu/vivachallenge/data/Lights_Detection/LISA_TL_nightTrain.zip --output LISA_TL_nightTrain.zip
 curl http://cvrr.ucsd.edu/vivachallenge/data/Lights_Detection/LISA_TL_dayTest.zip --output LISA_TL_dayTest.zip
 curl http://cvrr.ucsd.edu/vivachallenge/data/Lights_Detection/LISA_TL_nightTest.zip --output LISA_TL_nightTest.zip
 
-# Unzip files
-unzip LISA_TL_dayTrain.zip
-unzip LISA_TL_nightTrain.zip
-unzip LISA_TL_dayTest.zip
-unzip LISA_TL_nightTest.zip
+unzip LISA_TL_dayTrain.zip -d ../../LISA/
+unzip LISA_TL_nightTrain.zip -d ../../LISA/
+unzip LISA_TL_dayTest.zip -d ../../LISA/
+unzip LISA_TL_nightTest.zip -d ../../LISA/
+cd ../../
