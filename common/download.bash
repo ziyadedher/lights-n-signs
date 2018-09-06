@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Space-separated package dependencies
 DEPS="curl unzip"
@@ -18,7 +18,7 @@ fi
 
 
 # TODO: somehow link this to the resources data root
-RESOURCES_ROOT="${~/.lns-training/resources/#\~$HOME}"
+RESOURCES_ROOT="$HOME/.lns-training/resources/"
 
 # Create main directories
 mkdir -p $RESOURCES_ROOT
