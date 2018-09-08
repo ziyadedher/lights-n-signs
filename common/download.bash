@@ -37,4 +37,4 @@ cd ../..
 cd data
 mkdir -p LISA
 cd LISA
-unzip LISA_TL_dayTrain.zip -d .
+unzip ../../raw/LISA/LISA_TL_dayTrain.zip -d .
