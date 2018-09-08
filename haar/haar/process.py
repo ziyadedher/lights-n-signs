@@ -85,16 +85,16 @@ class HaarProcessor:
 
         # Create required folders if they do not exist
         if not os.path.exists(base_data_folder):
-            os.mkdir(base_data_folder)
+            os.makedirs(base_data_folder)
         if not os.path.exists(data_folder):
-            os.mkdir(data_folder)
+            os.makedirs(data_folder)
         if not os.path.exists(images_folder):
-            os.mkdir(images_folder)
+            os.makedirs(images_folder)
 
         # Remove annotations folder to be regenerated
         if os.path.exists(annotations_folder):
             shutil.rmtree(annotations_folder)
-        os.mkdir(annotations_folder)
+        os.makedirs(annotations_folder)
 
         # Open the positive and negative annotation files
         positive_annotations_files = {
