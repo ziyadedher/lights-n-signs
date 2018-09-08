@@ -56,6 +56,12 @@ class PreprocessingData:
         """
         return self.__annotations.copy()
 
+    def __add__(self, other: 'PreprocessingData') -> 'PreprocessingData':
+        """Magic method for adding two preprocessing data objects."""
+        return PreprocessingData(self.images + other.images,
+                                 self.classes + other.classes,
+                                 {**self.annotations, **other.annotations})
+
 
 def preprocess_LISA(LISA_path: str) -> PreprocessingData:
     """Preprocess and generate data for a LISA dataset at the given path.
