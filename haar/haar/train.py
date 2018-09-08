@@ -2,7 +2,7 @@
 
 This script manages model training and generation.
 """
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 
 import os
 import shutil
@@ -11,6 +11,8 @@ import subprocess
 import cv2  # type: ignore
 
 from common import config
+from common.preprocess.preprocess import Preprocessor
+from common.preprocess.preprocessing import Dataset
 from haar.model import HaarModel
 from haar.process import HaarData, HaarProcessor
 
@@ -34,22 +36,32 @@ class Trainer:
     _data: HaarData
 
     __name: str
-    __dataset_name: str
+    __dataset: Dataset
     __paths: Dict[str, str]
 
-    def __init__(self, name: str, dataset_name: str) -> None:
+    def __init__(self, name: str,
+                 dataset: Union[str, Dataset]) -> None:
         """Initialize a trainer with the given unique <name>.
 
-        Sources data from the dataset with the given <dataset_name>.
+        Sources data from the <dataset> given which can either be a name of
+        an available dataset or a `PreprocessingData` object.
         """
         self.model = None
-
         self.__name = name
-        self.__dataset_name = dataset_name
+
+        if isinstance(dataset, str):
+            self.__dataset = Preprocessor.preprocess(dataset)
+        elif isinstance(dataset, Dataset):
+            self.__dataset = dataset
+        else:
+            raise ValueError(
+                "`dataset` may only be `str` or `PreprocessingData`, not" +
+                f"{type(dataset)}"
+            )
 
         self._feature_size = -1
         self._light_type = None
-        self._data = HaarProcessor.process(self.__dataset_name)
+        self._data = HaarProcessor.process(self.__dataset)
 
         # Set up the required paths
         __trainer = os.path.join(

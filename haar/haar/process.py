@@ -12,7 +12,7 @@ import cv2             # type: ignore
 from tqdm import tqdm  # type: ignore
 
 from common import config
-from common.preprocess.preprocess import Preprocessor
+from common.preprocess.preprocessing import Dataset
 
 
 class HaarData:
@@ -56,36 +56,29 @@ class HaarData:
 class HaarProcessor:
     """Haar processor responsible for data processing to Haar-valid formats."""
 
-    _processing_data: Dict[str, HaarData] = {}
+    BASE_DATA_FOLDER = os.path.join(config.RESOURCES_ROOT, "haar/data")
 
     @classmethod
-    def process(cls, dataset_name: str,
-                force: bool = False) -> HaarData:
+    def process(cls, dataset: Dataset, force: bool = False) -> HaarData:
         """Process all required data from the dataset with the given name.
 
-        Setting <force> to `True` will force a preprocessing even if the
-        preprocessed data already exists in memory.
+        Setting <force> to `True` will force a processing even if the images
+        already exist on file.
 
         Raises `NoPreprocessorException` if a preprocessor for the dataset does
         not exist.
         """
         # TODO: structure this function better
-        # TODO: read any data that exists on file as well
-        # Uses memoization to speed up processing acquisition
-        if not force and dataset_name in cls._processing_data:
-            return cls._processing_data[dataset_name]
 
-        preprocessed_data = Preprocessor.preprocess(dataset_name)
-
-        # Remove and generate required folders
-        base_data_folder = os.path.join(config.RESOURCES_ROOT, "haar/data")
-        data_folder = os.path.join(base_data_folder, dataset_name)
+        # Register all folders
+        data_folder = os.path.join(cls.BASE_DATA_FOLDER, dataset.name)
         annotations_folder = os.path.join(data_folder, "annotations")
         images_folder = os.path.join(data_folder, "images")
 
+        # Create base data folder if it does not exist
+        if not os.path.exists(cls.BASE_DATA_FOLDER):
+            os.makedirs(cls.BASE_DATA_FOLDER)
         # Create required folders if they do not exist
-        if not os.path.exists(base_data_folder):
-            os.makedirs(base_data_folder)
         if not os.path.exists(data_folder):
             os.makedirs(data_folder)
         if not os.path.exists(images_folder):
@@ -98,23 +91,23 @@ class HaarProcessor:
 
         # Open the positive and negative annotation files
         positive_annotations_files = {
-            light_type: open(os.path.join(
-                annotations_folder, light_type + "_positive"
-            ), "w") for light_type in preprocessed_data.classes
+            class_name: open(os.path.join(
+                annotations_folder, class_name + "_positive"
+            ), "w") for class_name in dataset.classes
         }
         negative_annotations_files = {
-            light_type: open(os.path.join(
-                annotations_folder, light_type + "_negative"
-            ), "w") for light_type in preprocessed_data.classes
+            class_name: open(os.path.join(
+                annotations_folder, class_name + "_negative"
+            ), "w") for class_name in dataset.classes
         }
 
         # Set up for reading annotations
         clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
-        enumeration = enumerate(preprocessed_data.annotations.items())
+        enumeration = enumerate(dataset.annotations.items())
 
         # Read all annotations
         with tqdm(desc="Preprocessing",
-                  total=len(preprocessed_data.annotations.keys()),
+                  total=len(dataset.annotations.keys()),
                   miniters=1) as bar:
             for i, (image_path, labels) in enumeration:
                 # Update the progress bar
@@ -141,7 +134,7 @@ class HaarProcessor:
 
                 # Go through each detection and populate the above dictionary
                 for label in labels:
-                    class_name = preprocessed_data.classes[label["class"]]
+                    class_name = dataset.classes[label["class"]]
                     x_min = label["x_min"]
                     y_min = label["y_min"]
                     width = label["x_max"] - x_min
@@ -166,7 +159,7 @@ class HaarProcessor:
                     )
 
                 # Append to the negative annotations file
-                for light_type in preprocessed_data.classes:
+                for light_type in dataset.classes:
                     if light_type not in light_detections.keys():
                         negative_annotations_files[light_type].write(
                             f"{new_image_path}\n"
@@ -188,7 +181,4 @@ class HaarProcessor:
             for light_type, file in negative_annotations_files.items()
         }
 
-        # Memoize and return the processed data
-        processed_data = HaarData(positive_annotations, negative_annotations)
-        cls._processing_data[dataset_name] = processed_data
-        return processed_data
+        return HaarData(positive_annotations, negative_annotations)
