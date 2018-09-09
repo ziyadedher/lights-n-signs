@@ -41,7 +41,7 @@ from typing import Dict
 
 from common.config import Data
 from common.preprocess import preprocessing
-from common.preprocess.preprocessing import PreprocessingData
+from common.preprocess.preprocessing import Dataset
 
 
 class Preprocessor:
@@ -52,11 +52,11 @@ class Preprocessor:
         "LISA": preprocessing.preprocess_LISA
     }
 
-    _preprocessing_data: Dict[str, PreprocessingData] = {}
+    _preprocessing_data: Dict[str, Dataset] = {}
 
     @classmethod
     def preprocess(cls, dataset_name: str,
-                   force: bool = False) -> PreprocessingData:
+                   force: bool = False) -> Dataset:
         """Preprocess the dataset with the given name and return the result.
 
         Setting <force> to `True` will force a preprocessing even if the
