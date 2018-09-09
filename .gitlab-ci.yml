@@ -1,0 +1,14 @@
+before_script:
+  - pip install flake8
+  - pip install mypy
+
+haar:
+  image: jjanzic/docker-python3-opencv:latest
+  script:
+    - cd /builds/aUToronto/autonomy/lights-n-signs-training
+    - cd haar
+    - python setup.py build
+    - python setup.py install
+    - python setup.py flake8
+    - mypy haar
+    - python setup.py test
