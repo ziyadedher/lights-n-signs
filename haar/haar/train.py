@@ -161,7 +161,7 @@ class Trainer:
         cascade_file = self.__paths["cascade_file"]
 
         if os.path.isfile(cascade_file):
-            HaarModel(
+            self.model = HaarModel(
                 cv2.CascadeClassifier(cascade_file),
                 [self._light_type] if self._light_type is not None else []
             )

@@ -26,7 +26,7 @@ class Data:
     _DEFAULT_DATA_ROOT: str = os.path.join(RESOURCES_ROOT, "data")
 
     # Possible datasets available
-    _POSSIBLE_DATASET_FOLDERS: List[str] = ["LISA"]
+    _POSSIBLE_DATASET_FOLDERS: List[str] = ["LISA", "Bosch"]
 
     # Current data root and stored datsets
     _data_root: str = _DEFAULT_DATA_ROOT
