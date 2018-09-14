@@ -5,8 +5,13 @@ preprocessing data structure.
 """
 from typing import Dict, List
 
+import random
+import datetime
+
 import os
 import csv
+
+import json
 import copy
 import sys
 
@@ -108,9 +113,17 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
     if not os.path.isdir(day_train_path):
         raise FileNotFoundError("Could not find `dayTrain` in LISA dataset.")
 
-    images: List[str] = []
-    detection_classes: List[str] = []
-    annotations: Dict[str, List[Dict[str, int]]] = {}
+    #define lists containing info for test + train structures
+    images_train: List[str] = []
+    detection_classes_train: List[str] = []
+    annotations_train: Dict[str, List[Dict[str, int]]] = {}
+
+    images_test: List[str] = []
+    detection_classes_test: List[str] = []
+    annotations_test: Dict[str, List[Dict[str, int]]] = {}
+
+    #generate the random seed
+    random.seed(1)  #can be arbitrary const
 
     for file_name in os.listdir(day_train_path):
         if not file_name.startswith("dayClip"):
@@ -130,7 +143,10 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
 
         # Register all the images
         for image_name in os.listdir(frames_path):
-            images.append(os.path.join(frames_path, image_name))
+            if random.random() < 0.1 :
+                images_test.append(os.path.join(frames_path, image_name))
+            else:
+                images_train.append(os.path.join(frames_path, image_name))
 
         # Read annotations
         with open(annotations_path, "r") as annotations_file:
@@ -152,21 +168,48 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
 
                 # Get the class index if it has already been registered
                 # otherwise register it and select the index
-                try:
-                    class_index = detection_classes.index(detection_class)
-                except ValueError:
-                    class_index = len(detection_classes)
-                    detection_classes.append(detection_class)
 
-                # Package the detection
-                if image_path not in annotations:
-                    annotations[image_path] = []
-                annotations[image_path].append({
-                    "class": class_index,
-                    "x_min": x_min,
-                    "y_min": y_min,
-                    "x_max": x_max,
-                    "y_max": y_max
-                })
+                if image_path in images_test :
+                    try:
+                        class_index = detection_classes_test.index(detection_class)
+                    except ValueError:
+                        class_index = len(detection_classes_test)
+                        detection_classes_test.append(detection_class)
 
-    return Dataset("LISA", {"LISA": images}, detection_classes, annotations)
+                    # Package the detection
+                    if image_path not in annotations_test:
+                        annotations_test[image_path] = []
+                        annotations_test[image_path].append({
+                        "class": class_index,
+                        "x_min": x_min,
+                        "y_min": y_min,
+                        "x_max": x_max,
+                        "y_max": y_max
+                    })
+                else:
+                    try:
+                        class_index = detection_classes_train.index(detection_class)
+                    except ValueError:
+                        class_index = len(detection_classes_train)
+                        detection_classes_train.append(detection_class)
+
+                    # Package the detection
+                    if image_path not in annotations_train:
+                        annotations_train[image_path] = []
+                        annotations_train[image_path].append({
+                        "class": class_index,
+                        "x_min": x_min,
+                        "y_min": y_min,
+                        "x_max": x_max,
+                        "y_max": y_max
+                    })
+
+    # save the test_struct in file for future reference
+    test_struct = Dataset("LISA", {"LISA": images_test}, detection_classes_test, annotations_test)
+    with open("test_data.json", "w") as rs:
+        json_test = json.dump({"images":images_test, "classes": detection_classes_test,
+                                "annotations": annotations_test}, rs)
+
+    train_struct = Dataset("LISA", {"LISA": images_train}, detection_classes_train, annotations_train)
+    return train_struct
+
