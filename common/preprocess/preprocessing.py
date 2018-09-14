@@ -123,7 +123,7 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
     annotations_test: Dict[str, List[Dict[str, int]]] = {}
 
     #generate the random seed
-    random.seed(datetime.datetime.now())
+    random.seed(1)  #can be arbitrary const
 
     for file_name in os.listdir(day_train_path):
         if not file_name.startswith("dayClip"):
@@ -143,8 +143,7 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
 
         # Register all the images
         for image_name in os.listdir(frames_path):
-            rand_num = random.randrange(1,10,1)
-            if rand_num == 9 :
+            if random.random() < 0.1 :
                 images_test.append(os.path.join(frames_path, image_name))
             else:
                 images_train.append(os.path.join(frames_path, image_name))
