@@ -5,15 +5,12 @@ preprocessing data structure.
 """
 from typing import Dict, List
 
-import random
-import datetime
-
 import os
 import csv
-
 import json
 import copy
-import sys
+import yaml  # XXX: this could be sped up by using PyYaml C-bindings
+import random
 
 
 class Dataset:
@@ -113,7 +110,7 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
     if not os.path.isdir(day_train_path):
         raise FileNotFoundError("Could not find `dayTrain` in LISA dataset.")
 
-    #define lists containing info for test + train structures
+    # Define lists containing info for test + train structures
     images_train: List[str] = []
     detection_classes_train: List[str] = []
     annotations_train: Dict[str, List[Dict[str, int]]] = {}
@@ -122,8 +119,8 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
     detection_classes_test: List[str] = []
     annotations_test: Dict[str, List[Dict[str, int]]] = {}
 
-    #generate the random seed
-    random.seed(1)  #can be arbitrary const
+    # Generate the random seed
+    random.seed(1)  # Can be arbitrary const
 
     for file_name in os.listdir(day_train_path):
         if not file_name.startswith("dayClip"):
@@ -143,7 +140,7 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
 
         # Register all the images
         for image_name in os.listdir(frames_path):
-            if random.random() < 0.1 :
+            if random.random() < 0.1:
                 images_test.append(os.path.join(frames_path, image_name))
             else:
                 images_train.append(os.path.join(frames_path, image_name))
@@ -169,9 +166,11 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
                 # Get the class index if it has already been registered
                 # otherwise register it and select the index
 
-                if image_path in images_test :
+                if image_path in images_test:
                     try:
-                        class_index = detection_classes_test.index(detection_class)
+                        class_index = detection_classes_test.index(
+                            detection_class
+                        )
                     except ValueError:
                         class_index = len(detection_classes_test)
                         detection_classes_test.append(detection_class)
@@ -180,15 +179,17 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
                     if image_path not in annotations_test:
                         annotations_test[image_path] = []
                         annotations_test[image_path].append({
-                        "class": class_index,
-                        "x_min": x_min,
-                        "y_min": y_min,
-                        "x_max": x_max,
-                        "y_max": y_max
-                    })
+                            "class": class_index,
+                            "x_min": x_min,
+                            "y_min": y_min,
+                            "x_max": x_max,
+                            "y_max": y_max
+                        })
                 else:
                     try:
-                        class_index = detection_classes_train.index(detection_class)
+                        class_index = detection_classes_train.index(
+                            detection_class
+                        )
                     except ValueError:
                         class_index = len(detection_classes_train)
                         detection_classes_train.append(detection_class)
@@ -197,19 +198,75 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
                     if image_path not in annotations_train:
                         annotations_train[image_path] = []
                         annotations_train[image_path].append({
-                        "class": class_index,
-                        "x_min": x_min,
-                        "y_min": y_min,
-                        "x_max": x_max,
-                        "y_max": y_max
-                    })
+                            "class": class_index,
+                            "x_min": x_min,
+                            "y_min": y_min,
+                            "x_max": x_max,
+                            "y_max": y_max
+                        })
 
     # save the test_struct in file for future reference
-    test_struct = Dataset("LISA", {"LISA": images_test}, detection_classes_test, annotations_test)
     with open("test_data.json", "w") as rs:
-        json_test = json.dump({"images":images_test, "classes": detection_classes_test,
-                                "annotations": annotations_test}, rs)
+        json.dump({
+            "images": images_test,
+            "classes": detection_classes_test,
+            "annotations": annotations_test
+        }, rs)
 
-    train_struct = Dataset("LISA", {"LISA": images_train}, detection_classes_train, annotations_train)
+    train_struct = Dataset("LISA", {"LISA": images_train},
+                           detection_classes_train, annotations_train)
     return train_struct
 
+
+def preprocess_bosch(bosch_path: str) -> Dataset:
+    """Preprocess and generate data for a Bosch dataset at the given path.
+
+    Raises `FileNotFoundError` if any of the required Bosch files or
+    folders is not found.
+    """
+    annotations_path = os.path.join(bosch_path, "train.yaml")
+    if not os.path.isfile(annotations_path):
+        raise FileNotFoundError(
+            f"Could not find annotations file {annotations_path}."
+        )
+    with open(annotations_path, "r") as file:
+        raw_annotations = yaml.load(file)
+
+    images: List[str] = []
+    detection_classes: List[str] = []
+    annotations: Dict[str, List[Dict[str, int]]] = {}
+
+    for annotation in raw_annotations:
+        detections = annotation["boxes"]
+        image_path = os.path.abspath(
+            os.path.join(bosch_path, annotation["path"])
+        )
+        images.append(image_path)
+
+        for detection in detections:
+            label = detection["label"]
+            x_min = round(detection["x_min"])
+            x_max = round(detection["x_max"])
+            y_min = round(detection["y_min"])
+            y_max = round(detection["y_max"])
+
+            # Get the class index if it has already been registered
+            # otherwise register it and select the index
+            try:
+                class_index = detection_classes.index(label)
+            except ValueError:
+                class_index = len(detection_classes)
+                detection_classes.append(label)
+
+            # Package the detection
+            if image_path not in annotations:
+                annotations[image_path] = []
+            annotations[image_path].append({
+                "class": class_index,
+                "x_min": x_min,
+                "y_min": y_min,
+                "x_max": x_max,
+                "y_max": y_max
+            })
+
+    return Dataset("Bosch", {"Bosch": images}, detection_classes, annotations)
