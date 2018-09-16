@@ -21,6 +21,7 @@ class Dataset:
     __images: Dict[str, List[str]]
     __classes: List[str]
     __annotations: Dict[str, List[Dict[str, int]]]
+    __annotations_test: Dict[str, List[Dict[str, int]]]
 
     def __init__(self, name: str,
                  images: Dict[str, List[str]], classes: List[str],
@@ -41,7 +42,18 @@ class Dataset:
         self._name = name
         self.__images = images
         self.__classes = classes
-        self.__annotations = annotations
+        self.__annotations = {}
+        self.__annotations_test = {}
+
+        #Test-train split process. Populates annotations
+        random.seed(1)
+
+        for image_path in annotations.keys() :  #Iterate through all images with annotations in object
+            if random.random() < 0.1 :
+                self.__annotations_test[image_path] = annotations[image_path]
+            else:
+                self.__annotations[image_path] = annotations[image_path]
+
 
     @property
     def name(self) -> str:
@@ -60,7 +72,7 @@ class Dataset:
 
     @property
     def annotations(self) -> Dict[str, List[Dict[str, int]]]:
-        """Get all image annotations.
+        """Get all training image annotations.
 
         Image annotations are structured as a mapping of absolute image path
         (as given in `self.images`) to a list of detections. Each detection
@@ -70,6 +82,19 @@ class Dataset:
         `class`, `x_min`, `y_min`, `x_max`, `y_max`.
         """
         return copy.deepcopy(self.__annotations)
+
+    @property
+    def test_annotations(self) -> Dict[str, List[Dict[str, int]]]:
+        """Get all testing image annotations.
+
+        Image annotations are structured as a mapping of absolute image path
+        (as given in `self.images`) to a list of detections. Each detection
+        consists of a mapping from detection key to its respective information.
+
+        Available detection keys are
+        `class`, `x_min`, `y_min`, `x_max`, `y_max`.
+        """
+        return copy.deepcopy(self.__annotations_test)
 
     def merge_classes(self, mapping: Dict[str, List[str]]) -> 'Dataset':
         """Get a new `Dataset` that has classes merged together.
