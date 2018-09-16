@@ -40,11 +40,14 @@ class Trainer:
     __paths: Dict[str, str]
 
     def __init__(self, name: str,
-                 dataset: Union[str, Dataset]) -> None:
+                 dataset: Union[str, Dataset],
+                 load: bool = False) -> None:
         """Initialize a trainer with the given unique <name>.
 
         Sources data from the <dataset> given which can either be a name of
-        an available dataset or a `PreprocessingData` object.
+        an available dataset or a `PreprocessingData` object. If <load> is set
+        to True attempts to load the trainer with the given ID before
+        overwriting.
         """
         self.model = None
         self.__name = name
@@ -73,12 +76,14 @@ class Trainer:
             "cascade_file": os.path.join(__trainer, "cascade", "cascade.xml")
         }
 
-        # Remove the training directory with this name if it exists
-        # and generate a new one
-        if os.path.isdir(__trainer):
+        # Remove the trainer folder if not loading from file and
+        # generate the folders if they do not exis
+        if not load and os.path.isdir(__trainer):
             shutil.rmtree(__trainer)
-        os.makedirs(__trainer)
-        os.makedirs(self.__paths["cascade_folder"])
+        elif not os.path.isdir(__trainer):
+            os.makedirs(__trainer)
+        if not os.path.isdir(self.__paths["cascade_folder"]):
+            os.makedirs(self.__paths["cascade_folder"])
 
     @property
     def name(self) -> str:
