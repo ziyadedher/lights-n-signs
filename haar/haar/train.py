@@ -77,7 +77,7 @@ class Trainer:
         }
 
         # Remove the trainer folder if not loading from file and
-        # generate the folders if they do not exis
+        # generate the folders if they do not exist
         if not load and os.path.isdir(__trainer):
             shutil.rmtree(__trainer)
         elif not os.path.isdir(__trainer):
@@ -154,9 +154,25 @@ class Trainer:
             "-h", str(feature_size),
             "-data", str(cascade_folder)
         ]
-        subprocess.run(command)
 
-        self.generate_model()
+        try:
+            subprocess.run(command)
+        except KeyboardInterrupt:
+            stage = -1
+            for file_name in os.listdir(cascade_folder):
+                if not file_name.startswith("stage"):
+                    continue
+                # Grab the number out of "stageXXX.xml" by removing first five
+                # and last four characters
+                stage = max(int(file_name[5:-4]), stage)
+
+            if stage > -1:
+                self.train(stage + 1, num_positive, num_negative)
+            else:
+                print(f"Training ended prematurely, no stages were trained.")
+        else:
+            print(f"Training completed at stage {num_stages - 1}.")
+            self.generate_model()
 
     def generate_model(self) -> Optional[HaarModel]:
         """Generate and return the currently available prediction model.
