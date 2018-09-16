@@ -171,7 +171,12 @@ class Trainer:
             else:
                 print(f"Training ended prematurely, no stages were trained.")
         else:
-            print(f"Training completed at stage {num_stages - 1}.")
+            # Makes sure the cascade has been generated if
+            # the training ended normally
+            if "cascade.xml" in os.listdir(cascade_folder):
+                print(f"Training completed at stage {num_stages - 1}.")
+            else:
+                print("Something went wrong, no cascade generated.")
             self.generate_model()
 
     def generate_model(self) -> Optional[HaarModel]:
