@@ -158,13 +158,12 @@ class Trainer:
         try:
             subprocess.run(command)
         except KeyboardInterrupt:
-            stage = -1
-            for file_name in os.listdir(cascade_folder):
-                if not file_name.startswith("stage"):
-                    continue
-                # Grab the number out of "stageXXX.xml" by removing first five
-                # and last four characters
-                stage = max(int(file_name[5:-4]), stage)
+            # Find the highest stage that has been trained
+            stage = max(
+                int(file_name[5:-4])  # Grab the number out of "stageXXX.xml"
+                for file_name in os.listdir(cascade_folder)
+                if file_name.startswith("stage") and file_name.endswith(".xml")
+            ) or -1
 
             if stage > -1:
                 self.train(stage + 1, num_positive, num_negative)
