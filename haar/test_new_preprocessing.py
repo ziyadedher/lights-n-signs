@@ -22,15 +22,22 @@ def get_image_distance(image_1: List[int], image_2: List[int]) -> float:
         sum += (image_2[i] - image_1[i]) ^ 2
     return float(math.sqrt(sum))
 
-def compute_bb_overlap(image_1: List[int], image_2: List[int]) -> float:
+def compute_bb_overlap(detection: List[int], g_truth: List[int]) -> float:
     """Find the area overlap between two specified rectangles 
     Inputs: image_1,2 - list of [x_min, y_min, x_max. y_max] for each image
-    Outputs: Overlap value"""
-    if len(image_1) != len(image_2):
+    Outputs: Fraction of detection bounding box that overlaps with g_truth's"""
+
+    def find_overlap(image_1: List[int], image_2: List[int]) -> int :
+        dim = [x for x in image_1 if x in image_2]
+        return len(dim)
+
+    if len(detection) != len(g_truth):
         return -1
 
-    overlap_width = 4
-
+    overlap_width = find_overlap(list(range(detection[0], detection[2]+1)),  list(range(g_truth[0], g_truth[2]+1)))
+    overlap_height = find_overlap(list(range(detection[1], detection[3]+1)),  list(range(g_truth[1], g_truth[3]+1)))
+    area_g_truth = (g_truth[2]-g_truth[0])*(g_truth[3]-g_truth[1])
+    return float((overlap_height*overlap_width)/area_g_truth)
 
 def benchmark_model(dataset_name: str):
     # Setup the model
