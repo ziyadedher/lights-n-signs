@@ -11,8 +11,8 @@ import shutil
 import cv2             # type: ignore
 from tqdm import tqdm  # type: ignore
 
-from common import config
-from common.preprocess.preprocessing import Dataset
+from lns_common import config
+from lns_common.preprocess.preprocessing import Dataset
 
 
 class HaarData:
