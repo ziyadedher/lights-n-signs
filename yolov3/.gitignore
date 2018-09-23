@@ -1,0 +1,12 @@
+#--Model stuff--
+yolov3.weights
+model_data/*.h5
+#model_data/yolo.h5
+#model_data/yolo_weights.h5
+
+#--Processing stuff--
+annotations.txt
+classes.txt
+
+#--Training stuff--
+logs/*
