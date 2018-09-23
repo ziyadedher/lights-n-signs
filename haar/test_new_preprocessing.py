@@ -39,35 +39,47 @@ def compute_bb_overlap(detection: List[int], g_truth: List[int]) -> float:
     area_g_truth = (g_truth[2]-g_truth[0])*(g_truth[3]-g_truth[1])
     return float((overlap_height*overlap_width)/area_g_truth)
 
+def find_average(full_accuracy_stats, param_name):
+    '''Take a full test results data structure and find the avg of specified param name (two supported rn)
+        Inputs: full_accuracy_stats = Dict[str: Dict[int: Dict[str:union(int, List[int, int, int, int])]]]
+        Inputs: param_name - the parameter whose average we want to take
+        Inputs: ground_truth - a dict of annotations as specified in test.annotations
+        Outputs: float specifiying the resultant average'''
+
+    sum_of_param = 0
+    for image_path in full_accuracy_stats.keys() :
+        for detect_num in full_accuracy_stats[image_path].keys() :
+            if (param_name == "average_type_error") :
+                sum_of_param += full_accuracy_stats[image_path][detect_num]["correct_class"]
+
+            elif (param_name == "average_bounding_box_overlap") :
+                sum_of_param += full_accuracy_stats[image_path][detect_num]["bounding_box_overlap"]
+
+    return sum_of_param/len(full_accuracy_stats.keys())
+
 class DummyModel(Model):
     def predict(self, img):
         return [PredictedObject2D(Bounds2D(0,0,100,100), ["go"])]
-
 
 
 def benchmark_model(dataset_name: str):
     # Setup the model
 
     dataset = preprocess.preprocess.Preprocessor.preprocess(dataset_name)  #The Dataset object for some specified name
-    '''trainer = Trainer("trainer", dataset)
-trainer.setup_training(24, 5000, "go")
-trainer.train(100, 4000, 2000)
-model = trainer.generate_model()   '''
-    model = DummyModel()
+    trainer = Trainer("trainer", dataset)
+    trainer.setup_training(24, 5000, "go")
+    trainer.train(100, 4000, 2000)
+    model = trainer.generate_model()
 
     # Unpack the images
     img_accuracy_stats: Dict[str: Dict[int: Dict[str:union(int, List[int, int, int, int])]]] = {}
     for image_path in dataset.test_annotations:
         # Get model's detections
-        print ("before statement")
         img_file = cv2.imread(image_path)
         detections_list = model.predict(img_file)
-        print("detections_list is okay")
-
 
         # Assume the right number of predictions, map ground truth to prediction
         truth_to_predict_map = [0] * len(detections_list)  #index=index of detection in list, value=believed corresponding true light
-
         possible_gt_list = copy.deepcopy(dataset.test_annotations[image_path])
         for ind, detection in enumerate(detections_list):
             closest = [0,{}]  # Initialize list keeps track of closest feature to detection - its distance + values in annotations_list form
@@ -96,29 +108,24 @@ model = trainer.generate_model()   '''
             img_accuracy_stats[image_path][index] = {}
 
             #compute relevant per detection statistics
-            is_type_accurate = (detection.predicted_classes[0] == truth_to_predict_map[index]["class"])
+            is_type_accurate = (detection.predicted_classes[0] == dataset.classes[truth_to_predict_map[index]["class"]])
             bb_overlap = compute_bb_overlap([detection.bounding_box.left, detection.bounding_box.top,
                                    detection.bounding_box.left + detection.bounding_box.width, detection.bounding_box.top + detection.bounding_box.height],
                                         [truth_to_predict_map[index]["x_min"],truth_to_predict_map[index]["y_min"],
                                         truth_to_predict_map[index]["x_max"], truth_to_predict_map[index]["y_max"]])
 
-            #assign relevant per detectionstatistics
+            #assign relevant per detection statistics
             img_accuracy_stats[image_path][index]["correct_class"] = is_type_accurate
             img_accuracy_stats[image_path][index]["bounding_box_overlap"] = bb_overlap
 
-        # Create and populate data strucutre containing accuracy stats for entire dataset
-        # average_type_error = float(total_type_error/len(detections_list))
-        # average_bounding_box_overlap = float(total_bounding_box_error/len(detections_list))
-        # right_predict_num = len(detections_list) == len(dataset.annotations_test[image_path])
+    # Create and populate data strucutre containing accuracy stats for entire dataset
+    summary_stat_dict = {}
+    summary_stat_dict["average_type_error"] = find_average(img_accuracy_stats, "average_type_error")
+    summary_stat_dict["average_bounding_box_overlap"] = find_average(img_accuracy_stats, "average_bounding_box_overlap")
 
-#confusion matrix
+    print(summary_stat_dict["average_type_error"])
+    print(summary_stat_dict["average_bounding_box_overlap"])
+
 
 if __name__ == '__main__':
     benchmark_model("LISA")
-'''
-
-# Note: Currently, the classes retuned from the PredictedObject can only be a single class, cause that's all the classifier is designed for
-
-heads, tail = os.path.split(image)
-img_path = os.path.join(root_img_path, (str(i) + ".png"))
-root_img_path = os.path.join(config.RESOURCES_ROOT, ("haar/data/" + dataset_name + "/images/"))  '''
