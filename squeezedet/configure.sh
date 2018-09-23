@@ -21,4 +21,5 @@ done
 
 mkdir $packagepath
 cp -r main/* $packagepath/
+cp -r scripts $packagepath/
 echo "Configuration completed."
