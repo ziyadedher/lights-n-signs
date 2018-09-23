@@ -40,11 +40,14 @@ class Trainer:
     __paths: Dict[str, str]
 
     def __init__(self, name: str,
-                 dataset: Union[str, Dataset]) -> None:
+                 dataset: Union[str, Dataset],
+                 load: bool = False) -> None:
         """Initialize a trainer with the given unique <name>.
 
         Sources data from the <dataset> given which can either be a name of
-        an available dataset or a `PreprocessingData` object.
+        an available dataset or a `PreprocessingData` object. If <load> is set
+        to True attempts to load the trainer with the given ID before
+        overwriting.
         """
         self.model = None
         self.__name = name
@@ -73,12 +76,14 @@ class Trainer:
             "cascade_file": os.path.join(__trainer, "cascade", "cascade.xml")
         }
 
-        # Remove the training directory with this name if it exists
-        # and generate a new one
-        if os.path.isdir(__trainer):
+        # Remove the trainer folder if not loading from file and
+        # generate the folders if they do not exist
+        if not load and os.path.isdir(__trainer):
             shutil.rmtree(__trainer)
-        os.makedirs(__trainer)
-        os.makedirs(self.__paths["cascade_folder"])
+        elif not os.path.isdir(__trainer):
+            os.makedirs(__trainer)
+        if not os.path.isdir(self.__paths["cascade_folder"]):
+            os.makedirs(self.__paths["cascade_folder"])
 
     @property
     def name(self) -> str:
@@ -149,9 +154,29 @@ class Trainer:
             "-h", str(feature_size),
             "-data", str(cascade_folder)
         ]
-        subprocess.run(command)
 
-        self.generate_model()
+        try:
+            subprocess.run(command)
+        except KeyboardInterrupt:
+            # Find the highest stage that has been trained
+            stage = max(
+                int(file_name[5:-4])  # Grab the number out of "stageXXX.xml"
+                for file_name in os.listdir(cascade_folder)
+                if file_name.startswith("stage") and file_name.endswith(".xml")
+            ) or -1
+
+            if stage > -1:
+                self.train(stage + 1, num_positive, num_negative)
+            else:
+                print(f"Training ended prematurely, no stages were trained.")
+        else:
+            # Makes sure the cascade has been generated if
+            # the training ended normally
+            if "cascade.xml" in os.listdir(cascade_folder):
+                print(f"Training completed at stage {num_stages - 1}.")
+            else:
+                print("Something went wrong, no cascade generated.")
+            self.generate_model()
 
     def generate_model(self) -> Optional[HaarModel]:
         """Generate and return the currently available prediction model.
@@ -161,7 +186,7 @@ class Trainer:
         cascade_file = self.__paths["cascade_file"]
 
         if os.path.isfile(cascade_file):
-            HaarModel(
+            self.model = HaarModel(
                 cv2.CascadeClassifier(cascade_file),
                 [self._light_type] if self._light_type is not None else []
             )

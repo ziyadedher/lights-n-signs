@@ -7,8 +7,10 @@ from typing import Dict, List
 
 import os
 import csv
+import json
 import copy
-import sys
+import yaml  # XXX: this could be sped up by using PyYaml C-bindings
+import random
 
 
 class Dataset:
@@ -19,6 +21,7 @@ class Dataset:
     __images: Dict[str, List[str]]
     __classes: List[str]
     __annotations: Dict[str, List[Dict[str, int]]]
+    __annotations_test: Dict[str, List[Dict[str, int]]]
 
     def __init__(self, name: str,
                  images: Dict[str, List[str]], classes: List[str],
@@ -39,7 +42,18 @@ class Dataset:
         self._name = name
         self.__images = images
         self.__classes = classes
-        self.__annotations = annotations
+        self.__annotations = {}
+        self.__annotations_test = {}
+
+        #Test-train split process. Populates annotations
+        random.seed(1)
+
+        for image_path in annotations.keys() :  #Iterate through all images with annotations in object
+            if random.random() < 0.1 :
+                self.__annotations_test[image_path] = annotations[image_path]
+            else:
+                self.__annotations[image_path] = annotations[image_path]
+
 
     @property
     def name(self) -> str:
@@ -58,7 +72,7 @@ class Dataset:
 
     @property
     def annotations(self) -> Dict[str, List[Dict[str, int]]]:
-        """Get all image annotations.
+        """Get all training image annotations.
 
         Image annotations are structured as a mapping of absolute image path
         (as given in `self.images`) to a list of detections. Each detection
@@ -68,6 +82,19 @@ class Dataset:
         `class`, `x_min`, `y_min`, `x_max`, `y_max`.
         """
         return copy.deepcopy(self.__annotations)
+
+    @property
+    def test_annotations(self) -> Dict[str, List[Dict[str, int]]]:
+        """Get all testing image annotations.
+
+        Image annotations are structured as a mapping of absolute image path
+        (as given in `self.images`) to a list of detections. Each detection
+        consists of a mapping from detection key to its respective information.
+
+        Available detection keys are
+        `class`, `x_min`, `y_min`, `x_max`, `y_max`.
+        """
+        return copy.deepcopy(self.__annotations_test)
 
     def merge_classes(self, mapping: Dict[str, List[str]]) -> 'Dataset':
         """Get a new `Dataset` that has classes merged together.
@@ -170,3 +197,56 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
                 })
 
     return Dataset("LISA", {"LISA": images}, detection_classes, annotations)
+
+def preprocess_bosch(bosch_path: str) -> Dataset:
+    """Preprocess and generate data for a Bosch dataset at the given path.
+
+    Raises `FileNotFoundError` if any of the required Bosch files or
+    folders is not found.
+    """
+    annotations_path = os.path.join(bosch_path, "train.yaml")
+    if not os.path.isfile(annotations_path):
+        raise FileNotFoundError(
+            f"Could not find annotations file {annotations_path}."
+        )
+    with open(annotations_path, "r") as file:
+        raw_annotations = yaml.load(file)
+
+    images: List[str] = []
+    detection_classes: List[str] = []
+    annotations: Dict[str, List[Dict[str, int]]] = {}
+
+    for annotation in raw_annotations:
+        detections = annotation["boxes"]
+        image_path = os.path.abspath(
+            os.path.join(bosch_path, annotation["path"])
+        )
+        images.append(image_path)
+
+        for detection in detections:
+            label = detection["label"]
+            x_min = round(detection["x_min"])
+            x_max = round(detection["x_max"])
+            y_min = round(detection["y_min"])
+            y_max = round(detection["y_max"])
+
+            # Get the class index if it has already been registered
+            # otherwise register it and select the index
+            try:
+                class_index = detection_classes.index(label)
+            except ValueError:
+                class_index = len(detection_classes)
+                detection_classes.append(label)
+
+            # Package the detection
+            if image_path not in annotations:
+                annotations[image_path] = []
+            annotations[image_path].append({
+                "class": class_index,
+                "x_min": x_min,
+                "y_min": y_min,
+                "x_max": x_max,
+                "y_max": y_max
+            })
+
+    return Dataset("Bosch", {"Bosch": images}, detection_classes, annotations)

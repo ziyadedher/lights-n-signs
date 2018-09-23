@@ -49,7 +49,8 @@ class Preprocessor:
 
     # Preprocessor allocation for each dataset
     _PREPROCESSORS = {
-        "LISA": preprocessing.preprocess_LISA
+        "LISA": preprocessing.preprocess_LISA,
+        "Bosch": preprocessing.preprocess_bosch,
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}
