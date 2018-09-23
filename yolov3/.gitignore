@@ -10,3 +10,4 @@ classes.txt
 
 #--Training stuff--
 logs/*
+yolo_anchors.txt

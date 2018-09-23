@@ -5,7 +5,7 @@ class YOLO_Kmeans:
 
     def __init__(self, cluster_number, filename):
         self.cluster_number = cluster_number
-        self.filename = "2012_train.txt"
+        self.filename = filename
 
     def iou(self, boxes, clusters):  # 1 box -> k clusters
         n = boxes.shape[0]
@@ -72,7 +72,7 @@ class YOLO_Kmeans:
         f = open(self.filename, 'r')
         dataSet = []
         for line in f:
-            infos = line.split(" ")
+            infos = line.split(" ")[:-1]
             length = len(infos)
             for i in range(1, length):
                 width = int(infos[i].split(",")[2]) - \
@@ -92,7 +92,6 @@ class YOLO_Kmeans:
         print("K anchors:\n {}".format(result))
         print("Accuracy: {:.2f}%".format(
             self.avg_iou(all_boxes, result) * 100))
-
 
 if __name__ == "__main__":
     cluster_number = 9
