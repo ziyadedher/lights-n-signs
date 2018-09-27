@@ -1,4 +1,7 @@
+# flake8: noqa
+# type: ignore
 # -*- coding: utf-8 -*-
+
 """
 Class definition of YOLO_v3 style detection model on image and video
 """
@@ -210,4 +213,3 @@ def detect_video(yolo, video_path, output_path=""):
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     yolo.close_session()
-

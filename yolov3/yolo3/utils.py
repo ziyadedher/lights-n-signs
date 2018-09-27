@@ -1,3 +1,5 @@
+# type: ignore
+# flake8: noqa
 """Miscellaneous utility functions."""
 
 from functools import reduce

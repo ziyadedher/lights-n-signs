@@ -1,4 +1,6 @@
 #! /usr/bin/env python
+# flake8: noqa
+# type: ignore
 """
 Reads Darknet config and weights and creates Keras model with TF backend.
 

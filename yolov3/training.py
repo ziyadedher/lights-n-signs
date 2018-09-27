@@ -1,3 +1,6 @@
+# flake8: noqa
+# type: ignore
+
 """
 Retrain the YOLO model for your own dataset.
 """
