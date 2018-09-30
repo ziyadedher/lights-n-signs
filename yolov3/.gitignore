@@ -1,0 +1,13 @@
+#--Model stuff--
+yolov3.weights
+model_data/*.h5
+darknet53.conv.74
+darknet53.weights
+
+#--Processing stuff--
+annotations.txt
+classes.txt
+
+#--Training stuff--
+logs/*
+yolo_anchors.txt
