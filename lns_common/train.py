@@ -112,12 +112,12 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         )
         self._paths["trainer_root"] = __trainer_root
 
-        for name, (subpath, keep, generate, type) in _subpaths:
+        for name, (subpath, keep, generate, type) in _subpaths.items():
             # Generate absolute paths to each file we want to track
             if type not in ("file", "folder"):
                 continue
             path = os.path.join(self._paths["trainer_root"], subpath)
-            self._paths[f"{name}_{type}"] = path
+            self._paths[name] = path
 
             # Remove files and folders that we do not want to keep,
             # based on whether or not we are loading from previously trained
