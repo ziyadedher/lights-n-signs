@@ -77,7 +77,10 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
 
     @classmethod
     def setup(cls, setup_call: SetupFunc) -> SetupFunc:
-        """Set up the trainer for training."""
+        """Decorate the main setup function to set up the trainer for training.
+
+        Ensures that the trainer has been registered as set up.
+        """
         def _setup(*args, **kwargs):  # type: ignore
             setup_call(*args, **kwargs)
             args[0].__is_setup = True
@@ -86,7 +89,10 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
 
     @classmethod
     def train(cls, train_call: TrainFunc) -> TrainFunc:
-        """Begin training the model."""
+        """Decorate the main train function for pretraining checks.
+
+        Makes sure the trainer has been set up.
+        """
         def _train(*args, **kwargs):  # type: ignore
             if not args[0].__is_setup:
                 raise TrainerNotSetupException(
