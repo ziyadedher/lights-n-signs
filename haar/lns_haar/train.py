@@ -2,37 +2,39 @@
 
 This script manages model training and generation.
 """
-from typing import Optional, Dict, Union
+from typing import Optional, Union
 
 import os
-import shutil
 import subprocess
 
 import cv2  # type: ignore
 
-from lns_common import config
-from lns_common.preprocess.preprocess import Preprocessor
+from lns_common.train import Trainer
 from lns_common.preprocess.preprocessing import Dataset
 from lns_haar.model import HaarModel
 from lns_haar.process import HaarData, HaarProcessor
 
 
-class HaarTrainer:
+class HaarTrainer(Trainer[HaarModel, HaarData]):
     """Manages the training environment.
 
     Contains and encapsulates all training setup and files under one namespace.
     """
 
-    model: Optional[HaarModel]
-
     _feature_size: int
     _light_type: Optional[str]
-    _data: HaarData
 
-    __name: str
-    __dataset: Dataset
-    __paths: Dict[str, str]
-    __is_setup: bool
+    __subpaths = {
+        "vector_file": (
+            "positive.vec", True, False, "file"
+        ),
+        "cascade_folder": (
+            "cascade", True, True, "folder"
+        ),
+        "cascade_file": (
+            os.path.join("cascade", "cascade.xml"), True, False, "file"
+        )
+    }
 
     def __init__(self, name: str,
                  dataset: Union[str, Dataset],
@@ -44,56 +46,22 @@ class HaarTrainer:
         to True attempts to load the trainer with the given ID before
         overwriting.
         """
-        self.model = None
-        self.__name = name
-        self.__is_setup = False
-
-        if isinstance(dataset, str):
-            self.__dataset = Preprocessor.preprocess(dataset)
-        elif isinstance(dataset, Dataset):
-            self.__dataset = dataset
-        else:
-            raise ValueError(
-                "`dataset` may only be `str` or `Dataset`, not" +
-                f"{type(dataset)}"
-            )
+        super().__init__(name, dataset,
+                         _processor=HaarProcessor, _type="haar", _load=load,
+                         _subpaths=HaarTrainer.__subpaths)
 
         self._feature_size = -1
         self._light_type = None
-        self._data = HaarProcessor.process(self.__dataset)
 
-        # Set up the required paths
-        __trainer = os.path.join(
-            config.RESOURCES_ROOT, "haar/trainers", self.__name
-        )
-        self.__paths = {
-            "vector_file": os.path.join(__trainer, "positive.vec"),
-            "cascade_folder": os.path.join(__trainer, "cascade"),
-            "cascade_file": os.path.join(__trainer, "cascade", "cascade.xml")
-        }
-
-        # Remove the trainer folder if not loading from file and
-        # generate the folders if they do not exist
-        if not load and os.path.isdir(__trainer):
-            shutil.rmtree(__trainer)
-        elif not os.path.isdir(__trainer):
-            os.makedirs(__trainer)
-        if not os.path.isdir(self.__paths["cascade_folder"]):
-            os.makedirs(self.__paths["cascade_folder"])
-
-    @property
-    def name(self) -> str:
-        """Get the unique name of this training configuration."""
-        return self.__name
-
-    def setup_training(self, feature_size: int, num_samples: int,
-                       light_type: str) -> None:
+    @Trainer.setup
+    def setup_haar(self, feature_size: int, num_samples: int,
+                   light_type: str) -> None:
         """Generate and setup any files required for training.
 
         Create <num_samples> positive samples of the <light_type> with given
         <feature_size>.
         """
-        vector_file = self.__paths["vector_file"]
+        vector_file = self._paths["vector_file"]
         try:
             annotations_file = self._data.get_positive_annotation(light_type)
         except KeyError:
@@ -114,24 +82,19 @@ class HaarTrainer:
         self._feature_size = feature_size
         self._light_type = light_type
 
-        self.__is_setup = True
-
-    def train(self, num_stages: int,
-              num_positive: int, num_negative: int) -> None:
+    @Trainer.train
+    def train_haar(self, num_stages: int,
+                   num_positive: int, num_negative: int) -> None:
         """Begin training the model.
 
         Train for <num_stages> stages before automatically stopping and
         generating the trained model. Train on <num_positive> positive samples
         and <num_negative> negative samples.
         """
-        if not self.__is_setup:
-            raise config.TrainerNotSetupException(
-                "Trainer has not been set up using `setup_training`."
-            )
         assert self._light_type is not None
 
-        vector_file = self.__paths["vector_file"]
-        cascade_folder = self.__paths["cascade_folder"]
+        vector_file = self._paths["vector_file"]
+        cascade_folder = self._paths["cascade_folder"]
         feature_size = self._feature_size
         try:
             negative_annotations_file = self._data.get_negative_annotation(
@@ -165,7 +128,7 @@ class HaarTrainer:
             ) or -1
 
             if stage > -1:
-                self.train(stage + 1, num_positive, num_negative)
+                self.train_haar(stage + 1, num_positive, num_negative)
             else:
                 print(f"Training ended prematurely, no stages were trained.")
         else:
@@ -182,7 +145,7 @@ class HaarTrainer:
 
         Model may be `None` if there is no currently available model.
         """
-        cascade_file = self.__paths["cascade_file"]
+        cascade_file = self._paths["cascade_file"]
 
         if os.path.isfile(cascade_file):
             self.model = HaarModel(
