@@ -17,13 +17,7 @@ from lns_haar.model import HaarModel
 from lns_haar.process import HaarData, HaarProcessor
 
 
-class TrainerNotSetupException(Exception):
-    """Raised when training is attempted to be started without being set up."""
-
-    pass
-
-
-class Trainer:
+class HaarTrainer:
     """Manages the training environment.
 
     Contains and encapsulates all training setup and files under one namespace.
@@ -38,19 +32,21 @@ class Trainer:
     __name: str
     __dataset: Dataset
     __paths: Dict[str, str]
+    __is_setup: bool
 
     def __init__(self, name: str,
                  dataset: Union[str, Dataset],
                  load: bool = False) -> None:
-        """Initialize a trainer with the given unique <name>.
+        """Initialize a Haar trainer with the given unique <name>.
 
         Sources data from the <dataset> given which can either be a name of
-        an available dataset or a `PreprocessingData` object. If <load> is set
+        an available dataset or a `Dataset` object. If <load> is set
         to True attempts to load the trainer with the given ID before
         overwriting.
         """
         self.model = None
         self.__name = name
+        self.__is_setup = False
 
         if isinstance(dataset, str):
             self.__dataset = Preprocessor.preprocess(dataset)
@@ -58,7 +54,7 @@ class Trainer:
             self.__dataset = dataset
         else:
             raise ValueError(
-                "`dataset` may only be `str` or `PreprocessingData`, not" +
+                "`dataset` may only be `str` or `Dataset`, not" +
                 f"{type(dataset)}"
             )
 
@@ -118,6 +114,8 @@ class Trainer:
         self._feature_size = feature_size
         self._light_type = light_type
 
+        self.__is_setup = True
+
     def train(self, num_stages: int,
               num_positive: int, num_negative: int) -> None:
         """Begin training the model.
@@ -126,10 +124,11 @@ class Trainer:
         generating the trained model. Train on <num_positive> positive samples
         and <num_negative> negative samples.
         """
-        if self._feature_size < 0 or self._light_type is None:
-            raise TrainerNotSetupException(
+        if not self.__is_setup:
+            raise config.TrainerNotSetupException(
                 "Trainer has not been set up using `setup_training`."
             )
+        assert self._light_type is not None
 
         vector_file = self.__paths["vector_file"]
         cascade_folder = self.__paths["cascade_folder"]
