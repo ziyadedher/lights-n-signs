@@ -4,7 +4,9 @@ Provides simple functionality for easier implementation of new training
 methods following in the spirit of streamlining the training and testing
 process.
 """
-from typing import Generic, Type, Optional, Union, Dict, Tuple
+from typing import (
+    Generic, TypeVar, Type, Callable, Optional, Union, Any, Dict, Tuple, cast
+)
 
 import os
 import shutil
@@ -32,6 +34,9 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
     __name: str
     __dataset: Dataset
     __is_setup: bool
+
+    SetupFunc = TypeVar("SetupFunc", bound=Callable[..., Any])
+    TrainFunc = TypeVar("TrainFunc", bound=Callable[..., Any])
 
     def __init__(self, name: str, dataset: Union[str, Dataset], *,
                  _processor: Type[Processor[ProcessedDataType]],
@@ -70,16 +75,25 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         """Get the unique name of this training configuration."""
         return self.__name
 
-    def setup_training(self) -> None:
+    @classmethod
+    def setup(cls, setup_call: SetupFunc) -> SetupFunc:
         """Set up the trainer for training."""
-        self.__is_setup = True
+        def _setup(*args, **kwargs):  # type: ignore
+            setup_call(*args, **kwargs)
+            args[0].__is_setup = True
 
-    def train(self) -> None:
+        return cast(Trainer.SetupFunc, _setup)
+
+    @classmethod
+    def train(cls, train_call: TrainFunc) -> TrainFunc:
         """Begin training the model."""
-        if not self.__is_setup:
-            raise TrainerNotSetupException(
-                "Trainer has not been set up using `setup_training`."
-            )
+        def _train(*args, **kwargs):  # type: ignore
+            if not args[0].__is_setup:
+                raise TrainerNotSetupException(
+                    "Trainer has not been set up using `setup_training`."
+                )
+            train_call(*args, **kwargs)
+        return cast(Trainer.TrainFunc, _train)
 
     def generate_model(self) -> Optional[ModelType]:
         """Generate and return the currently available model.
