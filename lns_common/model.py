@@ -3,7 +3,7 @@
 This module consists of abstract and container classes that provide a
 common interface for every technique for light and sign detection.
 """
-from typing import List
+from typing import TypeVar, List
 
 import numpy as np  # type: ignore
 
@@ -51,3 +51,6 @@ class Model:
     def predict(self, image: np.ndarray) -> List[PredictedObject2D]:
         """Predict the required bounding boxes on the given <image>."""
         raise NotImplementedError
+
+
+ModelType = TypeVar("ModelType", bound=Model)
