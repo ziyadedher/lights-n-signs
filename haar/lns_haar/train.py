@@ -10,11 +10,11 @@ import subprocess
 
 import cv2  # type: ignore
 
-from common import config
-from common.preprocess.preprocess import Preprocessor
-from common.preprocess.preprocessing import Dataset
-from haar.model import HaarModel
-from haar.process import HaarData, HaarProcessor
+from lns_common import config
+from lns_common.preprocess.preprocess import Preprocessor
+from lns_common.preprocess.preprocessing import Dataset
+from lns_haar.model import HaarModel
+from lns_haar.process import HaarData, HaarProcessor
 
 
 class TrainerNotSetupException(Exception):

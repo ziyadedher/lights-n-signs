@@ -7,8 +7,7 @@ haar:
   script:
     - cd /builds/aUToronto/autonomy/lights-n-signs-training
     - cd haar
-    - python setup.py build
-    - python setup.py install
-    - python setup.py flake8
-    - mypy haar
+    - pip install .
+    - flake8 lns_haar
+    - mypy lns_haar
     - python setup.py test

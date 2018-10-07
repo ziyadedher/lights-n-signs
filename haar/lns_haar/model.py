@@ -8,7 +8,7 @@ from typing import List, Tuple
 import cv2          # type: ignore
 import numpy as np  # type: ignore
 
-from common.model import Model, PredictedObject2D, Bounds2D
+from lns_common.model import Model, PredictedObject2D, Bounds2D
 
 
 class HaarModel(Model):
