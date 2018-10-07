@@ -294,7 +294,8 @@ def preprocess_custom(custom_path: str) -> Dataset:
         label_root = ET.parse(label_path).getroot()
         for label_object in label_root.findall("object"):
             # XXX: Probably clean up this code
-            # Check all the nodes are
+            # Check that the data is in the correct form and that all nodes
+            # exist correctly in the file
             bounding_box_node = label_object.find("bndbox")
             label_node = label_object.find("name")
             if bounding_box_node is None or label_node is None:
