@@ -12,10 +12,11 @@ import cv2             # type: ignore
 from tqdm import tqdm  # type: ignore
 
 from lns_common import config
+from lns_common.process import ProcessedData, Processor
 from lns_common.preprocess.preprocessing import Dataset
 
 
-class HaarData:
+class HaarData(ProcessedData):
     """Data container for all Haar processed data.
 
     Contains positive annotations for each type of light and negative
@@ -53,7 +54,7 @@ class HaarData:
             raise e
 
 
-class HaarProcessor:
+class HaarProcessor(Processor[HaarData]):
     """Haar processor responsible for data processing to Haar-valid formats."""
 
     BASE_DATA_FOLDER = os.path.join(config.RESOURCES_ROOT, "haar/data")
