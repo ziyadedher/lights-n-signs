@@ -1,6 +1,7 @@
 """Video Stream Tester
 """
 import cv2
+import time
 
 from common.model import Model
 
@@ -13,6 +14,7 @@ def test_video_stream(model: Model):
     """
 
     cap = cv2.VideoCapture(0)
+    
     while 1:
         _, img = cap.read()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -34,8 +36,9 @@ def test_video_stream(model: Model):
                     label,
                     (b.left, b.height),
                     cv2.FONT_HERSHEY_SIMPLEX,
-                    1.0,
-                    (255, 255, 255),
+                    0.8,
+                    (0, 255, 255),
+                    thickness=2,
                     lineType=cv2.LINE_AA,
                 )
             cv2.imshow('img', img)
