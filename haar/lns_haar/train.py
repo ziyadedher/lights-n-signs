@@ -53,7 +53,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         self._feature_size = -1
         self._light_type = None
 
-    @Trainer.setup
+    @Trainer._setup
     def setup_haar(self, feature_size: int, num_samples: int,
                    light_type: str) -> None:
         """Generate and setup any files required for training.
@@ -82,7 +82,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         self._feature_size = feature_size
         self._light_type = light_type
 
-    @Trainer.train
+    @Trainer._train
     def train_haar(self, num_stages: int,
                    num_positive: int, num_negative: int) -> None:
         """Begin training the model.
