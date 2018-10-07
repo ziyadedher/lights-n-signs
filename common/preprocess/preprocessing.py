@@ -7,7 +7,6 @@ from typing import Dict, List
 
 import os
 import csv
-import json
 import copy
 import yaml  # XXX: this could be sped up by using PyYaml C-bindings
 import random
@@ -45,15 +44,15 @@ class Dataset:
         self.__annotations = {}
         self.__annotations_test = {}
 
-        #Test-train split process. Populates annotations
+        # Test-train split process. Populates annotations
         random.seed(1)
 
-        for image_path in annotations.keys() :  #Iterate through all images with annotations in object
-            if random.random() < 0.1 :
+        # Iterate through all images with annotations in object
+        for image_path in annotations.keys():
+            if random.random() < 0.1:
                 self.__annotations_test[image_path] = annotations[image_path]
             else:
                 self.__annotations[image_path] = annotations[image_path]
-
 
     @property
     def name(self) -> str:
@@ -197,6 +196,7 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
                 })
 
     return Dataset("LISA", {"LISA": images}, detection_classes, annotations)
+
 
 def preprocess_bosch(bosch_path: str) -> Dataset:
     """Preprocess and generate data for a Bosch dataset at the given path.

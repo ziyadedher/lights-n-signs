@@ -1,20 +1,19 @@
-"""Video Stream Tester
+"""Video Stream Tester.
+
+This script is for using a video video stream from your webcam
+as the input to a model.
 """
 import cv2
-import time
 
 from common.model import Model
 
 CLAHE = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
 
-def test_video_stream(model: Model):
-    """
-    This function takes an instance of any model and tests it on a video stream
-    for benchmarking purposes.
-    """
 
+def test_video_stream(model: Model) -> None:
+    """This function tests a model instance on your webcam's video stream."""
     cap = cv2.VideoCapture(0)
-    
+
     while 1:
         _, img = cap.read()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -27,7 +26,7 @@ def test_video_stream(model: Model):
                 cv2.rectangle(
                     img,
                     (b.left, b.top),
-                    (b.left+b.width, b.top+b.height),
+                    (b.left + b.width, b.top + b.height),
                     (255, 255, 0),
                     2,
                 )
