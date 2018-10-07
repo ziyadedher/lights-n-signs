@@ -47,6 +47,18 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         Generates a trainer with the given <name> on the given <dataset> which
         could be either a `Dataset` object or a string represented a dataset
         name.
+
+        Needs some metadata to function correctly including the following:
+        <_processor> is the specific processor class that is used for this
+        method of training. <_type> is the unique name of the type of
+        classifier we are training. <_load> determines whether to keep the
+        folders and files that are marked as able to be kept in the next
+        argument. <_subpaths> is a dictionary of unique path name to path
+        description; the path description is a quadruple of relative path
+        of file or folder, whether or not this file or folder should be
+        preserved if <_load> is set to True, whether or not this file or folder
+        should be regenerated if it does not exist, and the type of path
+        which could be either "file" or "folder".
         """
         self.model = None
         self._paths = {}
@@ -76,30 +88,42 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         return self.__name
 
     @classmethod
+<<<<<<< HEAD
     def setup(cls, setup_call: SetupFunc) -> SetupFunc:
         """Decorate the main setup function to set up the trainer for training.
 
         Ensures that the trainer has been registered as set up.
         """
         def _setup(*args, **kwargs):  # type: ignore
+=======
+    def _setup(cls, setup_call: SetupFunc) -> SetupFunc:
+        """Set up the trainer for training."""
+        def _setup_wrapper(*args, **kwargs):  # type: ignore
+>>>>>>> develop
             setup_call(*args, **kwargs)
             args[0].__is_setup = True
 
-        return cast(Trainer.SetupFunc, _setup)
+        return cast(Trainer.SetupFunc, _setup_wrapper)
 
     @classmethod
+<<<<<<< HEAD
     def train(cls, train_call: TrainFunc) -> TrainFunc:
         """Decorate the main train function for pretraining checks.
 
         Makes sure the trainer has been set up.
         """
         def _train(*args, **kwargs):  # type: ignore
+=======
+    def _train(cls, train_call: TrainFunc) -> TrainFunc:
+        """Begin training the model."""
+        def _train_wrapper(*args, **kwargs):  # type: ignore
+>>>>>>> develop
             if not args[0].__is_setup:
                 raise TrainerNotSetupException(
-                    "Trainer has not been set up using `setup_training`."
+                    f"Trainer has not been set up yet."
                 )
             train_call(*args, **kwargs)
-        return cast(Trainer.TrainFunc, _train)
+        return cast(Trainer.TrainFunc, _train_wrapper)
 
     def generate_model(self) -> Optional[ModelType]:
         """Generate and return the currently available model.

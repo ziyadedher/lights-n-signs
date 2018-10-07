@@ -7,10 +7,10 @@ from typing import Dict, List
 
 import os
 import csv
-import json
 import copy
 import yaml  # XXX: this could be sped up by using PyYaml C-bindings
 import random
+from xml.etree import ElementTree as ET
 
 
 class Dataset:
@@ -21,6 +21,7 @@ class Dataset:
     __images: Dict[str, List[str]]
     __classes: List[str]
     __annotations: Dict[str, List[Dict[str, int]]]
+    __annotations_test: Dict[str, List[Dict[str, int]]]
 
     def __init__(self, name: str,
                  images: Dict[str, List[str]], classes: List[str],
@@ -41,7 +42,18 @@ class Dataset:
         self._name = name
         self.__images = images
         self.__classes = classes
-        self.__annotations = annotations
+        self.__annotations = {}
+        self.__annotations_test = {}
+
+        # Test-train split process. Populates annotations
+        random.seed(1)
+
+        # Iterate through all images with annotations in object
+        for image_path in annotations.keys():
+            if random.random() < 0.1:
+                self.__annotations_test[image_path] = annotations[image_path]
+            else:
+                self.__annotations[image_path] = annotations[image_path]
 
     @property
     def name(self) -> str:
@@ -60,7 +72,7 @@ class Dataset:
 
     @property
     def annotations(self) -> Dict[str, List[Dict[str, int]]]:
-        """Get all image annotations.
+        """Get all training image annotations.
 
         Image annotations are structured as a mapping of absolute image path
         (as given in `self.images`) to a list of detections. Each detection
@@ -70,6 +82,19 @@ class Dataset:
         `class`, `x_min`, `y_min`, `x_max`, `y_max`.
         """
         return copy.deepcopy(self.__annotations)
+
+    @property
+    def test_annotations(self) -> Dict[str, List[Dict[str, int]]]:
+        """Get all testing image annotations.
+
+        Image annotations are structured as a mapping of absolute image path
+        (as given in `self.images`) to a list of detections. Each detection
+        consists of a mapping from detection key to its respective information.
+
+        Available detection keys are
+        `class`, `x_min`, `y_min`, `x_max`, `y_max`.
+        """
+        return copy.deepcopy(self.__annotations_test)
 
     def merge_classes(self, mapping: Dict[str, List[str]]) -> 'Dataset':
         """Get a new `Dataset` that has classes merged together.
@@ -110,17 +135,9 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
     if not os.path.isdir(day_train_path):
         raise FileNotFoundError("Could not find `dayTrain` in LISA dataset.")
 
-    # Define lists containing info for test + train structures
-    images_train: List[str] = []
-    detection_classes_train: List[str] = []
-    annotations_train: Dict[str, List[Dict[str, int]]] = {}
-
-    images_test: List[str] = []
-    detection_classes_test: List[str] = []
-    annotations_test: Dict[str, List[Dict[str, int]]] = {}
-
-    # Generate the random seed
-    random.seed(1)  # Can be arbitrary const
+    images: List[str] = []
+    detection_classes: List[str] = []
+    annotations: Dict[str, List[Dict[str, int]]] = {}
 
     for file_name in os.listdir(day_train_path):
         if not file_name.startswith("dayClip"):
@@ -140,10 +157,7 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
 
         # Register all the images
         for image_name in os.listdir(frames_path):
-            if random.random() < 0.1:
-                images_test.append(os.path.join(frames_path, image_name))
-            else:
-                images_train.append(os.path.join(frames_path, image_name))
+            images.append(os.path.join(frames_path, image_name))
 
         # Read annotations
         with open(annotations_path, "r") as annotations_file:
@@ -165,57 +179,25 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
 
                 # Get the class index if it has already been registered
                 # otherwise register it and select the index
+                try:
+                    class_index = detection_classes.index(detection_class)
+                except ValueError:
+                    class_index = len(detection_classes)
+                    detection_classes.append(detection_class)
 
-                if image_path in images_test:
-                    try:
-                        class_index = detection_classes_test.index(
-                            detection_class
-                        )
-                    except ValueError:
-                        class_index = len(detection_classes_test)
-                        detection_classes_test.append(detection_class)
+                # Package the detection
+                if image_path not in annotations:
+                    annotations[image_path] = []
+                annotations[image_path].append({
+                    "class": class_index,
+                    "x_min": x_min,
+                    "y_min": y_min,
+                    "x_max": x_max,
+                    "y_max": y_max
+                })
 
-                    # Package the detection
-                    if image_path not in annotations_test:
-                        annotations_test[image_path] = []
-                        annotations_test[image_path].append({
-                            "class": class_index,
-                            "x_min": x_min,
-                            "y_min": y_min,
-                            "x_max": x_max,
-                            "y_max": y_max
-                        })
-                else:
-                    try:
-                        class_index = detection_classes_train.index(
-                            detection_class
-                        )
-                    except ValueError:
-                        class_index = len(detection_classes_train)
-                        detection_classes_train.append(detection_class)
-
-                    # Package the detection
-                    if image_path not in annotations_train:
-                        annotations_train[image_path] = []
-                        annotations_train[image_path].append({
-                            "class": class_index,
-                            "x_min": x_min,
-                            "y_min": y_min,
-                            "x_max": x_max,
-                            "y_max": y_max
-                        })
-
-    # save the test_struct in file for future reference
-    with open("test_data.json", "w") as rs:
-        json.dump({
-            "images": images_test,
-            "classes": detection_classes_test,
-            "annotations": annotations_test
-        }, rs)
-
-    train_struct = Dataset("LISA", {"LISA": images_train},
-                           detection_classes_train, annotations_train)
-    return train_struct
+    return Dataset("LISA", {"LISA": images},
+                   detection_classes, annotations)
 
 
 def preprocess_bosch(bosch_path: str) -> Dataset:
@@ -269,4 +251,93 @@ def preprocess_bosch(bosch_path: str) -> Dataset:
                 "y_max": y_max
             })
 
-    return Dataset("Bosch", {"Bosch": images}, detection_classes, annotations)
+    return Dataset("Bosch", {"Bosch": images},
+                   detection_classes, annotations)
+
+
+def preprocess_custom(custom_path: str) -> Dataset:
+    """Preprocess and generate data for our custom dataset at the given path.
+
+    Raises `FileNotFoundError` if any of the required files or folders is not
+    found.
+    """
+    images: List[str] = []
+    detection_classes: List[str] = []
+    annotations: Dict[str, List[Dict[str, int]]] = {}
+
+    # Go through all files in the directory
+    for file_name in os.listdir(custom_path):
+        # Skip any files that are not annotations
+        if not file_name.endswith(".xml"):
+            continue
+
+        # Find the absolute image and label paths
+        image_path = os.path.join(
+            custom_path, file_name.split(".")[0] + ".jpg"
+        )
+        label_path = os.path.join(
+            custom_path, file_name.split(".")[0] + ".xml"
+        )
+
+        # Make sure both the image and the label both exist
+        if not os.path.isfile(image_path):
+            raise FileNotFoundError(
+                f"Could not find annotations file {image_path}."
+            )
+        if not os.path.isfile(label_path):
+            raise FileNotFoundError(
+                f"Could not find annotations file {label_path}."
+            )
+
+        images.append(image_path)
+
+        label_root = ET.parse(label_path).getroot()
+        for label_object in label_root.findall("object"):
+            # XXX: Probably clean up this code
+            # Check that the data is in the correct form and that all nodes
+            # exist correctly in the file
+            bounding_box_node = label_object.find("bndbox")
+            label_node = label_object.find("name")
+            if bounding_box_node is None or label_node is None:
+                continue
+            xmin_node = bounding_box_node.find("xmin")
+            xmax_node = bounding_box_node.find("xmax")
+            ymin_node = bounding_box_node.find("ymin")
+            ymax_node = bounding_box_node.find("ymax")
+            if (
+                xmin_node is None or xmax_node is None or
+                ymin_node is None or ymax_node is None or
+                xmin_node.text is None or xmax_node.text is None or
+                ymin_node.text is None or ymax_node.text is None or
+                label_node.text is None
+            ):
+                continue
+
+            # Get all the values from the XML
+            label = label_node.text
+            x_min = round(float(xmin_node.text))
+            x_max = round(float(xmax_node.text))
+            y_min = round(float(ymin_node.text))
+            y_max = round(float(ymax_node.text))
+
+            # Get the class index if it has already been registered
+            # otherwise register it and select the index
+            try:
+                class_index = detection_classes.index(label)
+            except ValueError:
+                class_index = len(detection_classes)
+                detection_classes.append(label)
+
+            # Package the detection
+            if image_path not in annotations:
+                annotations[image_path] = []
+            annotations[image_path].append({
+                "class": class_index,
+                "x_min": x_min,
+                "y_min": y_min,
+                "x_max": x_max,
+                "y_max": y_max
+            })
+
+    return Dataset("Custom", {"Custom": images},
+                   detection_classes, annotations)
