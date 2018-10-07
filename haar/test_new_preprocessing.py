@@ -39,24 +39,6 @@ def compute_bb_overlap(detection: List[int], g_truth: List[int]) -> float:
     area_g_truth = (g_truth[2]-g_truth[0])*(g_truth[3]-g_truth[1])
     return float((overlap_height*overlap_width)/area_g_truth)
 
-def find_average(full_accuracy_stats, param_name):
-    '''Take a full test results data structure and find the avg of specified param name (two supported rn)
-        Inputs: full_accuracy_stats = Dict[str: Dict[int: Dict[str:union(int, List[int, int, int, int])]]]
-        Inputs: param_name - the parameter whose average we want to take
-        Inputs: ground_truth - a dict of annotations as specified in test.annotations
-        Outputs: float specifiying the resultant average'''
-
-    sum_of_param = 0
-    for image_path in full_accuracy_stats.keys() :
-        for detect_num in full_accuracy_stats[image_path].keys() :
-            if (param_name == "average_type_error") :
-                sum_of_param += full_accuracy_stats[image_path][detect_num]["correct_class"]
-
-            elif (param_name == "average_bounding_box_overlap") :
-                sum_of_param += full_accuracy_stats[image_path][detect_num]["bounding_box_overlap"]
-
-    return sum_of_param/len(full_accuracy_stats.keys())
-
 def find_confusion_matrix(true_structure, detection_strucutre, det_true_map, dataset):
     '''Take a full test results data structure and divide into true positive, true negatives, etc'''
 
@@ -79,8 +61,8 @@ def find_confusion_matrix(true_structure, detection_strucutre, det_true_map, dat
             if det_true_map[image][det_ind] == None :  #handle case where detection without true feature
                 confusion_matrix[detection["class"]]["None"] += 1
             else:
-                a = dataset.classes[true_list[det_true_map[image][det_ind]]["class"]]
                 confusion_matrix[detection["class"]][dataset.classes[true_list[det_true_map[image][det_ind]]["class"]]] += 1
+
             detected_true_indicies.append(det_ind)
 
         if len(true_list) > len(det_list)  :  #handle case where true feature without detection
@@ -97,17 +79,16 @@ class DummyModel(Model):
 
 
 def benchmark_model(dataset_name: str):
-    # Setup the model
 
+    # Setup the model
     dataset = preprocess.preprocess.Preprocessor.preprocess(dataset_name)  #The Dataset object for some specified name
-    # trainer = Trainer("trainer", dataset)
-    # trainer.setup_training(24, 5000, "go")
-    # trainer.train(100, 4000, 2000)
-    #model = trainer.generate_model()
-    model = DummyModel()
+    trainer = Trainer("trainer", dataset)
+    trainer.setup_training(24, 5000, "go")
+    trainer.train(100, 4000, 2000)
+    model = trainer.generate_model()
+    # model = DummyModel()
 
     # Unpack the images
-    img_accuracy_stats: Dict[str: Dict[int: Dict[str:union(int, List[int, int, int, int])]]] = {}
     detection_annotations: Dict[str: List[Dict[str,int]]] = {}
     predict_to_truth_map: Dict[str:Dict[int:int]] = {}
     for image_path in dataset.test_annotations:

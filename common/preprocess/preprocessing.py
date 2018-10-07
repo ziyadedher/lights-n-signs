@@ -49,7 +49,7 @@ class Dataset:
         random.seed(1)
 
         for image_path in annotations.keys() :  #Iterate through all images with annotations in object
-            if random.random() < 0.1 :
+            if random.random() < 0.001 :
                 self.__annotations_test[image_path] = annotations[image_path]
             else:
                 self.__annotations[image_path] = annotations[image_path]
