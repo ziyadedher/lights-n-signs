@@ -57,8 +57,9 @@ def find_average(full_accuracy_stats, param_name):
 
     return sum_of_param/len(full_accuracy_stats.keys())
 
-def find_confusion_matrix(true_full_accuracy_stats, classes):
+def find_confusion_matrix(true_structure, detection_strucutre, true_det_map ):
     '''Take a full test results data structure and divide into true positive, true negatives, etc'''
+    pass
 
 
 
@@ -85,46 +86,48 @@ def benchmark_model(dataset_name: str):
         img_file = cv2.imread(image_path)
         detections_list = model.predict(img_file)
 
-
-        predict_to_truth_map = [0] * len(detections_list)  #index=index of detection, value=index of g-truth
+        # Go through all detections, map each to the closest ground truth detectable object
+        predict_to_truth_map = {}
         possible_gt_list = copy.deepcopy(dataset.test_annotations[image_path])
         removal_indicies = []  # allows accurate transform to g_truth indicides
-        #Go through all detections, map each to the closest ground truth detectable object
+
+
         for ind, detection in enumerate(detections_list):
-            closest = [-1,-1]  #Element 0 is distance, element 1 is index of closest value
-            for index, true_light in enumerate(possible_gt_list):
-                feature_dist = get_image_distance([true_light["x_min"],true_light["y_min"],true_light["x_max"],true_light["y_max"]],
-                                   [detection.bounding_box.left, detection.bounding_box.top,
-                                   detection.bounding_box.left + detection.bounding_box.width,
-                                   detection.bounding_box.top + detection.bounding_box.height])
-                if (closest[1] == -1) or (feature_dist < closest[0]) :
-                    closest[0] = feature_dist
-                    closest[1] = index
+            if len(possible_gt_list) > 0:
+                closest = [-1,-1]  #Element 0 is distance, element 1 is index of closest value
+                for index, true_light in enumerate(possible_gt_list):
+                    feature_dist = get_image_distance([true_light["x_min"],true_light["y_min"],true_light["x_max"],true_light["y_max"]],
+                                       [detection.bounding_box.left, detection.bounding_box.top,
+                                       detection.bounding_box.left + detection.bounding_box.width,
+                                       detection.bounding_box.top + detection.bounding_box.height])
+                    if (closest[1] == -1) or (feature_dist < closest[0]) :
+                        closest[0] = feature_dist
+                        closest[1] = index
 
-            #Get true index in test_annotations and remove this feature from g_truhts we consider
-            del possible_gt_list[closest[1]]
+                #Get true index in test_annotations and remove this feature from g_truhts we consider
+                del possible_gt_list[closest[1]]
 
-            true_index = 0
-            if len(removal_indicies) == 0:
-                true_index = closest[1]
-                removal_indicies.append(closest[1])
-            else :
                 true_index = 0
-                for removed in removal_indicies:
-                    if closest[1] >= removed :
-                        true_index += 1
-                true_index = closest[1] + true_index
+                if len(removal_indicies) == 0:
+                    true_index = closest[1]
+                    removal_indicies.append(closest[1])
+                else :
+                    true_index = 0
+                    for removed in removal_indicies:
+                        if closest[1] >= removed :
+                            true_index += 1
+                    true_index = closest[1] + true_index
 
-            predict_to_truth_map[ind] = true_index
+                predict_to_truth_map[ind] = true_index
 
+            else:
+                predict_to_truth_map[ind] = None
 
 
         #Populate data strucutre containing predicted features on each image. Equivilant to test_annotations structure
         detection_annotations[image_path] = []
-        #img_accuracy_stats[image_path] = {}
         for index, detection in enumerate(detections_list):
             detection_annotations[image_path].append({})
-            #img_accuracy_stats[image_path][ index] = {}
 
             detection_annotations[image_path][index]["class"] = detection.predicted_classes[0]
             detection_annotations[image_path][index]["x_min"] = detection.bounding_box[0]
@@ -132,28 +135,8 @@ def benchmark_model(dataset_name: str):
             detection_annotations[image_path][index]["y_min"] = detection.bounding_box[2]
             detection_annotations[image_path][index]["y_max"] = detection.bounding_box[3]
 
-
-
-            #compute relevant per detection statistics
-            is_type_accurate = (detection.predicted_classes[0] == dataset.classes[truth_to_predict_map[index]["class"]])
-            bb_overlap = compute_bb_overlap([detection.bounding_box.left, detection.bounding_box.top,
-                                   detection.bounding_box.left + detection.bounding_box.width, detection.bounding_box.top + detection.bounding_box.height],
-                                        [truth_to_predict_map[index]["x_min"],truth_to_predict_map[index]["y_min"],
-                                        truth_to_predict_map[index]["x_max"], truth_to_predict_map[index]["y_max"]])
-
-            #assign relevant per detection statistics
-            img_accuracy_stats[image_path][index]["correct_class"] = is_type_accurate
-            img_accuracy_stats[image_path][index]["bounding_box_overlap"] = bb_overlap
-
-    # Create and populate data strucutre containing accuracy stats for entire dataset
-    summary_stat_dict = {}
-    summary_stat_dict["average_type_error"] = find_average(img_accuracy_stats, "average_type_error")
-    summary_stat_dict["average_bounding_box_overlap"] = find_average(img_accuracy_stats, "average_bounding_box_overlap")
-    summary_stat_dict["confusion_matrix"] = find_confusion_matrix()
-
-    print(summary_stat_dict["average_type_error"])
-    print(summary_stat_dict["average_bounding_box_overlap"])
-
+    #Generate and print all accuracy statistics
+    find_confusion_matrix(dataset.test_annotations, detection_annotations, predict_to_truth_map)
 
 if __name__ == '__main__':
     benchmark_model("LISA")
