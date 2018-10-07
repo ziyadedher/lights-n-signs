@@ -57,6 +57,11 @@ def find_average(full_accuracy_stats, param_name):
 
     return sum_of_param/len(full_accuracy_stats.keys())
 
+def find_confusion_matrix(true_full_accuracy_stats, classes):
+    '''Take a full test results data structure and divide into true positive, true negatives, etc'''
+
+
+
 class DummyModel(Model):
     def predict(self, img):
         return [PredictedObject2D(Bounds2D(0,0,100,100), ["go"])]
@@ -66,46 +71,68 @@ def benchmark_model(dataset_name: str):
     # Setup the model
 
     dataset = preprocess.preprocess.Preprocessor.preprocess(dataset_name)  #The Dataset object for some specified name
-    trainer = Trainer("trainer", dataset)
-    trainer.setup_training(24, 5000, "go")
-    trainer.train(100, 4000, 2000)
-    model = trainer.generate_model()
+    # trainer = Trainer("trainer", dataset)
+    # trainer.setup_training(24, 5000, "go")
+    # trainer.train(100, 4000, 2000)
+    #model = trainer.generate_model()
+    model = DummyModel()
 
     # Unpack the images
     img_accuracy_stats: Dict[str: Dict[int: Dict[str:union(int, List[int, int, int, int])]]] = {}
+    detection_annotations: Dict[str: List[Dict[str,int]]] = {}
     for image_path in dataset.test_annotations:
         # Get model's detections
         img_file = cv2.imread(image_path)
         detections_list = model.predict(img_file)
 
-        # Assume the right number of predictions, map ground truth to prediction
-        truth_to_predict_map = [0] * len(detections_list)  #index=index of detection in list, value=believed corresponding true light
-        possible_gt_list = copy.deepcopy(dataset.test_annotations[image_path])
-        for ind, detection in enumerate(detections_list):
-            closest = [0,{}]  # Initialize list keeps track of closest feature to detection - its distance + values in annotations_list form
-            removal_index = 0  #Index of possible ground truth that will be removed after each iteration
 
-            #Enumerate through each GT detect to find which is most likely the feature of interest
+        predict_to_truth_map = [0] * len(detections_list)  #index=index of detection, value=index of g-truth
+        possible_gt_list = copy.deepcopy(dataset.test_annotations[image_path])
+        removal_indicies = []  # allows accurate transform to g_truth indicides
+        #Go through all detections, map each to the closest ground truth detectable object
+        for ind, detection in enumerate(detections_list):
+            closest = [-1,-1]  #Element 0 is distance, element 1 is index of closest value
             for index, true_light in enumerate(possible_gt_list):
                 feature_dist = get_image_distance([true_light["x_min"],true_light["y_min"],true_light["x_max"],true_light["y_max"]],
                                    [detection.bounding_box.left, detection.bounding_box.top,
                                    detection.bounding_box.left + detection.bounding_box.width,
                                    detection.bounding_box.top + detection.bounding_box.height])
-                if feature_dist > closest[0] :
+                if (closest[1] == -1) or (feature_dist < closest[0]) :
                     closest[0] = feature_dist
-                    closest[1] = true_light
-                    removal_index = index
+                    closest[1] = index
+
+            #Get true index in test_annotations and remove this feature from g_truhts we consider
+            del possible_gt_list[closest[1]]
+
+            true_index = 0
+            if len(removal_indicies) == 0:
+                true_index = closest[1]
+                removal_indicies.append(closest[1])
+            else :
+                true_index = 0
+                for removed in removal_indicies:
+                    if closest[1] >= removed :
+                        true_index += 1
+                true_index = closest[1] + true_index
+
+            predict_to_truth_map[ind] = true_index
 
 
-            #Set the true BB associated with detection and, if appropiate, delete gorund truth possibilty
-            truth_to_predict_map[ind] = closest[1]
-            if len(detections_list) <= len(dataset.test_annotations[image_path]):
-                del possible_gt_list[removal_index]
 
-        #Create and populate data strucutre containing accuracy stats for each detection
-        img_accuracy_stats[image_path] = {}
+        #Populate data strucutre containing predicted features on each image. Equivilant to test_annotations structure
+        detection_annotations[image_path] = []
+        #img_accuracy_stats[image_path] = {}
         for index, detection in enumerate(detections_list):
-            img_accuracy_stats[image_path][index] = {}
+            detection_annotations[image_path].append({})
+            #img_accuracy_stats[image_path][ index] = {}
+
+            detection_annotations[image_path][index]["class"] = detection.predicted_classes[0]
+            detection_annotations[image_path][index]["x_min"] = detection.bounding_box[0]
+            detection_annotations[image_path][index]["x_max"] = detection.bounding_box[1]
+            detection_annotations[image_path][index]["y_min"] = detection.bounding_box[2]
+            detection_annotations[image_path][index]["y_max"] = detection.bounding_box[3]
+
+
 
             #compute relevant per detection statistics
             is_type_accurate = (detection.predicted_classes[0] == dataset.classes[truth_to_predict_map[index]["class"]])
@@ -122,6 +149,7 @@ def benchmark_model(dataset_name: str):
     summary_stat_dict = {}
     summary_stat_dict["average_type_error"] = find_average(img_accuracy_stats, "average_type_error")
     summary_stat_dict["average_bounding_box_overlap"] = find_average(img_accuracy_stats, "average_bounding_box_overlap")
+    summary_stat_dict["confusion_matrix"] = find_confusion_matrix()
 
     print(summary_stat_dict["average_type_error"])
     print(summary_stat_dict["average_bounding_box_overlap"])
