@@ -2,7 +2,7 @@
 
 This module contains scripts which generate Haar trained models
 """
-from typing import Tuple
+from typing import Tuple, Optional
 from haar.model import HaarModel
 from haar.train import Trainer
 from common import preprocess
@@ -11,7 +11,7 @@ from common.preprocess.preprocessing import Dataset
 
 def evaluate(dataset_name: str, feature_size: int, num_samples: int,
              light_type: str, num_stages: int, num_positive: int,
-             num_negative: int) -> Tuple[Dataset, HaarModel]:
+             num_negative: int) -> Tuple[Dataset, Optional[HaarModel]]:
     """Load dataset and train model
 
     Train haar cascade on images from <dataset> with params
