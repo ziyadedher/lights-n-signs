@@ -45,7 +45,7 @@ def find_confusion_matrix(true_structure, detection_structure, det_true_map,
      true negatives, etc'''
 
     # Init conf_matrix. Every predicted-actual combo is single int entry
-    confusion_matrix: Dict[str: Dict[str:int]] = {}
+    confusion_matrix: Dict[str, Dict[str, int]] = {}
     class_names = dataset.classes
     class_names.append("None")
     for row_type in class_names:
@@ -92,8 +92,8 @@ def benchmark_model(dataset_name: str):
     dataset, model = evaluate(dataset_name, 24, 5000, "go", 100, 4000, 2000)
 
     # Unpack the images
-    detection_annotations: Dict[str: List[Dict[str, int]]] = {}
-    predict_to_truth_map: Dict[str:Dict[int:int]] = {}
+    detection_annotations: Dict[str, List[Dict[str, int]]] = {}
+    predict_to_truth_map: Dict[str, Dict[int, int]] = {}
     for img_path in dataset.test_annotations:
         # Get model's detections
         img_file = cv2.imread(img_path)
