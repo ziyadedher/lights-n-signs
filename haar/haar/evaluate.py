@@ -7,6 +7,7 @@ from haar.train import Trainer
 from common import preprocess
 from common.preprocess.preprocessing import Dataset
 
+
 def evaluate(dataset_name: str, feature_size: int, num_samples: int,
              light_type: str, num_stages: int, num_positive: int,
              num_negative: int) -> (Dataset, HaarModel):
