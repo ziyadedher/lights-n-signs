@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import math
 import cv2
@@ -80,7 +80,7 @@ def find_confusion_matrix(true_structure, detection_structure, det_true_map,
     return confusion_matrix
 
 
-def benchmark_model(dataset: Dataset, model: Model):
+def benchmark_model(dataset: Dataset, model: Optional[Model]):
 
     # Unpack the images
     detection_annotations: Dict[str, List[Dict[str, int]]] = {}
