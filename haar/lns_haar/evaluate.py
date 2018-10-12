@@ -12,7 +12,7 @@ from lns_haar.train import HaarTrainer
 
 
 class DummyModel(Model):
-    def predict(self, img: np.array) ->  List[PredictedObject2D]:
+    def predict(self, img: np.array) -> List[PredictedObject2D]:
         return [PredictedObject2D(Bounds2D(0, 0, 100, 100), ["go"]),
                 PredictedObject2D(Bounds2D(0, 0, 100, 100), ["go"]),
                 PredictedObject2D(Bounds2D(0, 0, 100, 100), ["go"])]
