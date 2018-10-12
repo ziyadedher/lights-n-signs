@@ -1,9 +1,10 @@
-import math
-import cv2
 from typing import List, Dict
 
-from haar.model import Bounds2D, PredictedObject2D, Model
-from haar.evaluate import evaluate
+import math
+import cv2
+
+from lns_common.model import Model
+from lns_common.preprocess.preprocessing import Dataset
 
 
 def get_img_dist(image_1: List[int], image_2: List[int]) -> float:
@@ -79,25 +80,17 @@ def find_confusion_matrix(true_structure, detection_structure, det_true_map,
     return confusion_matrix
 
 
-class DummyModel(Model):
-    def predict(self, img):
-        return [PredictedObject2D(Bounds2D(0, 0, 100, 100), ["go"]),
-                PredictedObject2D(Bounds2D(0, 0, 100, 100), ["go"]),
-                PredictedObject2D(Bounds2D(0, 0, 100, 100), ["go"])]
-
-
-def benchmark_model(dataset_name: str):
-
-    # Setup the model
-    dataset, model = evaluate(dataset_name, 24, 5000, "go", 100, 4000, 2000)
+def benchmark_model(dataset: Dataset, model: Model):
 
     # Unpack the images
     detection_annotations: Dict[str, List[Dict[str, int]]] = {}
     predict_to_truth_map: Dict[str, Dict[int, int]] = {}
+    print(len(dataset.test_annotations))
     for img_path in dataset.test_annotations:
         # Get model's detections
         img_file = cv2.imread(img_path)
         detections_list = model.predict(img_file)
+        print(img_path)
 
         # Iterate through detections, map each to the closest ground truth
         predict_to_truth_map[img_path] = {}

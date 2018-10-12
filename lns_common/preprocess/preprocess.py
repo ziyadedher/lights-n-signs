@@ -39,9 +39,9 @@ structure of the generated file is below.
 """
 from typing import Dict
 
-from common.config import Data
-from common.preprocess import preprocessing
-from common.preprocess.preprocessing import Dataset
+from lns_common.config import Data
+from lns_common.preprocess import preprocessing
+from lns_common.preprocess.preprocessing import Dataset
 
 
 class Preprocessor:
@@ -51,6 +51,8 @@ class Preprocessor:
     _PREPROCESSORS = {
         "LISA": preprocessing.preprocess_LISA,
         "Bosch": preprocessing.preprocess_bosch,
+        "Custom": preprocessing.preprocess_custom,
+        "Custom_testing": preprocessing.preprocess_custom
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}
