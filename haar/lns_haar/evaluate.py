@@ -2,9 +2,7 @@
 
 This module contains scripts which generate Haar trained models
 """
-from typing import Tuple, Optional
-
-from lns_common.test_new_preprocessing import *
+from lns_common.test_new_preprocessing import benchmark_model
 from lns_common.preprocess.preprocess import Preprocessor
 from lns_common.model import Model
 from lns_haar.model import Bounds2D, PredictedObject2D
@@ -30,6 +28,7 @@ def evaluate(dataset_name: str):
     model = trainer.generate_model()
     model = DummyModel()
     benchmark_model(dataset, model)
+
 
 if __name__ == '__main__':
     evaluate("LISA")
