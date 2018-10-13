@@ -1,0 +1,8 @@
+[submodule "Augmentor"]
+	path = Augmentor
+	url = https://github.com/mdbloice/Augmentor.git
+	branch = master
+[submodule "mergevec"]
+	path = mergevec
+	url = https://github.com/wulfebw/mergevec.git
+	branch = master

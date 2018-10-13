@@ -7,10 +7,14 @@ from typing import Dict, List
 
 import os
 import csv
+import cv2
 import copy
 import yaml  # XXX: this could be sped up by using PyYaml C-bindings
 import random
 from xml.etree import ElementTree as ET
+from haar.preprocessing.artificial import SyntheticDataset
+from Augmentor.Augmentor import Pipeline
+from glob import glob
 
 
 class Dataset:
@@ -200,7 +204,6 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
                    detection_classes, annotations)
 
 
-
 def preprocess_bosch(bosch_path: str) -> Dataset:
     """Preprocess and generate data for a Bosch dataset at the given path.
 
@@ -342,3 +345,77 @@ def preprocess_custom(custom_path: str) -> Dataset:
 
     return Dataset("Custom", {"Custom": images},
                    detection_classes, annotations)
+
+
+def preprocess_synthetic_haar(path_to_samples: str,
+                              classes: List[str],
+                              num_samples: int,
+                              samples_multiplier: int) -> SyntheticDataset:
+    """
+    Preprocess and generate a synthetic dataset for haar cascade training.
+
+    <path_to_samples> is the path containing the preliminary samples.
+    <classes> is an indexed list of classes.
+    <num_samples> is the number of augmented samples that will be created
+    by the Augmentor module.
+    <samples_multiplier> is the number of samples per each augmented
+    sample that will be created for cascade training - the total number
+    of samples will be (num_samples * samples_multiplier).
+
+    Creates a set of augmented samples from those found in the source
+    directory specified, and returns a SyntheticDataset with the data.
+    This is done through probabilistic augmentation via the Augmentor module.
+    The further application of opencv_createsamples to each of the augmented
+    samples created will occur later, during haar model setup.
+    Raises `FileNotFoundError` if folder is empty or images aren't found.
+
+    NOTE: In order for this function to run properly the folder
+    specified durign the initialization of the synthetic dataset
+    (also known as `path_to_samples` here) needs to contain NOTHING but
+    3 or 4 samples of the logo/sign, scaled to different dimensions.
+    """
+    p = Pipeline(path_to_samples)
+    if len(p.augmentor_images) == 0:
+        raise ValueError("Source folder must have a few images" +
+                         "and nothing else!")
+
+    # Operations
+    p.skew_tilt(0.2)
+    p.random_distortion(0.15, grid_width=4, grid_height=4, magnitude=1)
+    p.skew_corner(0.05)
+    p.gaussian_distortion(
+        0.2,
+        grid_width=4,
+        grid_height=4,
+        magnitude=3,
+        corner="bell",
+        method="in",
+    )
+    p.random_brightness(0.15, 0.1, 2.0)
+    p.random_contrast(0.05, 0.1, 2.0)
+    p.random_erasing(0.05, 0.11)
+    p.greyscale(1.0)
+
+    # Creating augmented samples
+    p.sample(num_samples)
+    imgs = glob(path_to_samples + '/output/*')
+
+    # Applying CLAHE
+    clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
+    for i in imgs:
+        try:
+            img = cv2.imread(i)
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            gray = clahe.apply(gray)
+            cv2.imwrite(i, gray)
+        except(cv2.error):
+            continue
+
+    return SyntheticDataset(
+        "SyntheticHaar",
+        path_to_samples,
+        {"SyntheticHaar": imgs},
+        classes,
+        num_samples,
+        samples_multiplier,
+    )
