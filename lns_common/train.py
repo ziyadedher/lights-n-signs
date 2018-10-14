@@ -87,6 +87,11 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         """Get the unique name of this training configuration."""
         return self.__name
 
+    @property
+    def dataset(self) -> Dataset:
+        """Get the dataset that this trainer is operating on."""
+        return self.__dataset
+
     @classmethod
     def _setup(cls, setup_call: SetupFunc) -> SetupFunc:
         """Decorate the main setup function to set up the trainer for training.

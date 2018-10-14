@@ -58,30 +58,28 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
 
         self._config = create_config.squeezeDet_config("squeeze")
 
-    @property
-    def name(self) -> str:
-        """Get the unique name of this training configuration."""
-        return self.__name
-
     @Trainer._setup
     def setup_squeezedet(self, reduce_lr_on_plateau: bool = True) -> None:
-        """Set up training the SqueezeDet model.
+        """Set up training the SqueezeDet model by populating the configuration.
 
         If <reduce_lr_on_plateau> is set to `True` then the learning rate
         will be slowly decreased as we train if we hit a plateau.
         """
-        init_file = "imagenet.h5"  # FIXME: constantify
+        # FIXME: constantify
+        init_file = "/home/ziyadedher/.lns-training/resources/weights/imagenet.h5"
 
-        with open(self._data.images_file) as images_file:
-            images = images_file.read().splitlines()
-        with open(self._data.labels_file) as labels_file:
-            labels = labels_file.read().splitlines()
-
-        self._config.img_file = self._paths["images_file"]
-        self._config.gt_file = self._paths["labels_file"]
+        # FIXME: figure out what these mean exactly
+        # self._config.img_file = self._paths["images_file"]
+        # self._config.gt_file = self._paths["labels_file"]
         self._config.init_file = init_file
-        self._config.images = images
-        self._config.gts = labels
+        self._config.images = self._data.images
+        self._config.gts = self._data.labels
+
+        self._config.CLASS_NAMES = self.dataset.classes
+        self._config.CLASSES = len(self._config.CLASS_NAMES)
+        self._config.CLASS_TO_IDX = dict(zip(
+            self._config.CLASS_NAMES, range(self._config.CLASSES)
+        ))
 
         self._config.STEPS = (
             len(self._config.images) // self._config.BATCH_SIZE
@@ -101,6 +99,10 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         ) = create_config.set_anchors(self._config)
         self._config.ANCHORS = len(self._config.ANCHOR_BOX)
 
+        K.set_session(tf.Session(
+            config=tf.ConfigProto(allow_soft_placement=True)
+        ))
+
     @Trainer._train
     def train_squeezedet(self, epochs: int) -> None:
         """Begin training the model.
@@ -108,15 +110,10 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         Train for <epochs> epochs before automatically stopping and
         generating the trained model.
         """
-        callbacks = self._get_callbacks()
         self._config.EPOCHS = epochs
 
         squeeze = SqueezeDet(self._config)
         load_only_possible_weights(squeeze.model, self._config.init_file)
-
-        K.set_session(tf.Session(
-            config=tf.ConfigProto(allow_soft_placement=True)
-        ))
 
         squeeze.model.compile(
             optimizer=optimizers.SGD(
@@ -138,10 +135,10 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         )
 
         squeeze.model.fit_generator(
-            self._data.generate_data(),
+            self._data.generate_data(self._config),
             epochs=self._config.EPOCHS,
             steps_per_epoch=self._config.STEPS,
-            callbacks=callbacks
+            callbacks=self._get_callbacks()
         )
 
     def generate_model(self) -> SqueezeDetModel:
