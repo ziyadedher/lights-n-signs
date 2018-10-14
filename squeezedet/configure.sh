@@ -6,8 +6,9 @@ sitepackages=$(python -c "import site; print(site.getsitepackages()[0])")
 packagename="squeezedet_keras"
 packagepath=$sitepackages/$packagename
 
+echo "Cloning $packagename."
 cd $directory
-git clone https://github.com/omni-us/squeezedet-keras.git
+git clone https://github.com/omni-us/squeezedet-keras.git &> /dev/null
 cd squeezedet-keras
 
 while true; do
@@ -19,7 +20,8 @@ while true; do
     esac
 done
 
+echo "Installing $packagename."
 mkdir $packagepath
-cp -r main/* $packagepath/
-cp -r scripts $packagepath/
+sed -i s/main./squeezedet_keras./g main/**/*
+cp -r main/* $packagepath
 echo "Configuration completed."
