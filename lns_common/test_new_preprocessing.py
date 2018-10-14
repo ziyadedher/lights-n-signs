@@ -19,26 +19,56 @@ def get_img_dist(image_1: List[int], image_2: List[int]) -> float:
         sum += math.pow(abs(image_2[i] - image_1[i]), 2)
     return float(math.sqrt(sum))
 
+def find_avg_bb_overlap(true_structure, detection_structure, det_true_map):
+    """Find the average overlap of all bounding boxes in data structure
+    
+    Input: Full data structure for ground truth and detection 
+    Output: The average overlap
+    """
+    def create_bb(annotation: Dict[str, int]) -> List[int]:
+        """Take a detection annotation and return a list with bb coords """
+        bound_box = []
+        bound_box.append(annotation["x_min"])
+        bound_box.append(annotation["y_min"])
+        bound_box.append(annotation["x_max"])
+        bound_box.append(annotation["y_max"])
+        return bound_box
 
-def compute_bb_overlap(detection: List[int], g_truth: List[int]) -> float:
-    """Find the area overlap between two specified rectangles.
-    Inputs: list of [x_min, y_min, x_max. y_max]
-    Outputs: Fraction of overlapping bounding boxes"""
+    def compute_bb_overlap(detection: List[int], g_truth: List[int]) -> float:
+        """Find the area overlap between two specified rectangles.
+        Inputs: list of [x_min, y_min, x_max. y_max]
+        Outputs: Fraction of overlapping bounding boxes"""
 
-    def find_overlap(image_1: List[int], image_2: List[int]) -> int:
-        dim = [x for x in image_1 if x in image_2]
-        return len(dim)
+        def find_overlap(image_1: List[int], image_2: List[int]) -> int:
+            dim = [x for x in image_1 if x in image_2]
+            return len(dim)
 
-    if len(detection) != len(g_truth):
-        return -1
+        if len(detection) != len(g_truth):
+            return -1
 
-    overlap_width = find_overlap(list(range(detection[0], detection[2] + 1)),
-                                 list(range(g_truth[0], g_truth[2] + 1)))
-    overlap_height = find_overlap(list(range(detection[1], detection[3] + 1)),
-                                  list(range(g_truth[1], g_truth[3] + 1)))
-    area_g_truth = (g_truth[2] - g_truth[0]) * (g_truth[3] - g_truth[1])
-    return float((overlap_height * overlap_width) / area_g_truth)
+        overlap_width = find_overlap(list(range(detection[0], detection[2] + 1)),
+                                     list(range(g_truth[0], g_truth[2] + 1)))
+        overlap_height = find_overlap(list(range(detection[1], detection[3] + 1)),
+                                      list(range(g_truth[1], g_truth[3] + 1)))
+        area_g_truth = (g_truth[2] - g_truth[0]) * (g_truth[3] - g_truth[1])
+        return float((overlap_height * overlap_width) / area_g_truth)
 
+    total_error = 0
+    num_box_overlaps = 0
+    for image in detection_structure.keys():
+        det_list = detection_structure[image]
+        true_list = true_structure[image]
+
+        for det_ind, detection in enumerate(det_list):
+            if det_true_map[image][det_ind] is None:
+                pass
+            else:
+                det_box = create_bb(detection)
+                true_box = create_bb(true_list[det_true_map[image][det_ind]])
+                total_error += compute_bb_overlap(det_box, true_box)
+                num_box_overlaps += 1
+
+    return total_error/num_box_overlaps
 
 def find_confusion_matrix(true_structure, detection_structure, det_true_map,
                           dataset):
@@ -139,6 +169,10 @@ def benchmark_model(dataset: Dataset, model: Optional[Model]):
     confusion_matrix = find_confusion_matrix(dataset.test_annotations,
                                              detection_annotations,
                                              predict_to_truth_map, dataset)
+    avg_bb_overlap = find_avg_bb_overlap(dataset.test_annotations,
+                                             detection_annotations,
+                                             predict_to_truth_map)
+    print ("Average Bounding Box Overlap: ", avg_bb_overlap)
     print(confusion_matrix)
 
 
