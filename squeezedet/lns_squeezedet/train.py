@@ -2,7 +2,7 @@
 
 This script manages model training and generation.
 """
-from typing import Union, List
+from typing import Union, Optional, List
 
 import os
 
@@ -32,6 +32,7 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
     """
 
     _config: easydict.EasyDict
+    _squeeze: SqueezeDet
 
     __subpaths = {
         "checkpoint_folder": (
@@ -57,6 +58,7 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
                          _load=load, _subpaths=SqueezeDetTrainer.__subpaths)
 
         self._config = create_config.squeezeDet_config("squeeze")
+        self._squeeze = None
 
     @Trainer._setup
     def setup_squeezedet(self, reduce_lr_on_plateau: bool = True) -> None:
@@ -68,9 +70,6 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         # FIXME: constantify
         init_file = "/home/ziyadedher/.lns-training/resources/weights/imagenet.h5"
 
-        # FIXME: figure out what these mean exactly
-        # self._config.img_file = self._paths["images_file"]
-        # self._config.gt_file = self._paths["labels_file"]
         self._config.init_file = init_file
         self._config.images = self._data.images
         self._config.gts = self._data.labels
@@ -112,10 +111,10 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         """
         self._config.EPOCHS = epochs
 
-        squeeze = SqueezeDet(self._config)
-        load_only_possible_weights(squeeze.model, self._config.init_file)
+        self._squeeze = SqueezeDet(self._config)
+        load_only_possible_weights(self._squeeze.model, self._config.init_file)
 
-        squeeze.model.compile(
+        self._squeeze.model.compile(
             optimizer=optimizers.SGD(
                 lr=self._config.LEARNING_RATE,
                 decay=0,
@@ -124,30 +123,37 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
                 clipnorm=self._config.MAX_GRAD_NORM
             ),
             loss=[
-                squeeze.loss
+                self._squeeze.loss
             ],
             metrics=[
-                squeeze.loss_without_regularization,
-                squeeze.bbox_loss,
-                squeeze.class_loss,
-                squeeze.conf_loss
+                self._squeeze.loss_without_regularization,
+                self._squeeze.bbox_loss,
+                self._squeeze.class_loss,
+                self._squeeze.conf_loss
             ]
         )
 
-        squeeze.model.fit_generator(
+        self._squeeze.model.fit_generator(
             self._data.generate_data(self._config),
             epochs=self._config.EPOCHS,
             steps_per_epoch=self._config.STEPS,
             callbacks=self._get_callbacks()
         )
 
-    def generate_model(self) -> SqueezeDetModel:
+        self.generate_model()
+
+    def generate_model(self) -> Optional[SqueezeDetModel]:
         """Generate and return the currently available prediction model.
 
         Model may be `None` if there is no currently available model.
         """
-        # TODO: implement
-        raise NotImplementedError
+        if self._squeeze is not None and self._squeeze.model is not None:
+            self.model = SqueezeDetModel(
+                self._squeeze.model, self._config, self.dataset.classes
+            )
+        else:
+            self.model = None
+        return self.model
 
     def _get_callbacks(self) -> List[Callback]:
         """Get callbacks that we want for the training."""
