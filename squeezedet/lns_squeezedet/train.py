@@ -81,7 +81,8 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         self._config.CLASS_NAMES = self.dataset.classes
         self._config.CLASSES = len(self._config.CLASS_NAMES)
         self._config.CLASS_TO_IDX = dict(zip(
-            self._config.CLASS_NAMES, range(self._config.CLASSES)
+            (name.lower() for name in self._config.CLASS_NAMES),
+            range(self._config.CLASSES)
         ))
 
         self._config.STEPS = (

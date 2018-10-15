@@ -88,8 +88,9 @@ class SqueezeDetProcessor(Processor[SqueezeDetData]):
             for annotation in annotations:
                 # NOTE: see https://github.com/NVIDIA/DIGITS/issues/992
                 # for more information about the format
+                class_name = dataset.classes[annotation["class"]].lower()
                 label_strings.append(" ".join((
-                    dataset.classes[annotation["class"]],  # class string
+                    str(class_name),                       # class string
                     "0",                                   # truncation number
                     "0",                                   # occlusion number
                     "0",                                   # observation angle
@@ -106,6 +107,10 @@ class SqueezeDetProcessor(Processor[SqueezeDetData]):
                     "0",                                   # y rot  (3d)
                     "0"                                    # score
                 )))
+
+            # Do not write empty files
+            if len(label_strings) == 0:
+                continue
 
             # Create the file and put the strings in it
             label = "".join(os.path.basename(image).split(".")[:-1]) + ".txt"
