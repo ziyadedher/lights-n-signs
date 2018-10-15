@@ -5,6 +5,7 @@ This script manages model training and generation.
 from typing import Union, Optional, List
 
 import os
+import inspect
 
 import easydict                                                # type: ignore
 import tensorflow as tf                                        # type: ignore
@@ -13,6 +14,7 @@ from keras import optimizers
 from keras.callbacks import (                                  # type: ignore
     Callback, TensorBoard, ModelCheckpoint, ReduceLROnPlateau
 )
+import squeezedet_keras                                        # type: ignore
 from squeezedet_keras.model.squeezeDet import SqueezeDet       # type: ignore
 from squeezedet_keras.model.modelLoading import (              # type: ignore
     load_only_possible_weights
@@ -30,6 +32,11 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
 
     Contains and encapsulates all training setup and files under one namespace.
     """
+
+    _WEIGHTS_INIT_FILE = os.path.join(
+        os.path.dirname(inspect.getfile(squeezedet_keras)),
+        "model", "imagenet.h5"
+    )
 
     _config: easydict.EasyDict
     _squeeze: SqueezeDet
@@ -67,10 +74,7 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         If <reduce_lr_on_plateau> is set to `True` then the learning rate
         will be slowly decreased as we train if we hit a plateau.
         """
-        # FIXME: constantify
-        init_file = "/home/ziyadedher/.lns-training/resources/weights/imagenet.h5"
-
-        self._config.init_file = init_file
+        self._config.init_file = SqueezeDetTrainer._WEIGHTS_INIT_FILE
         self._config.images = self._data.images
         self._config.gts = self._data.labels
 

@@ -86,7 +86,7 @@ class SqueezeDetProcessor(Processor[SqueezeDetData]):
             images.append(image)
             label_strings: List[str] = []
             for annotation in annotations:
-                # XXX: see https://github.com/NVIDIA/DIGITS/issues/992
+                # NOTE: see https://github.com/NVIDIA/DIGITS/issues/992
                 # for more information about the format
                 label_strings.append(" ".join((
                     dataset.classes[annotation["class"]],  # class string
