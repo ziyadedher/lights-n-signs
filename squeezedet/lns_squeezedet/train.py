@@ -58,7 +58,7 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
 
         Sources data from the <dataset> given which can either be a name of
         an available dataset or a `Dataset` object. If <load> is set
-        to False removes any existing trained checkpoints before training.
+        to `False` removes any existing trained checkpoints before training.
         """
         super().__init__(name, dataset,
                          _processor=SqueezeDetProcessor, _type="squeezedet",
@@ -73,13 +73,19 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         )
 
     @Trainer._setup
-    def setup_squeezedet(self, reduce_lr_on_plateau: bool = True) -> None:
+    def setup_squeezedet(self, use_pretrained_weights: bool = True,
+                         reduce_lr_on_plateau: bool = True) -> None:
         """Set up training the SqueezeDet model by populating the configuration.
 
-        If <reduce_lr_on_plateau> is set to `True` then the learning rate
-        will be slowly decreased as we train if we hit a plateau.
+        If <use_pretrained_weights> is set to `True` then the model will load
+        pretrained weights as a fallback. If <reduce_lr_on_plateau> is set to
+        `True` then the learning rate will be slowly decreased as we train if
+        we hit a plateau.
         """
-        self._config.init_file = SqueezeDetTrainer._WEIGHTS_INIT_FILE
+        self._config.init_file = (
+            SqueezeDetTrainer._WEIGHTS_INIT_FILE
+            if use_pretrained_weights else None
+        )
         self._config.images = self._data.images
         self._config.gts = self._data.labels
 
@@ -124,7 +130,6 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
 
         # Find the checkpoint with the greatest number of trained epochs
         initial_epoch = 0
-        weights_path = self._config.init_file
         if self._load:
             checkpoint_paths = os.listdir(self._paths["checkpoint_folder"])
             most_recent_checkpoint = checkpoint_paths[0]
@@ -134,12 +139,15 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
                 if epoch > initial_epoch:
                     initial_epoch = epoch
                     most_recent_checkpoint = checkpoint
-            weights_path = os.path.join(
+            self._config.init_file = os.path.join(
                 self._paths["checkpoint_folder"], most_recent_checkpoint
             )
-        load_only_possible_weights(
-            self._squeeze.model, weights_path
-        )
+
+        if self._config.init_file is not None:
+            print(f"Resuming training from {self._config.init_file}.")
+            load_only_possible_weights(
+                self._squeeze.model, self._config.init_file
+            )
 
         self._squeeze.model.compile(
             optimizer=optimizers.SGD(
