@@ -203,6 +203,7 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
 
     return Dataset("LISA", {"LISA": images}, detection_classes, annotations)
 
+
 def preprocess_bosch(bosch_path: str) -> Dataset:
     """Preprocess and generate data for a Bosch dataset at the given path.
 

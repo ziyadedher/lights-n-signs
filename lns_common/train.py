@@ -15,6 +15,7 @@ from lns_common import config
 from lns_common.model import ModelType
 from lns_common.process import ProcessedDataType, Processor
 from lns_common.preprocess.preprocess import Preprocessor, Dataset
+from haar.preprocessing.artificial import SyntheticDataset
 
 
 class TrainerNotSetupException(Exception):
@@ -35,8 +36,8 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
     __dataset: Dataset
     __is_setup: bool
 
-    SetupFunc = TypeVar("SetupFunc", bound=Callable[..., Any])
-    TrainFunc = TypeVar("TrainFunc", bound=Callable[..., Any])
+    SetupFunc = TypeVar("SetupFunc", bound=Callable[..., Any])  # type: ignore
+    TrainFunc = TypeVar("TrainFunc", bound=Callable[..., Any])  # type: ignore
 
     def __init__(self, name: str, dataset: Union[str, Dataset], *,
                  _processor: Type[Processor[ProcessedDataType]],
@@ -76,16 +77,22 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
                 f"{type(dataset)}"
             )
 
-        # Get processed data from the preprocessed dataset
-        self._data = _processor.process(self.__dataset)
+        if not isinstance(self.__dataset, SyntheticDataset):
+            # Get processed data from the preprocessed dataset
+            self._data = _processor.process(self.__dataset)
 
-        # Find the training root folder with the trainer name
-        self._generate_filestructure(_load, _type,  _subpaths)
+            # Find the training root folder with the trainer name
+            self._generate_filestructure(_load, _type, _subpaths)
 
     @property
     def name(self) -> str:
         """Get the unique name of this training configuration."""
         return self.__name
+
+    @property
+    def dataset(self) -> Dataset:
+        """Get the dataset being used with this training configuration."""
+        return self.__dataset
 
     @classmethod
     def _setup(cls, setup_call: SetupFunc) -> SetupFunc:

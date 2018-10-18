@@ -52,7 +52,8 @@ class Preprocessor:
         "LISA": preprocessing.preprocess_LISA,
         "Bosch": preprocessing.preprocess_bosch,
         "Custom": preprocessing.preprocess_custom,
-        "Custom_testing": preprocessing.preprocess_custom
+        "Custom_testing": preprocessing.preprocess_custom,
+        "Synthetic_HAAR": preprocessing.preprocess_synthetic_haar,
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}
@@ -81,9 +82,9 @@ class Preprocessor:
                 "Dataset {} has no allocated preprocessor."
             )
 
-        preprocessed = _preprocessor(dataset_path)
+        preprocessed = _preprocessor(dataset_path)  # type: ignore
         cls._preprocessing_data[dataset_name] = preprocessed
-        return preprocessed
+        return preprocessed  # type: ignore
 
 
 class NoPreprocessorException(Exception):

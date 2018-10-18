@@ -13,6 +13,8 @@ from lns_common.train import Trainer
 from lns_common.preprocess.preprocessing import Dataset
 from lns_haar.model import HaarModel
 from lns_haar.process import HaarData, HaarProcessor
+from haar.preprocessing.artificial import SyntheticDataset
+from mergevec.mergevec import merge_vec_files
 
 
 class HaarTrainer(Trainer[HaarModel, HaarData]):
@@ -23,6 +25,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
 
     _feature_size: int
     _light_type: Optional[str]
+    _is_synthetic: bool
 
     __subpaths = {
         "vector_file": (
@@ -46,6 +49,8 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         to True attempts to load the trainer with the given ID before
         overwriting.
         """
+        self._is_synthetic = isinstance(dataset, SyntheticDataset)
+
         super().__init__(name, dataset,
                          _processor=HaarProcessor, _type="haar", _load=load,
                          _subpaths=HaarTrainer.__subpaths)
@@ -62,25 +67,57 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         <feature_size>.
         """
         vector_file = self._paths["vector_file"]
-        try:
-            annotations_file = self._data.get_positive_annotation(light_type)
-        except KeyError:
-            print("No positive annotations for light type " +
-                  f"`{light_type}` available.")
-            return
 
-        command = [
-            "opencv_createsamples",
-            "-info", str(annotations_file),
-            "-w", str(feature_size),
-            "-h", str(feature_size),
-            "-num", str(num_samples),
-            "-vec", str(vector_file)
-        ]
-        subprocess.run(command)
+        if self._is_synthetic:
+            vecs_dir = os.path.join(
+                self.__dataset.path_to_source, "vecs"  # type: ignore
+            )
+            augmented_samples = os.path.join(
+                self.__dataset.path_to_source, "output"  # type: ignore
+            )
 
-        self._feature_size = feature_size
+            try:
+                neg_annotations_file = self._data.get_negative_annotation(
+                    str(self._light_type)
+                )
+            except KeyError:
+                print("No negative annotations for light type " +
+                      f"`{self._light_type}` available.")
+                return
+
+            os.mkdir(vecs_dir)
+            subprocess.run(
+                [
+                    "./create_samples_multi.sh",
+                    augmented_samples,
+                    vecs_dir,
+                    str(self.__dataset.samples_multiplier),  # type: ignore
+                    str(neg_annotations_file)
+                ]
+            )
+            merge_vec_files(vecs_dir, str(vector_file))
+        else:
+            try:
+                pos_annotations_file = self._data.get_positive_annotation(
+                    light_type
+                )
+            except KeyError:
+                print("No positive annotations for light type " +
+                      f"`{light_type}` available.")
+                return
+
+            command = [
+                "opencv_createsamples",
+                "-info", str(pos_annotations_file),
+                "-w", str(feature_size),
+                "-h", str(feature_size),
+                "-num", str(num_samples),
+                "-vec", str(vector_file)
+            ]
+            subprocess.run(command)
+
         self._light_type = light_type
+        self._feature_size = feature_size
 
     @Trainer._train
     def train_haar(self, num_stages: int,
@@ -97,11 +134,11 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         cascade_folder = self._paths["cascade_folder"]
         feature_size = self._feature_size
         try:
-            negative_annotations_file = self._data.get_negative_annotation(
+            neg_annotations_file = self._data.get_negative_annotation(
                 self._light_type
             )
         except KeyError:
-            print("No positive annotations for light type " +
+            print("No negative annotations for light type " +
                   f"`{self._light_type}` available.")
             return
 
@@ -111,7 +148,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
             "-numNeg", str(num_negative),
             "-numStages", str(num_stages),
             "-vec", str(vector_file),
-            "-bg", str(negative_annotations_file),
+            "-bg", str(neg_annotations_file),
             "-w", str(feature_size),
             "-h", str(feature_size),
             "-data", str(cascade_folder)
