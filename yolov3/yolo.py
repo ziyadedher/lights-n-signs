@@ -1,7 +1,4 @@
-# flake8: noqa
-# type: ignore
 # -*- coding: utf-8 -*-
-
 """
 Class definition of YOLO_v3 style detection model on image and video
 """
@@ -21,11 +18,13 @@ from yolo3.utils import letterbox_image
 import os
 from keras.utils import multi_gpu_model
 
+from lns_common.model import Bounds2D, PredictedObject2D, Model
+
 class YOLO(object):
     _defaults = {
         "model_path": 'logs/000/trained_weights_final.h5',
         "anchors_path": 'model_data/yolo_anchors.txt',
-        "classes_path": '../classes.txt',
+        "classes_path": 'classes.txt',
         "score" : 0.15,
         "iou" : 0.15,
         "model_image_size" : (416, 416),
@@ -102,6 +101,55 @@ class YOLO(object):
                 len(self.class_names), self.input_image_shape,
                 score_threshold=self.score, iou_threshold=self.iou)
         return boxes, scores, classes
+
+    def predict(self, image):
+        image = Image.fromarray(image.astype("float32"))
+        if self.model_image_size != (None, None):
+            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
+            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
+            boxed_image = letterbox_image(image, tuple(reversed(self.model_image_size)))
+        else:
+            new_image_size = (image.width - (image.width % 32),
+                              image.height - (image.height % 32))
+            boxed_image = letterbox_image(image, new_image_size)
+        image_data = np.array(boxed_image, dtype='float32')
+
+        #print(image_data.shape)
+        image_data /= 255.
+        image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
+
+        out_boxes, out_scores, out_classes = self.sess.run(
+            [self.boxes, self.scores, self.classes],
+            feed_dict={
+                self.yolo_model.input: image_data,
+                self.input_image_shape: [image.size[1], image.size[0]],
+                K.learning_phase(): 0
+            })
+
+        #print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
+
+        output = []
+        for i, c in reversed(list(enumerate(out_classes))):
+            predicted_class = self.class_names[c]
+            box = out_boxes[i]
+            score = out_scores[i]
+
+            label = '{} {:.2f}'.format(predicted_class, score)
+            #draw = ImageDraw.Draw(image)
+            #label_size = draw.textsize(label, font)
+
+            top, left, bottom, right = box
+            top = max(0, np.floor(top + 0.5).astype('int32'))
+            left = max(0, np.floor(left + 0.5).astype('int32'))
+            bottom = min(image.size[1], np.floor(bottom + 0.5).astype('int32'))
+            right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
+            print(label, (left, top), (right, bottom))
+
+            b = Bounds2D(left, top, right - left, top - bottom)
+            pred = PredictedObject2D(b, [predicted_class])
+            output.append(pred)
+
+        return output
 
     def detect_image(self, image):
         start = timer()
@@ -213,3 +261,4 @@ def detect_video(yolo, video_path, output_path=""):
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     yolo.close_session()
+
