@@ -1,7 +1,7 @@
 
 from typing import List
 
-from common.preprocess.preprocess import Preprocessor
+from lns_common.preprocess.preprocess import Preprocessor
 
 
 def run_process(datasets: List[str]) -> None:
