@@ -8,7 +8,7 @@ vec files.
 from typing import List, Tuple
 from Augmentor import Pipeline
 from glob import glob
-import mergevec
+from haar.preprocessing.mergevec.mergevec import merge_vec_files
 import cv2
 import os
 import subprocess
@@ -123,6 +123,6 @@ class SyntheticDataset:
         )
 
         # Merging vec files
-        mergevec.merge_vec_files(vecs_dir, str(vector_file))
+        merge_vec_files(vecs_dir, str(vector_file))
 
         return (vector_file, neg_annotations_file, cascade_folder)
