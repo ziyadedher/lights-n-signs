@@ -9,6 +9,7 @@ from lns_common.preprocess.preprocess import Preprocessor
 from lns_common.model import Model
 from lns_haar.model import Bounds2D, PredictedObject2D
 from lns_haar.train import HaarTrainer
+from haar.preprocessing.artificial import SyntheticDataset
 
 
 class DummyModel(Model):
@@ -19,7 +20,7 @@ class DummyModel(Model):
 
 
 def evaluate(dataset_name: str) -> None:
-    """Load dataset and train model
+    """Load dataset and train model.
 
     Train haar cascade on images from <dataset> with params
     """
@@ -31,5 +32,21 @@ def evaluate(dataset_name: str) -> None:
     benchmark_model(dataset, model)
 
 
+def evaluate_synthetic() -> None:
+    """Test the creation and use of a synthetic dataset.
+    """
+    dataset = SyntheticDataset("synthetic",
+                               "~/.lns_training/haar/data/donotenter/" +
+                               "donotenter_samples",
+                               ['donotenter'])
+    trainer = HaarTrainer("synthetic_trainer", dataset)
+    trainer.setup_haar(24, 2000, "donotenter")
+    trainer.train_haar(30, 1500, 700)
+    model = trainer.generate_model()
+    print(model)
+    # benchmark_model(dataset, model)
+
+
 if __name__ == '__main__':
-    evaluate("LISA")
+    # evaluate("LISA")
+    evaluate_synthetic()

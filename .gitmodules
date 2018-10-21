@@ -3,6 +3,6 @@
 	url = https://github.com/mdbloice/Augmentor.git
 	branch = master
 [submodule "mergevec"]
-	path = mergevec
+	path = haar/preprocessing/mergevec
 	url = https://github.com/wulfebw/mergevec.git
 	branch = master

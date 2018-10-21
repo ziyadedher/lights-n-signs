@@ -53,7 +53,6 @@ class Preprocessor:
         "Bosch": preprocessing.preprocess_bosch,
         "Custom": preprocessing.preprocess_custom,
         "Custom_testing": preprocessing.preprocess_custom,
-        "Synthetic_HAAR": preprocessing.preprocess_synthetic_haar,
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}

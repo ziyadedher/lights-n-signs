@@ -14,7 +14,6 @@ from lns_common.preprocess.preprocessing import Dataset
 from lns_haar.model import HaarModel
 from lns_haar.process import HaarData, HaarProcessor
 from haar.preprocessing.artificial import SyntheticDataset
-from mergevec.mergevec import merge_vec_files
 
 
 class HaarTrainer(Trainer[HaarModel, HaarData]):
@@ -66,37 +65,16 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         Create <num_samples> positive samples of the <light_type> with given
         <feature_size>.
         """
-        vector_file = self._paths["vector_file"]
-
         if self._is_synthetic:
-            vecs_dir = os.path.join(
-                self.__dataset.path_to_source, "vecs"  # type: ignore
-            )
-            augmented_samples = os.path.join(
-                self.__dataset.path_to_source, "output"  # type: ignore
-            )
-
-            try:
-                neg_annotations_file = self._data.get_negative_annotation(
-                    str(self._light_type)
-                )
-            except KeyError:
-                print("No negative annotations for light type " +
-                      f"`{self._light_type}` available.")
-                return
-
-            os.mkdir(vecs_dir)
-            subprocess.run(
-                [
-                    "./create_samples_multi.sh",
-                    augmented_samples,
-                    vecs_dir,
-                    str(self.__dataset.samples_multiplier),  # type: ignore
-                    str(neg_annotations_file)
-                ]
-            )
-            merge_vec_files(vecs_dir, str(vector_file))
+            vec, neg, cascade = \
+                self.__dataset.generate(num_samples)  # type: ignore
+            self._paths["vector_file"] = vec
+            self._paths["negative_annotations"] = neg
+            self._paths["cascade_folder"] = cascade
+            self._paths["cascade_file"] = os.path.join(cascade, 'cascade.xml')
         else:
+            vector_file = self._paths["vector_file"]
+
             try:
                 pos_annotations_file = self._data.get_positive_annotation(
                     light_type
@@ -133,14 +111,17 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         vector_file = self._paths["vector_file"]
         cascade_folder = self._paths["cascade_folder"]
         feature_size = self._feature_size
-        try:
-            neg_annotations_file = self._data.get_negative_annotation(
-                self._light_type
-            )
-        except KeyError:
-            print("No negative annotations for light type " +
-                  f"`{self._light_type}` available.")
-            return
+        if self._is_synthetic:
+            neg_annotations_file = self._paths["negative_annotations"]
+        else:
+            try:
+                neg_annotations_file = self._data.get_negative_annotation(
+                    self._light_type
+                )
+            except KeyError:
+                print("No negative annotations for light type " +
+                      f"`{self._light_type}` available.")
+                return
 
         command = [
             "opencv_traincascade",

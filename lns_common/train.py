@@ -39,7 +39,8 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
     SetupFunc = TypeVar("SetupFunc", bound=Callable[..., Any])  # type: ignore
     TrainFunc = TypeVar("TrainFunc", bound=Callable[..., Any])  # type: ignore
 
-    def __init__(self, name: str, dataset: Union[str, Dataset], *,
+    def __init__(self,
+                 name: str, dataset: Union[str, Dataset, SyntheticDataset], *,
                  _processor: Type[Processor[ProcessedDataType]],
                  _type: str, _load: bool,
                  _subpaths: Dict[str, Tuple[str, bool, bool, str]]) -> None:
@@ -62,6 +63,7 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         which could be either "file" or "folder".
         """
         self.model = None
+        self._data = None  # type: ignore
         self._paths = {}
         self.__name = name
         self.__is_setup = False
@@ -69,7 +71,8 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         # Get preprocess data if required
         if isinstance(dataset, str):
             self.__dataset = Preprocessor.preprocess(dataset)
-        elif isinstance(dataset, Dataset):
+        elif isinstance(dataset, Dataset) or \
+                isinstance(dataset, SyntheticDataset):
             self.__dataset = dataset
         else:
             raise ValueError(
@@ -77,7 +80,7 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
                 f"{type(dataset)}"
             )
 
-        if not isinstance(self.__dataset, SyntheticDataset):
+        if isinstance(self.__dataset, Dataset):
             # Get processed data from the preprocessed dataset
             self._data = _processor.process(self.__dataset)
 
