@@ -8,7 +8,7 @@ vec files.
 from typing import List, Tuple
 from Augmentor import Pipeline
 from glob import glob
-from haar.preprocessing.mergevec.mergevec import merge_vec_files
+from preprocessing.mergevec.mergevec import merge_vec_files
 import cv2
 import os
 import subprocess
@@ -89,10 +89,14 @@ class SyntheticDataset:
         p.greyscale(1.0)
 
         # Creating augmented samples
-        p.sample(num_samples // multiplier)
+        num_augmented = num_samples // multiplier
+        print(f"\n\nCreating {num_augmented} augmented samples...\n")
+        p.sample(num_augmented)
         imgs = glob(self.source_path + '/output/*')
+        print("\n-----------------------------------------------\n")
 
         # Applying CLAHE
+        print("Applying CLAHE to augmented samples...\n")
         clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
         for i in imgs:
             try:
@@ -102,6 +106,7 @@ class SyntheticDataset:
                 cv2.imwrite(i, gray)
             except(cv2.error):
                 continue
+        print("\n-----------------------------------------------\n")
 
         vecs_dir = os.path.join(self.source_path, "vecs")
         augmented_samples = os.path.join(self.source_path, "output")
@@ -112,17 +117,26 @@ class SyntheticDataset:
         # Creating haar samples
         os.mkdir(vecs_dir)
         os.mkdir(cascade_folder)
-        subprocess.run(
+        print("Creating haar samples for each augmented image...\n")
+        out = subprocess.run(  # noqa: F841
             [
-                "./create_samples_multi.sh",
+                os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)),
+                    "create_samples_multi.sh"
+                ),
                 augmented_samples,
                 vecs_dir,
                 str(multiplier),
                 str(neg_annotations_file)
-            ]
+            ],
+            stdout=subprocess.PIPE
         )
+        print("\n-----------------------------------------------\n")
 
         # Merging vec files
+        print("Merging vec files...\n")
         merge_vec_files(vecs_dir, str(vector_file))
+        print("\n-----------------------------------------------\n")
+        print("READY FOR TRAINING!\n")
 
         return (vector_file, neg_annotations_file, cascade_folder)

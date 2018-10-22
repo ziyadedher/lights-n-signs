@@ -13,7 +13,7 @@ from lns_common.train import Trainer
 from lns_common.preprocess.preprocessing import Dataset
 from lns_haar.model import HaarModel
 from lns_haar.process import HaarData, HaarProcessor
-from haar.preprocessing.artificial import SyntheticDataset
+from preprocessing.artificial import SyntheticDataset
 
 
 class HaarTrainer(Trainer[HaarModel, HaarData]):
@@ -67,7 +67,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         """
         if self._is_synthetic:
             vec, neg, cascade = \
-                self.__dataset.generate(num_samples)  # type: ignore
+                self._dataset.generate(num_samples)  # type: ignore
             self._paths["vector_file"] = vec
             self._paths["negative_annotations"] = neg
             self._paths["cascade_folder"] = cascade

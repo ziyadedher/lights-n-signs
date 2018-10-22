@@ -15,7 +15,7 @@ from lns_common import config
 from lns_common.model import ModelType
 from lns_common.process import ProcessedDataType, Processor
 from lns_common.preprocess.preprocess import Preprocessor, Dataset
-from haar.preprocessing.artificial import SyntheticDataset
+from preprocessing.artificial import SyntheticDataset
 
 
 class TrainerNotSetupException(Exception):
@@ -33,7 +33,7 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
     _data: ProcessedDataType
 
     __name: str
-    __dataset: Dataset
+    _dataset: Union[Dataset, SyntheticDataset]
     __is_setup: bool
 
     SetupFunc = TypeVar("SetupFunc", bound=Callable[..., Any])  # type: ignore
@@ -70,19 +70,19 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
 
         # Get preprocess data if required
         if isinstance(dataset, str):
-            self.__dataset = Preprocessor.preprocess(dataset)
+            self._dataset = Preprocessor.preprocess(dataset)
         elif isinstance(dataset, Dataset) or \
                 isinstance(dataset, SyntheticDataset):
-            self.__dataset = dataset
+            self._dataset = dataset
         else:
             raise ValueError(
                 "`dataset` may only be `str` or `Dataset`, not" +
                 f"{type(dataset)}"
             )
 
-        if isinstance(self.__dataset, Dataset):
+        if isinstance(self._dataset, Dataset):
             # Get processed data from the preprocessed dataset
-            self._data = _processor.process(self.__dataset)
+            self._data = _processor.process(self._dataset)
 
             # Find the training root folder with the trainer name
             self._generate_filestructure(_load, _type, _subpaths)
@@ -95,7 +95,7 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
     @property
     def dataset(self) -> Dataset:
         """Get the dataset being used with this training configuration."""
-        return self.__dataset
+        return self._dataset
 
     @classmethod
     def _setup(cls, setup_call: SetupFunc) -> SetupFunc:
