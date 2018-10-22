@@ -46,9 +46,13 @@ def evaluate_synthetic(path: str) -> None:
 
 if __name__ == '__main__':
     # evaluate("LISA")
+    print(os.path.join(
+            config.RESOURCES_ROOT,
+            "haar/data/dataset/dataset_samples"
+        ))
     evaluate_synthetic(
         os.path.join(
             config.RESOURCES_ROOT,
-            "haar/data/dataset/dataset_samples"
+            "haar/data/sign/sign_samples"
         )
     )
