@@ -12,6 +12,7 @@ from lns_haar.train import HaarTrainer
 from preprocessing.artificial import SyntheticDataset
 from lns_common import config
 import os
+import sys
 
 
 class DummyModel(Model):
@@ -49,6 +50,6 @@ if __name__ == '__main__':
     evaluate_synthetic(
         os.path.join(
             config.RESOURCES_ROOT,
-            "haar/data/sign/sign_samples"
+            "haar/data/" + sys.argv[1]
         )
     )
