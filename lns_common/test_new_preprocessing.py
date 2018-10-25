@@ -109,6 +109,49 @@ def find_confusion_matrix(true_structure, detection_structure, det_true_map,
 
     return confusion_matrix
 
+def find_classification_accuracy_stats(true_structure, detection_structure, det_true_map, dataset):
+    """Find the recall, precision and f1 score for detections"""
+
+    #Set up data structure containing number of right and wrong for each class
+    def find_accuracy(acc_struct):
+        """Return total accuracy of predictions. """
+
+    accuracy_stats_dict: Dict[str, float] = {}
+    class_acc: Dict[str, Dict[str, int]] = {}
+    for class_name in dataset.classes:
+        class_acc[class_name] = {}
+        class_acc[class_name]["right"] = 0
+        class_acc[class_name]["wrong"] = 0
+    class_acc["None"] = 0
+
+    #Populate the data structure
+    for image in detection_structure.keys():
+        det_list = detection_structure[image]
+        true_list = true_structure[image]
+
+        for det_ind, detection in enumerate(det_list):
+            # handle case where detection without true feature
+            true_ind = det_true_map[image][det_ind]
+            detect_type = dataset.classes[detection["class"]]
+            true_type = dataset.classes[dataset.annotations[image][true_ind]["class"]]
+
+            if true_ind is None:
+                class_acc["None"] += 1
+            else:
+                if detect_type == true_type:
+                    class_acc[true_type]["right"] += 1
+                else:
+                    class_acc[true_type]["wrong"] += 1
+
+    #Compute the precision for each class
+    for class_name in class_acc.keys():
+        accuracy_stats_dict[class_name] = {}
+        accuracy_stats_dict[class_name]["accuracy"] = \  #Find adccuracy
+           class_acc[class_name]["right"]/(class_acc[class_name]["right"] + class_acc[class_name]["wrong"])
+
+        for   #find precision
+        accuracy_stats_dict[class_name]["precision"] =
+
 
 def benchmark_model(dataset: Dataset, model: Optional[Model]):
 
@@ -172,6 +215,8 @@ def benchmark_model(dataset: Dataset, model: Optional[Model]):
     avg_bb_overlap = find_avg_bb_overlap(dataset.test_annotations,
                                              detection_annotations,
                                              predict_to_truth_map)
+
+    find_classification_accuracy_stats(dataset.test_annotations, detection_annotations, predict_to_truth_map, dataset)
     print ("Average Bounding Box Overlap: ", avg_bb_overlap)
     print(confusion_matrix)
 
