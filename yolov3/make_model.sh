@@ -9,4 +9,5 @@ mkdir model/model_data
 cp model_data/yolo_anchors.txt model/model_data/yolo_anchors.txt
 mkdir model/lns_common
 cp lns_common/model.py model/lns_common/model.py
+touch model/__init__.py
 
