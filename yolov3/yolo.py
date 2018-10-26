@@ -103,7 +103,7 @@ class YOLO(object):
         return boxes, scores, classes
 
     def predict(self, image):
-        image = Image.fromarray(image.astype("float32"))
+        image = Image.fromarray(image)
         if self.model_image_size != (None, None):
             assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
