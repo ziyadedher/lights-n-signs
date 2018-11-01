@@ -8,6 +8,7 @@ import os
 from timeit import default_timer as timer
 
 import numpy as np
+import cv2
 from keras import backend as K
 from keras.models import load_model
 from keras.layers import Input
@@ -103,7 +104,8 @@ class YOLO(object):
         return boxes, scores, classes
 
     def predict(self, image):
-        image = Image.fromarray(image.astype("float32"))
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = Image.fromarray(image)
         if self.model_image_size != (None, None):
             assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
