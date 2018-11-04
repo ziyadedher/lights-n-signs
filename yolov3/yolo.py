@@ -49,21 +49,21 @@ class YOLO(object):
         self.boxes, self.scores, self.classes = self.generate()
 
     def _get_class(self):
-        classes_path = os.path.expanduser(self.classes_path)
+        classes_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.path.expanduser(self.classes_path))
         with open(classes_path) as f:
             class_names = f.readlines()
         class_names = [c.strip() for c in class_names]
         return class_names
 
     def _get_anchors(self):
-        anchors_path = os.path.expanduser(self.anchors_path)
+        anchors_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.path.expanduser(self.anchors_path))
         with open(anchors_path) as f:
             anchors = f.readline()
         anchors = [float(x) for x in anchors.split(',')]
         return np.array(anchors).reshape(-1, 2)
 
     def generate(self):
-        model_path = os.path.expanduser(self.model_path)
+        model_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.path.expanduser(self.model_path))
         assert model_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
 
         # Load model, or construct model and load weights.
@@ -75,7 +75,7 @@ class YOLO(object):
         except:
             self.yolo_model = tiny_yolo_body(Input(shape=(None,None,3)), num_anchors//2, num_classes) \
                 if is_tiny_version else yolo_body(Input(shape=(None,None,3)), num_anchors//3, num_classes)
-            self.yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
+            self.yolo_model.load_weights(model_path) # make sure model, anchors and classes match
         else:
             assert self.yolo_model.layers[-1].output_shape[-1] == \
                 num_anchors/len(self.yolo_model.output) * (num_classes + 5), \
