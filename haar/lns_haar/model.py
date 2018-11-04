@@ -5,6 +5,7 @@ training.
 """
 from typing import List, Tuple
 
+import os
 import cv2          # type: ignore
 import numpy as np  # type: ignore
 
@@ -20,7 +21,7 @@ class HaarModel(Model):
     __cascade: cv2.CascadeClassifier
     __classes: List[str]
 
-    def __init__(self, cascade: cv2.CascadeClassifier,
+    def __init__(self, cascade_file: str,
                  classes: List[str]) -> None:
         """Initialize a Haar cascade model.
 
@@ -31,7 +32,8 @@ class HaarModel(Model):
         self.scale_factor = 1.1
         self.min_neighbours = 3
 
-        self.__cascade = cascade
+        cascade_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.path.expanduser(cascade_file))
+        self.__cascade = cv2.CascadeClassifier(cascade_file)
         self.__classes = classes
 
     def predict(self, image: np.ndarray) -> List[PredictedObject2D]:
