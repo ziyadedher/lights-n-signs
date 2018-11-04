@@ -14,12 +14,11 @@ from keras.models import load_model
 from keras.layers import Input
 from PIL import Image, ImageFont, ImageDraw
 
-from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
-from yolo3.utils import letterbox_image
-import os
+from .yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
+from .yolo3.utils import letterbox_image
 from keras.utils import multi_gpu_model
 
-from lns_common.model import Bounds2D, PredictedObject2D, Model
+from .lns_common.model import Bounds2D, PredictedObject2D, Model
 
 class YOLO(object):
     _defaults = {
