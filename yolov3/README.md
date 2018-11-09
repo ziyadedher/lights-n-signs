@@ -3,6 +3,7 @@
 Steps to train:
 
 1. install requirements: `pip install -r requirements.txt`
+2. install system: `python setup.py install`
 2. run setup script `bash setup.sh`
 3. run process.py `python process.py`
 4. (optional) run kmeans to redefine the anchors `python kmeans.py`
@@ -18,3 +19,7 @@ Similarly, change the datasets you want to you directly in process.py
 convert.py can be used to convert regular tensorflow models into keras models
   and can also be used to convert traditional darknet models with weights to
   keras models. 
+  
+We currently have an already trained model that can be found in the team google
+drive in autonomy/lights-n-signs/models/yolo
+

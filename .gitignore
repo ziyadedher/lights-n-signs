@@ -22,6 +22,9 @@ wheels/
 *.egg
 MANIFEST
 
+# IDE stuff
+.vscode*
+
 # Virtual environments
 .venv
 
