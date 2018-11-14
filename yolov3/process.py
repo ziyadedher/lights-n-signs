@@ -40,4 +40,4 @@ def run_process(datasets: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    run_process(["LISA"])
+    run_process(["sim"])

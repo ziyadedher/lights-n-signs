@@ -3,13 +3,15 @@
 Contains dedicated preprocessing functions for each dataset and the
 preprocessing data structure.
 """
-from typing import Dict, List
+from typing import Dict, List, Tuple, Union
 
 import os
+import sys
 import csv
 import copy
 import yaml  # XXX: this could be sped up by using PyYaml C-bindings
 import random
+import pickle
 from xml.etree import ElementTree as ET
 
 TEST_TRAIN_SPLIT = 0.001
@@ -199,6 +201,53 @@ def preprocess_LISA(LISA_path: str) -> Dataset:
 
     return Dataset("LISA", {"LISA": images}, detection_classes, annotations)
 
+def preprocess_sim(sim_path: str) -> Dataset:
+    """Proprocess and generate data for a simulated dataset at the given path.
+
+    Raises `FileNotFoundError` if any of the required Bosch files or
+    folders is not found. Requires a data.pkl to make the dataset and therefore
+    requires that process.py has been run to filter out bad data on the
+    dataset.
+    """
+
+    annotations_path = os.path.join(sim_path, 'data.pkl')
+    if not os.path.isfile(annotations_path):
+        raise FileNotFoundError(
+            f"Could not find annotations file {annotations_path}."
+        )
+
+    data: Dict[str, List[Tuple[Union[str, Tuple[int]]]]] = pickle.load(open(annotations_path, 'rb'))
+
+    images: List[str] = []
+    detection_classes: List[str] = []
+    annotations: Dict[str, List[Dict[str, int]]] = {}
+
+    for image in data.keys():
+        image_path = os.path.join(sim_path, image)
+        print(image_path)
+        images.append(image_path)
+        for item in data[image]:
+            item_class = item[0]
+            bb = item[1]
+
+            try:
+                class_index = detection_classes.index(item_class)
+            except ValueError:
+                class_index = len(detection_classes)
+                detection_classes.append(item_class)
+
+            if image not in annotations:
+                annotations[image_path] = []
+
+            annotations[image_path].append({
+                "class": class_index,
+                "x_min": bb[0],
+                "y_min": bb[1],
+                "x_max": bb[0] + bb[2],
+                "y_max": bb[1] + bb[3]
+            })
+
+    return Dataset("sim", {"sim": images}, detection_classes, annotations)
 
 def preprocess_bosch(bosch_path: str) -> Dataset:
     """Preprocess and generate data for a Bosch dataset at the given path.
