@@ -52,7 +52,8 @@ class Preprocessor:
         "LISA": preprocessing.preprocess_LISA,
         "Bosch": preprocessing.preprocess_bosch,
         "Custom": preprocessing.preprocess_custom,
-        "Custom_testing": preprocessing.preprocess_custom
+        "Custom_testing": preprocessing.preprocess_custom,
+        "sim": preprocessing.preprocess_sim
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}
