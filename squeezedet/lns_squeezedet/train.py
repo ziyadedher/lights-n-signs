@@ -84,7 +84,10 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
             self._config = create_config.squeezeDet_config("squeeze")
 
     @Trainer._setup
-    def setup_squeezedet(self, use_pretrained_weights: bool = True,
+    def setup_squeezedet(self,
+                         batch_size: int = 4,
+                         cuda_devices: str = "0",
+                         use_pretrained_weights: bool = True,
                          reduce_lr_on_plateau: bool = True) -> None:
         """Set up training the SqueezeDet model by populating the configuration.
 
@@ -114,9 +117,10 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         self._config.REDUCELRONPLATEAU = reduce_lr_on_plateau
         self._config.LR = self._config.LEARNING_RATE
 
+        self._config.BATCH_SIZE = batch_size
         self._config.GPUS = 1
-        self._config.CUDA_VISIBLE_DEVICES = "0"
-        os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+        self._config.CUDA_VISIBLE_DEVICES = cuda_devices
+        os.environ['CUDA_VISIBLE_DEVICES'] = cuda_devices
 
         (
             self._config.ANCHOR_BOX,
