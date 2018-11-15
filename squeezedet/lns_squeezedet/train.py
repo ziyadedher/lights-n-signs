@@ -5,6 +5,7 @@ This script manages model training and generation.
 from typing import Union, Optional, List
 
 import os
+import pickle
 import inspect
 
 import easydict                                                # type: ignore
@@ -48,6 +49,9 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         ),
         "tensorboard_folder": (
             "tensorboard", True, True, "folder"
+        ),
+        "config_file": (
+            "config", True, False, "file"
         )
     }
 
@@ -64,13 +68,20 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
                          _processor=SqueezeDetProcessor, _type="squeezedet",
                          _load=load, _subpaths=SqueezeDetTrainer.__subpaths)
 
-        self._config = create_config.squeezeDet_config("squeeze")
         self._squeeze = None
         self._load = (
             load and
             os.path.isdir(self._paths["checkpoint_folder"]) and
             len(os.listdir(self._paths["checkpoint_folder"])) > 0
         )
+
+        if self._load and os.path.isfile(self._paths["config_file"]):
+            with open(self._paths["config_file"], "rb") as file:
+                self._config = pickle.load(file)
+            self._load_model()
+            self.generate_model()
+        else:
+            self._config = create_config.squeezeDet_config("squeeze")
 
     @Trainer._setup
     def setup_squeezedet(self, use_pretrained_weights: bool = True,
@@ -126,28 +137,7 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         generating the trained model.
         """
         self._config.EPOCHS = epochs
-        self._squeeze = SqueezeDet(self._config)
-
-        # Find the checkpoint with the greatest number of trained epochs
-        initial_epoch = 0
-        if self._load:
-            checkpoint_paths = os.listdir(self._paths["checkpoint_folder"])
-            most_recent_checkpoint = checkpoint_paths[0]
-            for checkpoint in checkpoint_paths:
-                # Get the epoch from 'model.{epoch}-{loss}.hdf5'
-                epoch = int(checkpoint.split(".")[1].split("-")[0])
-                if epoch > initial_epoch:
-                    initial_epoch = epoch
-                    most_recent_checkpoint = checkpoint
-            self._config.init_file = os.path.join(
-                self._paths["checkpoint_folder"], most_recent_checkpoint
-            )
-
-        if self._config.init_file is not None:
-            print(f"Resuming training from {self._config.init_file}.")
-            load_only_possible_weights(
-                self._squeeze.model, self._config.init_file
-            )
+        initial_epoch = self._load_model()
 
         self._squeeze.model.compile(
             optimizer=optimizers.SGD(
@@ -168,15 +158,21 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
             ]
         )
 
-        self._squeeze.model.fit_generator(
-            self._data.generate_data(self._config),
-            initial_epoch=initial_epoch,
-            epochs=self._config.EPOCHS,
-            steps_per_epoch=self._config.STEPS,
-            callbacks=self._get_callbacks()
-        )
+        try:
+            self._squeeze.model.fit_generator(
+                self._data.generate_data(self._config),
+                initial_epoch=initial_epoch,
+                epochs=self._config.EPOCHS,
+                steps_per_epoch=self._config.STEPS,
+                callbacks=self._get_callbacks()
+            )
+        except KeyboardInterrupt:
+            print("Interrupting training.")
+        finally:
+            with open(self._paths["config_file"], "wb+") as file:
+                pickle.dump(self._config, file)
 
-        self.generate_model()
+            self.generate_model()
 
     def generate_model(self) -> Optional[SqueezeDetModel]:
         """Generate and return the currently available prediction model.
@@ -190,6 +186,37 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         else:
             self.model = None
         return self.model
+
+    def _load_model(self) -> int:
+        """Load all of SqueezeDet from config and existing files if <load>.
+
+        Returns the number of the next epoch to be trained.
+        """
+        self._squeeze = SqueezeDet(self._config)
+
+        # Find the checkpoint with the greatest number of trained epochs
+        initial_epoch = 0
+        if self._load:
+            checkpoint_paths = os.listdir(self._paths["checkpoint_folder"])
+            most_recent_checkpoint = checkpoint_paths[0]
+            for checkpoint in checkpoint_paths:
+                # Get the epoch from 'model.{epoch}-{loss}.hdf5'
+                epoch = int(checkpoint.split(".")[1].split("-")[0])
+                if epoch > initial_epoch:
+                    initial_epoch = epoch
+                    most_recent_checkpoint = checkpoint
+            self._config.init_file = os.path.join(
+                self._paths["checkpoint_folder"], most_recent_checkpoint
+            )
+
+        # Print out a message if training from file
+        if self._config.init_file is not None:
+            print(f"Resuming training from {self._config.init_file}.")
+            load_only_possible_weights(
+                self._squeeze.model, self._config.init_file
+            )
+
+        return initial_epoch
 
     def _get_callbacks(self) -> List[Callback]:
         """Get callbacks that we want for the training."""

@@ -63,9 +63,14 @@ class SqueezeDetModel(Model):
         boxes[3] *= height / self.__config.IMAGE_HEIGHT
 
         # Generate the prediction boxes
-        return [
-            PredictedObject2D(
-                Bounds2D(*_box),
-                [self.__classes[_class]]
-            ) for _box, _class, _score in zip(boxes, classes, scores)
-        ]
+        predictions = []
+        for _box, _class, _score in zip(boxes, classes, scores):
+            bounds = Bounds2D(
+                int(_box[0]), int(_box[1]), int(_box[2]), int(_box[3])
+            )
+            predictions.append(PredictedObject2D(
+                bounds,
+                [self.__classes[_class]],
+                [_score]
+            ))
+        return predictions
