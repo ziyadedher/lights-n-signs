@@ -243,8 +243,7 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
             log_dir=self._paths["tensorboard_folder"],
             histogram_freq=0,
             write_graph=True,
-            write_images=True,
-            update_freq="batch"
+            write_images=True
         ))
 
         if self._config.REDUCELRONPLATEAU:
