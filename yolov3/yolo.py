@@ -146,7 +146,7 @@ class YOLO(object):
             right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
             print(label, (left, top), (right, bottom))
 
-            b = Bounds2D(left, top, right - left, top - bottom)
+            b = Bounds2D(left, top, right - left, bottom - top)
             pred = PredictedObject2D(b, [predicted_class])
             output.append(pred)
 
@@ -262,4 +262,3 @@ def detect_video(yolo, video_path, output_path=""):
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     yolo.close_session()
-
