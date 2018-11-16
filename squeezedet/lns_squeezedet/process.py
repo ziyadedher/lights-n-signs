@@ -83,9 +83,11 @@ class SqueezeDetProcessor(Processor[SqueezeDetData]):
         images: List[str] = []
         labels: List[str] = []
         for image, annotations in dataset.annotations.items():
-            images.append(image)
             label_strings: List[str] = []
             for annotation in annotations:
+                if (annotation["x_min"] < 0 or annotation["y_min"] < 0):
+                    continue
+
                 # NOTE: see https://github.com/NVIDIA/DIGITS/issues/992
                 # for more information about the format
                 class_name = dataset.classes[annotation["class"]].lower()
@@ -112,11 +114,25 @@ class SqueezeDetProcessor(Processor[SqueezeDetData]):
             if len(label_strings) == 0:
                 continue
 
+            images.append(image)
+
             # Create the file and put the strings in it
             label = "".join(os.path.basename(image).split(".")[:-1]) + ".txt"
             label_path = os.path.join(labels_folder, label)
             with open(label_path, "w") as label_file:
                 label_file.write("\n".join(label_strings))
             labels.append(label_path)
+
+        # Sort the images and labels
+        images = sorted(images, key=lambda image: image.split("/")[-1])
+        labels = sorted(labels, key=lambda image: image.split("/")[-1])
+
+        # Create images and labels files
+        labels_path = os.path.join(data_folder, "labels.txt")
+        with open(labels_path, "w") as labels_file:
+            labels_file.write("\n".join(labels))
+        images_path = os.path.join(data_folder, "images.txt")
+        with open(images_path, "w") as images_file:
+            images_file.write("\n".join(images))
 
         return SqueezeDetData(images, labels)
