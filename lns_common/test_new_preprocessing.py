@@ -126,9 +126,9 @@ def find_classification_accuracy_stats(confusion_matrix, dataset):
 
     def find_precision(confusion_matrix, class_name):
         '''Compute precision for given class name'''
-        num_det =
-        for dets in confusion_matrix[class_name].keys():
-            num_det +=
+        # num_det =
+        # for dets in confusion_matrix[class_name].keys():
+        #     num_det +=
 
 
     #accuracy_stats_dict: Dict[str, float] = {}
@@ -237,4 +237,9 @@ def benchmark_model(dataset: Dataset, model: Optional[Model]):
 
 
 if __name__ == '__main__':
-    benchmark_model("LISA")
+    from preprocess.preprocessing import preprocess_LISA
+    import sys
+    sys.path.append("/Users/RobertAdragna/Documents/AutoDrive/2018-2019/code/lights-n-signs-training/yolov3")
+    from yolov3 import yolo
+    dataset = preprocess_LISA("LISA")
+    model = yolo.YOLO
