@@ -3,6 +3,10 @@
 This script is for using a video video stream from your webcam
 as the input to a model.
 """
+import sys
+lights_n_signs_home = "/Users/RobertAdragna/Documents/AutoDrive/2018-2019/code/lights-n-signs-training"
+sys.path.append(lights_n_signs_home)
+
 import cv2
 
 from lns_common.model import Model
@@ -102,3 +106,10 @@ def save_bounding_box_video(model: Model, vid_path: str, wid: int, hgt: int):
 
     writer.release()
     cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    from yolo import YOLO
+
+    model = YOLO()
+    save_bounding_box_video(model, "out.mp4", 1920, 1440)
+
