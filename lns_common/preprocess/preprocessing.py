@@ -356,8 +356,6 @@ def preprocess_mturk(mturk_path: str) -> Dataset:
                     for r in range(len(row)):
                         if "Input.image_url" in row[r]:
                             url_index = r
-                        if "HITId" in row[r]:
-                            id_index = r
                         if "Input.objects_to_find" in row[r]:
                             classification = r
                         if "Answer.annotation_data" in row[r]:
