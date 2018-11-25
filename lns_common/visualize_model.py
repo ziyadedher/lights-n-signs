@@ -33,4 +33,4 @@ def visualize(dataset: str) -> None:
 
 
 if __name__ == "__main__":
-    visualize('LISA')
+    visualize('mturk')

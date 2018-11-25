@@ -53,7 +53,8 @@ class Preprocessor:
         "Bosch": preprocessing.preprocess_bosch,
         "Custom": preprocessing.preprocess_custom,
         "Custom_testing": preprocessing.preprocess_custom,
-        "sim": preprocessing.preprocess_sim
+        "sim": preprocessing.preprocess_sim,
+        "mturk": preprocessing.preprocess_mturk
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}
