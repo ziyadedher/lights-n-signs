@@ -1,7 +1,7 @@
 
 from typing import List
 
-from common.preprocess.preprocess import Preprocessor
+from lns_common.preprocess.preprocess import Preprocessor
 
 
 def run_process(datasets: List[str]) -> None:
@@ -40,4 +40,4 @@ def run_process(datasets: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    run_process(["LISA"])
+    run_process(["sim"])

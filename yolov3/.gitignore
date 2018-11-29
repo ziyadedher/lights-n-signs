@@ -1,8 +1,9 @@
 #--Model stuff--
-yolov3.weights
+yolov3.weights*
 model_data/*.h5
-darknet53.conv.74
-darknet53.weights
+darknet53.conv.74*
+darknet53.weights*
+model
 
 #--Processing stuff--
 annotations.txt
