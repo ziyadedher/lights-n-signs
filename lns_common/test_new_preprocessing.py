@@ -3,7 +3,6 @@ from typing import List, Dict, Optional
 import math
 import cv2
 
-from lns_common.model import Model
 from lns_common.preprocess.preprocessing import Dataset
 
 
@@ -109,66 +108,55 @@ def find_confusion_matrix(true_structure, detection_structure, det_true_map,
 
     return confusion_matrix
 
+def find_accuracy(confusion_matrix):
+    '''Compute total accuracy of all detections'''
+    right_dets = 0
+    wrong_dets = 0
+    for det_class_name in confusion_matrix.keys():
+        for true_class_name in det_class_name.keys():
+            if det_class_name == true_class_name:
+                right_dets += confusion_matrix[det_class_name][true_class_name]
+            else:
+                wrong_dets += confusion_matrix[det_class_name][true_class_name]
+    return right_dets/(right_dets + wrong_dets)
+
 def find_classification_accuracy_stats(confusion_matrix, dataset):
     """Find the recall, precision and f1 score for detections"""
 
-    def find_accuracy(confusion_matrix):
-        '''Compute total accuracy of all detections'''
-        right_dets = 0
-        wrong_dets = 0
-        for det_class_name in confusion_matrix.keys():
-            for true_class_name in det_class_name.keys():
-                if det_class_name == true_class_name:
-                    right_dets += confusion_matrix[det_class_name][true_class_name]
-                else:
-                    wrong_dets += confusion_matrix[det_class_name][true_class_name]
-        return right_dets/(right_dets + wrong_dets)
+    def find_recall(confusion_matrix, class_name):
+        num_true = 0
+        num_acc = 0
+        for det in confusion_matrix.keys():
+            num_true += confusion_matrix[det][class_name]
+            if det == class_name:
+                num_acc = confusion_matrix[det][class_name]
+
+        return float(num_acc/num_true)
+
 
     def find_precision(confusion_matrix, class_name):
         '''Compute precision for given class name'''
-        # num_det =
-        # for dets in confusion_matrix[class_name].keys():
-        #     num_det +=
+        num_det = 0
+        num_acc = 0
+        for g_truth in confusion_matrix[class_name].keys():
+            num_det += confusion_matrix[class_name][g_truth]
+            if g_truth == class_name:
+                num_acc = confusion_matrix[class_name][g_truth]
+
+        return float(num_acc/num_det)
+
+    def find_f1(precision, recall):
+        pass
+
+    for det_class in confusion_matrix.keys():
+        precision = find_precision(confusion_matrix, det_class)
+        recall = find_recall(confusion_matrix, det_class)
+        f1 = find_f1(precision, recall)
+        print('For ', class_name, ': precision=', precision,
+              ' recall=', recall,' f1=', f1, '\n')
 
 
-    #accuracy_stats_dict: Dict[str, float] = {}
-    # class_acc: Dict[str, Dict[str, int]] = {}
-    # for class_name in dataset.classes:
-    #     class_acc[class_name] = {}
-    #     class_acc[class_name]["right"] = 0
-    #     class_acc[class_name]["wrong"] = 0
-    # class_acc["None"] = 0
-    #
-    # #Populate the data structure
-    # for image in detection_structure.keys():
-    #     det_list = detection_structure[image]
-    #     true_list = true_structure[image]
-    #
-    #     for det_ind, detection in enumerate(det_list):
-    #         # handle case where detection without true feature
-    #         true_ind = det_true_map[image][det_ind]
-    #         detect_type = dataset.classes[detection["class"]]
-    #         true_type = dataset.classes[dataset.annotations[image][true_ind]["class"]]
-    #
-    #         if true_ind is None:
-    #             class_acc["None"] += 1
-    #         else:
-    #             if detect_type == true_type:
-    #                 class_acc[true_type]["right"] += 1
-    #             else:
-    #                 class_acc[true_type]["wrong"] += 1
-    #
-    # #Compute the precision for each class
-    # for class_name in class_acc.keys():
-    #     accuracy_stats_dict[class_name] = {}
-    #     accuracy_stats_dict[class_name]["accuracy"] = \  #Find adccuracy
-    #        class_acc[class_name]["right"]/(class_acc[class_name]["right"] + class_acc[class_name]["wrong"])
-    #
-    #     for   #find precision
-    #     accuracy_stats_dict[class_name]["precision"] =
-
-
-def benchmark_model(dataset: Dataset, model: Optional[Model]):
+def benchmark_model(dataset: Dataset, model):
 
     # Unpack the images
     detection_annotations: Dict[str, List[Dict[str, int]]] = {}
@@ -234,12 +222,15 @@ def benchmark_model(dataset: Dataset, model: Optional[Model]):
     find_classification_accuracy_stats(confusion_matrix)
     print ("Average Bounding Box Overlap: ", avg_bb_overlap)
     print(confusion_matrix)
+    print(find_accuracy(confusion_matrix))
+    print(find_classification_accuracy_stats(confusion_matrix, dataset))
 
 
 if __name__ == '__main__':
     from preprocess.preprocessing import preprocess_LISA
     import sys
-    sys.path.append("/Users/RobertAdragna/Documents/AutoDrive/2018-2019/code/lights-n-signs-training/yolov3")
+    # insert the relevant home directory path here #sys.path.append("/Users/RobertAdragna/Documents/AutoDrive/2018-2019/code/lights-n-signs-training/yolov3")
     from yolov3 import yolo
     dataset = preprocess_LISA("LISA")
     model = yolo.YOLO
+    benchmark_model(dataset, model)
