@@ -13,6 +13,7 @@ import random
 import pickle
 import ast
 import urllib.request
+from PIL import Image
 from xml.etree import ElementTree as ET
 
 TEST_TRAIN_SPLIT = 0.001
@@ -337,8 +338,6 @@ def preprocess_mturk(mturk_path: str) -> Dataset:
     ))
 
     for f in annotation_files:
-
-
         if os.path.isdir(os.path.join(mturk_path, f)):
             continue
 
@@ -350,6 +349,7 @@ def preprocess_mturk(mturk_path: str) -> Dataset:
             id_index = 0
             annos = 0
             classification= 0
+            orientation = 0
 
             for row in csv_reader:
                 if url_index == 0:
@@ -360,34 +360,56 @@ def preprocess_mturk(mturk_path: str) -> Dataset:
                             classification = r
                         if "Answer.annotation_data" in row[r]:
                             annos = r
+                        if "Input.orientation" in row[r]:
+                            orientation = r
                 else:
                     url = row[url_index]
                     print (url)
-                    if "{}.jpg".format(row[id_index]) not in files_created:
+                    if "{}.png".format(row[id_index]) not in files_created:
                         urllib.request.urlretrieve(
-                            url, "{}.jpg".format(os.path.join(
+                            url, "{}.png".format(os.path.join(
                                 mturk_path, 'images', str(row[id_index])
                             ))
                         )
-                        print("{}.jpg".format(row[id_index]))
+                        print("{}.png".format(row[id_index]))
 
                     image_path = os.path.abspath(
-                        os.path.join(mturk_path, "images", str(row[id_index]))
+                        os.path.join(mturk_path, "images", "{}.png".format(row[id_index]))
                     )
 
-                    images.append(image_path)
+                    if open(image_path, 'rb').read()[-2:] != b'\xff\xd9':
+                        print("Error in image, skipping")
+                        continue
 
                     c = row[classification]
                     if c not in detection_classes:
                         detection_classes.append(c)
 
                     labels = ast.literal_eval(row[annos])
-                    annotations[image_path] = []
+                    to_orient = int(row[orientation]) == 6
+
+                    valid = False
+
                     for label in labels:
-                        x = label['left']
-                        y = label['top']
-                        w = label['width']
-                        h = label['height']
+                        if to_orient:
+                            width, height = Image.open(image_path).size
+
+                            y = label['left']
+                            x = height - label['top'] - label['height']
+                            h = label['width']
+                            w = label['height']
+                        else:
+                            x = label['left']
+                            y = label['top']
+                            w = label['width']
+                            h = label['height']
+
+                        if w*h < 40:
+                            continue
+
+                        if not valid:
+                            valid = True
+                            annotations[image_path] = []
 
                         annotations[image_path].append({
                             "class": detection_classes.index(c),
@@ -396,6 +418,11 @@ def preprocess_mturk(mturk_path: str) -> Dataset:
                             "x_max": x + w,
                             "y_max": y + h
                         })
+
+                    if not valid:
+                        continue
+
+                    images.append(image_path)
 
     return Dataset("mturk", {"mturk": images},
                    detection_classes, annotations)
