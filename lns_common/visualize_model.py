@@ -5,8 +5,9 @@ from model.yolo import YOLO as model
 
 def visualize(dataset: str) -> None:
     winname = "Images"
-    cv2.namedWindow(winname)
+    cv2.namedWindow(winname, cv2.WINDOW_NORMAL)
     cv2.moveWindow(winname, 40,30)
+    cv2.resizeWindow(winname, 1200, 1200)
 
     data = Preprocessor.preprocess(dataset)
     m = model()

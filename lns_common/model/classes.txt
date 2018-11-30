@@ -1,0 +1,10 @@
+RightTurn
+Limit15
+Limit10
+LeftTurn
+Limit5
+DoNotEnter
+Limit20
+Handicapped
+Limit25
+Parking
