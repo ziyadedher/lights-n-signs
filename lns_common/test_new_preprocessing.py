@@ -3,7 +3,6 @@ from typing import List, Dict, Optional
 import math
 import cv2
 
-from lns_common.model import Model
 from lns_common.preprocess.preprocessing import Dataset
 
 
@@ -19,26 +18,56 @@ def get_img_dist(image_1: List[int], image_2: List[int]) -> float:
         sum += math.pow(abs(image_2[i] - image_1[i]), 2)
     return float(math.sqrt(sum))
 
+def find_avg_bb_overlap(true_structure, detection_structure, det_true_map):
+    """Find the average overlap of all bounding boxes in data structure
+    
+    Input: Full data structure for ground truth and detection 
+    Output: The average overlap
+    """
+    def create_bb(annotation: Dict[str, int]) -> List[int]:
+        """Take a detection annotation and return a list with bb coords """
+        bound_box = []
+        bound_box.append(annotation["x_min"])
+        bound_box.append(annotation["y_min"])
+        bound_box.append(annotation["x_max"])
+        bound_box.append(annotation["y_max"])
+        return bound_box
 
-def compute_bb_overlap(detection: List[int], g_truth: List[int]) -> float:
-    """Find the area overlap between two specified rectangles.
-    Inputs: list of [x_min, y_min, x_max. y_max]
-    Outputs: Fraction of overlapping bounding boxes"""
+    def compute_bb_overlap(detection: List[int], g_truth: List[int]) -> float:
+        """Find the area overlap between two specified rectangles.
+        Inputs: list of [x_min, y_min, x_max. y_max]
+        Outputs: Fraction of overlapping bounding boxes"""
 
-    def find_overlap(image_1: List[int], image_2: List[int]) -> int:
-        dim = [x for x in image_1 if x in image_2]
-        return len(dim)
+        def find_overlap(image_1: List[int], image_2: List[int]) -> int:
+            dim = [x for x in image_1 if x in image_2]
+            return len(dim)
 
-    if len(detection) != len(g_truth):
-        return -1
+        if len(detection) != len(g_truth):
+            return -1
 
-    overlap_width = find_overlap(list(range(detection[0], detection[2] + 1)),
-                                 list(range(g_truth[0], g_truth[2] + 1)))
-    overlap_height = find_overlap(list(range(detection[1], detection[3] + 1)),
-                                  list(range(g_truth[1], g_truth[3] + 1)))
-    area_g_truth = (g_truth[2] - g_truth[0]) * (g_truth[3] - g_truth[1])
-    return float((overlap_height * overlap_width) / area_g_truth)
+        overlap_width = find_overlap(list(range(detection[0], detection[2] + 1)),
+                                     list(range(g_truth[0], g_truth[2] + 1)))
+        overlap_height = find_overlap(list(range(detection[1], detection[3] + 1)),
+                                      list(range(g_truth[1], g_truth[3] + 1)))
+        area_g_truth = (g_truth[2] - g_truth[0]) * (g_truth[3] - g_truth[1])
+        return float((overlap_height * overlap_width) / area_g_truth)
 
+    total_error = 0
+    num_box_overlaps = 0
+    for image in detection_structure.keys():
+        det_list = detection_structure[image]
+        true_list = true_structure[image]
+
+        for det_ind, detection in enumerate(det_list):
+            if det_true_map[image][det_ind] is None:
+                pass
+            else:
+                det_box = create_bb(detection)
+                true_box = create_bb(true_list[det_true_map[image][det_ind]])
+                total_error += compute_bb_overlap(det_box, true_box)
+                num_box_overlaps += 1
+
+    return total_error/num_box_overlaps
 
 def find_confusion_matrix(true_structure, detection_structure, det_true_map,
                           dataset):
@@ -79,8 +108,55 @@ def find_confusion_matrix(true_structure, detection_structure, det_true_map,
 
     return confusion_matrix
 
+def find_accuracy(confusion_matrix):
+    '''Compute total accuracy of all detections'''
+    right_dets = 0
+    wrong_dets = 0
+    for det_class_name in confusion_matrix.keys():
+        for true_class_name in det_class_name.keys():
+            if det_class_name == true_class_name:
+                right_dets += confusion_matrix[det_class_name][true_class_name]
+            else:
+                wrong_dets += confusion_matrix[det_class_name][true_class_name]
+    return right_dets/(right_dets + wrong_dets)
 
-def benchmark_model(dataset: Dataset, model: Optional[Model]):
+def find_classification_accuracy_stats(confusion_matrix, dataset):
+    """Find the recall, precision and f1 score for detections"""
+
+    def find_recall(confusion_matrix, class_name):
+        num_true = 0
+        num_acc = 0
+        for det in confusion_matrix.keys():
+            num_true += confusion_matrix[det][class_name]
+            if det == class_name:
+                num_acc = confusion_matrix[det][class_name]
+
+        return float(num_acc/num_true)
+
+
+    def find_precision(confusion_matrix, class_name):
+        '''Compute precision for given class name'''
+        num_det = 0
+        num_acc = 0
+        for g_truth in confusion_matrix[class_name].keys():
+            num_det += confusion_matrix[class_name][g_truth]
+            if g_truth == class_name:
+                num_acc = confusion_matrix[class_name][g_truth]
+
+        return float(num_acc/num_det)
+
+    def find_f1(precision, recall):
+        pass
+
+    for det_class in confusion_matrix.keys():
+        precision = find_precision(confusion_matrix, det_class)
+        recall = find_recall(confusion_matrix, det_class)
+        f1 = find_f1(precision, recall)
+        print('For ', class_name, ': precision=', precision,
+              ' recall=', recall,' f1=', f1, '\n')
+
+
+def benchmark_model(dataset: Dataset, model):
 
     # Unpack the images
     detection_annotations: Dict[str, List[Dict[str, int]]] = {}
@@ -139,8 +215,22 @@ def benchmark_model(dataset: Dataset, model: Optional[Model]):
     confusion_matrix = find_confusion_matrix(dataset.test_annotations,
                                              detection_annotations,
                                              predict_to_truth_map, dataset)
+    avg_bb_overlap = find_avg_bb_overlap(dataset.test_annotations,
+                                             detection_annotations,
+                                             predict_to_truth_map)
+
+    find_classification_accuracy_stats(confusion_matrix)
+    print ("Average Bounding Box Overlap: ", avg_bb_overlap)
     print(confusion_matrix)
+    print(find_accuracy(confusion_matrix))
+    print(find_classification_accuracy_stats(confusion_matrix, dataset))
 
 
 if __name__ == '__main__':
-    benchmark_model("LISA")
+    from preprocess.preprocessing import preprocess_LISA
+    import sys
+    # insert the relevant home directory path here #sys.path.append("/Users/RobertAdragna/Documents/AutoDrive/2018-2019/code/lights-n-signs-training/yolov3")
+    from yolov3 import yolo
+    dataset = preprocess_LISA("LISA")
+    model = yolo.YOLO
+    benchmark_model(dataset, model)
