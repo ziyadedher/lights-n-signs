@@ -9,6 +9,7 @@ import pickle
 import inspect
 
 import easydict                                                # type: ignore
+import numpy as np                                             # type: ignore
 import tensorflow as tf                                        # type: ignore
 import keras.backend as K                                      # type: ignore
 from keras import optimizers
@@ -85,8 +86,9 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
 
     @Trainer._setup
     def setup_squeezedet(self,
-                         batch_size: int = 4,
-                         cuda_devices: str = "0",
+                         image_height: int = 720,
+                         image_width: int = 1280,
+                         top_n_detection: int = 8,
                          use_pretrained_weights: bool = True,
                          reduce_lr_on_plateau: bool = True) -> None:
         """Set up training the SqueezeDet model by populating the configuration.
@@ -103,6 +105,20 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         self._config.images = self._data.images
         self._config.gts = self._data.labels
 
+        # XXX: k-means magic
+        self._config.ANCHOR_SEED = np.array([
+            [10.0, 13.0], [16.0, 30.0], [33.0, 23.0],
+            [30.0, 61.0], [62.0, 45.0], [59.0, 119.0],
+            [116.0, 90.0], [156.0, 198.0], [373.0, 326.0]
+        ])
+        self._config.ANCHORS_HEIGHT = image_height / 16
+        self._config.ANCHORS_WIDTH = image_width / 16
+        self._config.ANCHOR_PER_GRID = len(self._config.ANCHOR_SEED)
+
+        self._config.IMAGE_HEIGHT = image_height
+        self._config.IMAGE_WIDTH = image_width
+        self._config.TOP_N_DETECTION = top_n_detection
+
         self._config.CLASS_NAMES = self.dataset.classes
         self._config.CLASSES = len(self._config.CLASS_NAMES)
         self._config.CLASS_TO_IDX = dict(zip(
@@ -117,11 +133,6 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         self._config.REDUCELRONPLATEAU = reduce_lr_on_plateau
         self._config.LR = self._config.LEARNING_RATE
 
-        self._config.BATCH_SIZE = batch_size
-        self._config.GPUS = 1
-        self._config.CUDA_VISIBLE_DEVICES = cuda_devices
-        os.environ['CUDA_VISIBLE_DEVICES'] = cuda_devices
-
         (
             self._config.ANCHOR_BOX,
             self._config.N_ANCHORS_HEIGHT,
@@ -129,17 +140,28 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         ) = create_config.set_anchors(self._config)
         self._config.ANCHORS = len(self._config.ANCHOR_BOX)
 
+        with open(self._paths["config_file"], "wb+") as file:
+            pickle.dump(self._config, file)
+
         K.set_session(tf.Session(
             config=tf.ConfigProto(allow_soft_placement=True)
         ))
 
     @Trainer._train
-    def train_squeezedet(self, epochs: int) -> None:
+    def train_squeezedet(self,
+                         batch_size: int = 4,
+                         epochs: int = 100,
+                         cuda_devices: str = "0") -> None:
         """Begin training the model.
 
         Train for <epochs> epochs before automatically stopping and
         generating the trained model.
         """
+        self._config.BATCH_SIZE = batch_size
+        self._config.GPUS = 1
+        self._config.CUDA_VISIBLE_DEVICES = cuda_devices
+        os.environ['CUDA_VISIBLE_DEVICES'] = cuda_devices
+
         self._config.EPOCHS = epochs
         initial_epoch = self._load_model()
 
@@ -175,7 +197,6 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         finally:
             with open(self._paths["config_file"], "wb+") as file:
                 pickle.dump(self._config, file)
-
             self.generate_model()
 
     def generate_model(self) -> Optional[SqueezeDetModel]:

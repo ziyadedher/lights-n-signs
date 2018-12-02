@@ -30,9 +30,6 @@ class SqueezeDetModel(Model):
 
     def predict(self, image: np.ndarray) -> List[PredictedObject2D]:
         """Predict the required bounding boxes on the given <image>."""
-        # Store the original width and height before resizing
-        width, height, _ = image.shape
-
         # Preprocess the image how squeezedet_keras does it
         image = cv2.resize(
             image, (self.__config.IMAGE_WIDTH, self.__config.IMAGE_HEIGHT)
@@ -56,17 +53,12 @@ class SqueezeDetModel(Model):
         classes = classes[0]
         scores = scores[0]
 
-        # Resize the bounding boxes back to original size
-        boxes[0] *= width / self.__config.IMAGE_WIDTH
-        boxes[1] *= height / self.__config.IMAGE_HEIGHT
-        boxes[2] *= width / self.__config.IMAGE_WIDTH
-        boxes[3] *= height / self.__config.IMAGE_HEIGHT
-
         # Generate the prediction boxes
         predictions = []
         for _box, _class, _score in zip(boxes, classes, scores):
             bounds = Bounds2D(
-                int(_box[0]), int(_box[1]), int(_box[2]), int(_box[3])
+                int(_box[0] - (_box[2] / 2)), int(_box[1] - (_box[3] / 2)),
+                int(_box[2]), int(_box[3])
             )
             predictions.append(PredictedObject2D(
                 bounds,
