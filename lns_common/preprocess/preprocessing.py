@@ -320,9 +320,9 @@ def preprocess_mturk(mturk_path: str) -> Dataset:
     detection_classes: List[str] = []
     annotations: Dict[str, List[Dict[str, int]]] = {}
 
-    if not os.path.isdir(os.path.join(mturk_path, "images")):
+    if not os.path.isdir(os.path.join(mturk_path, "images_new")):
         os.mkdir(os.path.join(
-            mturk_path, "images"
+            mturk_path, "images_new"
         ))
 
 
@@ -334,7 +334,7 @@ def preprocess_mturk(mturk_path: str) -> Dataset:
         )
 
     files_created: List[str] = os.listdir(os.path.join(
-        mturk_path, "images"
+        mturk_path, "images_new"
     ))
 
     for f in annotation_files:
@@ -346,7 +346,7 @@ def preprocess_mturk(mturk_path: str) -> Dataset:
         with open(os.path.join(mturk_path, f)) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             url_index = 0
-            id_index = 0
+            id_index = -1
             annos = 0
             classification= 0
             orientation = 0
@@ -363,18 +363,19 @@ def preprocess_mturk(mturk_path: str) -> Dataset:
                         if "Input.orientation" in row[r]:
                             orientation = r
                 else:
+                    img_id = str(row[id_index])
                     url = row[url_index]
                     print (url)
-                    if "{}.png".format(row[id_index]) not in files_created:
+                    if "{}.png".format(img_id) not in files_created:
                         urllib.request.urlretrieve(
                             url, "{}.png".format(os.path.join(
-                                mturk_path, 'images', str(row[id_index])
+                                mturk_path, 'images_new', img_id
                             ))
                         )
-                        print("{}.png".format(row[id_index]))
+                        print("{}.png".format(img_id))
 
                     image_path = os.path.abspath(
-                        os.path.join(mturk_path, "images", "{}.png".format(row[id_index]))
+                        os.path.join(mturk_path, "images_new", "{}.png".format(img_id))
                     )
 
                     if open(image_path, 'rb').read()[-2:] != b'\xff\xd9':
@@ -391,18 +392,10 @@ def preprocess_mturk(mturk_path: str) -> Dataset:
                     valid = False
 
                     for label in labels:
-                        if to_orient:
-                            width, height = Image.open(image_path).size
-
-                            y = label['left']
-                            x = height - label['top'] - label['height']
-                            h = label['width']
-                            w = label['height']
-                        else:
-                            x = label['left']
-                            y = label['top']
-                            w = label['width']
-                            h = label['height']
+                        x = label['left']
+                        y = label['top']
+                        w = label['width']
+                        h = label['height']
 
                         if w*h < 40:
                             continue
