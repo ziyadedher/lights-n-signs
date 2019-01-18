@@ -85,7 +85,9 @@ class SqueezeDetProcessor(Processor[SqueezeDetData]):
         for image, annotations in dataset.annotations.items():
             label_strings: List[str] = []
             for annotation in annotations:
-                if (annotation["x_min"] < 0 or annotation["y_min"] < 0):
+                if (annotation["x_min"] < 0 or annotation["y_min"] < 0
+                    or annotation["x_min"] > annotation["x_max"]
+                    or annotation["y_min"] > annotation["y_max"]):
                     continue
 
                 # NOTE: see https://github.com/NVIDIA/DIGITS/issues/992
