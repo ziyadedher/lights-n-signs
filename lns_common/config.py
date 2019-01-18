@@ -12,6 +12,8 @@ RESOURCES_ROOT = os.path.abspath(
     os.path.join(os.path.expanduser("~"), ".lns-training/resources")
 )
 
+RAND_SEED = 6
+MIN_SIZE = 40
 
 def generate_resources_root() -> None:
     """Generate the folder structure for the common resources."""
@@ -27,7 +29,7 @@ class Data:
 
     # Possible datasets available
     _POSSIBLE_DATASET_FOLDERS: List[str] = [
-        "LISA", "Bosch", "Custom", "Custom_testing", "sim", "mturk"
+        "LISA", "Bosch", "Custom", "Custom_testing", "sim", "mturk", "cities"
     ]
 
     # Current data root and stored datsets

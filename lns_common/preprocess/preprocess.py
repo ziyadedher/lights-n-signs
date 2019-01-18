@@ -54,14 +54,15 @@ class Preprocessor:
         "Custom": preprocessing.preprocess_custom,
         "Custom_testing": preprocessing.preprocess_custom,
         "sim": preprocessing.preprocess_sim,
-        "mturk": preprocessing.preprocess_mturk
+        "mturk": preprocessing.preprocess_mturk,
+        "cities": preprocessing.preprocess_cities
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}
 
     @classmethod
     def preprocess(cls, dataset_name: str,
-                   force: bool = False) -> Dataset:
+                   force: bool = False, **kwargs) -> Dataset:
         """Preprocess the dataset with the given name and return the result.
 
         Setting <force> to `True` will force a preprocessing even if the
@@ -83,7 +84,7 @@ class Preprocessor:
                 "Dataset {} has no allocated preprocessor."
             )
 
-        preprocessed = _preprocessor(dataset_path)
+        preprocessed = _preprocessor(dataset_path, **kwargs)
         cls._preprocessing_data[dataset_name] = preprocessed
         return preprocessed
 
