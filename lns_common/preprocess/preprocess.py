@@ -43,6 +43,9 @@ from lns_common.config import Data
 from lns_common.preprocess import preprocessing
 from lns_common.preprocess.preprocessing import Dataset
 
+from PIL import Image
+import os
+
 
 class Preprocessor:
     """Manager for all preprocessing and retrieval of preprocessed data."""
@@ -62,7 +65,7 @@ class Preprocessor:
 
     @classmethod
     def preprocess(cls, dataset_name: str,
-                   force: bool = False, **kwargs) -> Dataset:
+                   force: bool = False, scale: float = 1.0, **kwargs) -> Dataset:
         """Preprocess the dataset with the given name and return the result.
 
         Setting <force> to `True` will force a preprocessing even if the
@@ -86,7 +89,38 @@ class Preprocessor:
 
         preprocessed = _preprocessor(dataset_path, **kwargs)
         cls._preprocessing_data[dataset_name] = preprocessed
+
+        if scale != 1.0:
+            preprocessed = self.fix_scale(dataset_path, preprocessed, scale)
+
         return preprocessed
+
+    def fix_scale(self, dataset_path: str, data: Dataset, scale: float) -> Dataset:
+        """Downsizes the inputted dataset.
+        """
+        new_dir = dataset_path + "_{}".format(scale)
+
+        if not os.path.isdir(new_dir):
+            os.makedirs(new_dir)
+
+        for path, annotation in data.annotations.items():
+            annotations['x_min'] = int(annotations['x_min'] * scale)
+            annotations['y_min'] = int(annotations['y_min'] * scale)
+            annotations['x_max'] = int(annotations['x_max'] * scale)
+            annotations['y_max'] = int(annotations['y_max'] * scale)
+
+        for name, info in data.images.items():
+            for image in info:
+                img = Image.open(image)
+                width, height = img.size
+                width = int(scale * width)
+                height = int(scale * height)
+                img.resize((width, height), PIL.Image.ANTIALIAS)
+                basename = os.path.basename(image)
+                img.save(os.path.join(new_dir, basename))
+
+        return data
+
 
 
 class NoPreprocessorException(Exception):
