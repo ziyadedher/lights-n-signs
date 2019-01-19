@@ -14,6 +14,8 @@ import pickle
 import ast
 import json
 import urllib.request
+import itertools
+import statistics
 from PIL import Image
 from xml.etree import ElementTree as ET
 
@@ -607,12 +609,75 @@ def preprocess_cities(cities_path: str, proportion: float = 1.0, testset: bool =
 
                     images.append(image_path)
 
+    print("Processing annotations... ")
+
+    for a in annotations.keys():
+        tris = itertools.combinations(annotations[a], 3)
+        for t in tris:
+            results = [
+                Intersection(
+                    t[0]['x_min'],
+                    t[0]['y_min'],
+                    t[0]['x_max'],
+                    t[0]['y_max'],
+                    t[1]['x_min'],
+                    t[1]['y_min'],
+                    t[1]['x_max'],
+                    t[1]['y_max'],
+                ),
+                Intersection(
+                    t[0]['x_min'],
+                    t[0]['y_min'],
+                    t[0]['x_max'],
+                    t[0]['y_max'],
+                    t[2]['x_min'],
+                    t[2]['y_min'],
+                    t[2]['x_max'],
+                    t[2]['y_max'],
+                ),
+                Intersection(
+                    t[1]['x_min'],
+                    t[1]['y_min'],
+                    t[1]['x_max'] - t[1]['x_min'],
+                    t[1]['y_max'] - t[1]['y_min'],
+                    t[2]['x_min'],
+                    t[2]['y_min'],
+                    t[2]['x_max'] - t[2]['x_min'],
+                    t[2]['y_max'] - t[2]['y_min'],
+                )
+            ]
+
+            if results[0] and results[1] and results[2]:
+                try:
+                    annotations[a].remove(t[0])
+                    annotations[a].remove(t[1])
+                    annotations[a].remove(t[2])
+                except ValueError as e:
+                    pass
+
+                annotations[a].append(
+
+                )
+
     if not testset:
         return set_proportions("cities", {"cities": images},
                    detection_classes, annotations, proportion)
     else:
         return create_testset("cities", {"cities": images},
                    detection_classes, annotations, proportion)
+
+def IOU(x1, y1, x2, y2, x1t, y1t, x2t, y2t):
+
+    # Check if the BBs intersect first
+    if x2 < x1t or x1 > x2t or y2 < y1t or y1 > y2t:
+        return 0.0
+
+    xa = max(x1, x1t)
+    ya = max(y1, y1t)
+    xb = min(x2, x2t)
+    yb = min(y2, y2t)
+
+    return (xb - xa + 1) * (yb - ya + 1)
 
 def set_proportions(name: str,
              images: Dict[str, List[str]], classes: List[str],
