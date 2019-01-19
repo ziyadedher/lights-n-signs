@@ -43,6 +43,9 @@ from lns_common.config import Data
 from lns_common.preprocess import preprocessing
 from lns_common.preprocess.preprocessing import Dataset
 
+from PIL import Image
+import os
+
 
 class Preprocessor:
     """Manager for all preprocessing and retrieval of preprocessed data."""
@@ -54,14 +57,15 @@ class Preprocessor:
         "Custom": preprocessing.preprocess_custom,
         "Custom_testing": preprocessing.preprocess_custom,
         "sim": preprocessing.preprocess_sim,
-        "mturk": preprocessing.preprocess_mturk
+        "mturk": preprocessing.preprocess_mturk,
+        "cities": preprocessing.preprocess_cities
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}
 
     @classmethod
     def preprocess(cls, dataset_name: str,
-                   force: bool = False) -> Dataset:
+                   force: bool = False, scale: float = 1.0, **kwargs) -> Dataset:
         """Preprocess the dataset with the given name and return the result.
 
         Setting <force> to `True` will force a preprocessing even if the
@@ -83,9 +87,57 @@ class Preprocessor:
                 "Dataset {} has no allocated preprocessor."
             )
 
-        preprocessed = _preprocessor(dataset_path)
+        preprocessed = _preprocessor(dataset_path, **kwargs)
         cls._preprocessing_data[dataset_name] = preprocessed
+
+        if scale != 1.0:
+            preprocessed = cls.fix_scale(dataset_path, preprocessed, scale)
+
         return preprocessed
+
+    @classmethod
+    def fix_scale(cls, dataset_path: str, data: Dataset, scale: float) -> Dataset:
+        """Downsizes the inputted dataset.
+        """
+        images: List[str] = data.images
+        detection_classes: List[str] = data.classes
+        annotations: Dict[str, List[Dict[str, int]]] = data.annotations
+
+        new_dir = dataset_path + "_{}".format(scale)
+
+        if not os.path.isdir(new_dir):
+            os.makedirs(new_dir)
+
+        for path, list_annotations in data.annotations.items():
+            for index in range(len(list_annotations)):
+                annotations[path][index]['x_min'] = int(annotations[path][index]['x_min'] * scale)
+                annotations[path][index]['y_min'] = int(annotations[path][index]['y_min'] * scale)
+                annotations[path][index]['x_max'] = int(annotations[path][index]['x_max'] * scale)
+                annotations[path][index]['y_max'] = int(annotations[path][index]['y_max'] * scale)
+
+            annos = annotations[path]
+            del annotations[path]
+            new_path = os.path.join(new_dir, os.path.basename(path))
+            annotations[new_path] = annos
+
+        for name, info in images.items():
+            for image_index in range(len(info)):
+                basename = os.path.basename(info[image_index])
+                print(os.path.join(new_dir, basename))
+
+                if os.path.isfile(os.path.join(new_dir, basename)):
+                    continue
+
+                img = Image.open(info[image_index])
+                width, height = img.size
+                width = int(scale * width)
+                height = int(scale * height)
+                img = img.resize((width, height), Image.ANTIALIAS)
+                img.save(os.path.join(new_dir, basename))
+                info[image_index] = os.path.join(new_dir, basename)
+
+        return Dataset(data.name, images, detection_classes, annotations)
+
 
 
 class NoPreprocessorException(Exception):
