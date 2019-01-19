@@ -91,35 +91,52 @@ class Preprocessor:
         cls._preprocessing_data[dataset_name] = preprocessed
 
         if scale != 1.0:
-            preprocessed = self.fix_scale(dataset_path, preprocessed, scale)
+            preprocessed = cls.fix_scale(dataset_path, preprocessed, scale)
 
         return preprocessed
 
-    def fix_scale(self, dataset_path: str, data: Dataset, scale: float) -> Dataset:
+    @classmethod
+    def fix_scale(cls, dataset_path: str, data: Dataset, scale: float) -> Dataset:
         """Downsizes the inputted dataset.
         """
+        images: List[str] = data.images
+        detection_classes: List[str] = data.classes
+        annotations: Dict[str, List[Dict[str, int]]] = data.annotations
+
         new_dir = dataset_path + "_{}".format(scale)
 
         if not os.path.isdir(new_dir):
             os.makedirs(new_dir)
 
-        for path, annotation in data.annotations.items():
-            annotations['x_min'] = int(annotations['x_min'] * scale)
-            annotations['y_min'] = int(annotations['y_min'] * scale)
-            annotations['x_max'] = int(annotations['x_max'] * scale)
-            annotations['y_max'] = int(annotations['y_max'] * scale)
+        for path, list_annotations in data.annotations.items():
+            for index in range(len(list_annotations)):
+                annotations[path][index]['x_min'] = int(annotations[path][index]['x_min'] * scale)
+                annotations[path][index]['y_min'] = int(annotations[path][index]['y_min'] * scale)
+                annotations[path][index]['x_max'] = int(annotations[path][index]['x_max'] * scale)
+                annotations[path][index]['y_max'] = int(annotations[path][index]['y_max'] * scale)
 
-        for name, info in data.images.items():
-            for image in info:
-                img = Image.open(image)
+            annos = annotations[path]
+            del annotations[path]
+            new_path = os.path.join(new_dir, os.path.basename(path))
+            annotations[new_path] = annos
+
+        for name, info in images.items():
+            for image_index in range(len(info)):
+                basename = os.path.basename(info[image_index])
+                print(os.path.join(new_dir, basename))
+
+                if os.path.isfile(os.path.join(new_dir, basename)):
+                    continue
+
+                img = Image.open(info[image_index])
                 width, height = img.size
                 width = int(scale * width)
                 height = int(scale * height)
-                img.resize((width, height), PIL.Image.ANTIALIAS)
-                basename = os.path.basename(image)
+                img = img.resize((width, height), Image.ANTIALIAS)
                 img.save(os.path.join(new_dir, basename))
+                info[image_index] = os.path.join(new_dir, basename)
 
-        return data
+        return Dataset(data.name, images, detection_classes, annotations)
 
 
 

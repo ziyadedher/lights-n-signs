@@ -607,6 +607,8 @@ def preprocess_cities(cities_path: str, proportion: float = 1.0, testset: bool =
 
                     images.append(image_path)
 
+    images = list(set(images))
+
     if not testset:
         return set_proportions("cities", {"cities": images},
                    detection_classes, annotations, proportion)

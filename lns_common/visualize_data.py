@@ -37,4 +37,4 @@ def visualize(dataset: str, **kwargs) -> None:
 
 
 if __name__ == "__main__":
-    visualize('mturk')
+    visualize('cities', scale=0.5)
