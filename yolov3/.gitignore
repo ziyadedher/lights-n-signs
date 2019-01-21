@@ -4,6 +4,7 @@ model_data/*.h5
 darknet53.conv.74*
 darknet53.weights*
 model
+yolo_model
 
 #--Processing stuff--
 annotations.txt
