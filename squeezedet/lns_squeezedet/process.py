@@ -92,7 +92,7 @@ class SqueezeDetProcessor(Processor[SqueezeDetData]):
 
                 # NOTE: see https://github.com/NVIDIA/DIGITS/issues/992
                 # for more information about the format
-                class_name = dataset.classes[annotation["class"]].lower()
+                class_name = "".join(dataset.classes[annotation["class"]].lower().split())
                 label_strings.append(" ".join((
                     str(class_name),                       # class string
                     "0",                                   # truncation number
