@@ -111,8 +111,8 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
             [30.0, 61.0], [62.0, 45.0], [59.0, 119.0],
             [116.0, 90.0], [156.0, 198.0], [373.0, 326.0]
         ])
-        self._config.ANCHORS_HEIGHT = image_height / 16
-        self._config.ANCHORS_WIDTH = image_width / 16
+        self._config.ANCHORS_HEIGHT = int(image_height / 16)
+        self._config.ANCHORS_WIDTH = int(image_width / 16)
         self._config.ANCHOR_PER_GRID = len(self._config.ANCHOR_SEED)
 
         self._config.IMAGE_HEIGHT = image_height
