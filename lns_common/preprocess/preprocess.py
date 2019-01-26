@@ -65,7 +65,8 @@ class Preprocessor:
 
     @classmethod
     def preprocess(cls, dataset_name: str,
-                   force: bool = False, scale: float = 1.0, **kwargs) -> Dataset:
+                   force: bool = False,
+                   scale: float = 1.0, **kwargs) -> Dataset:
         """Preprocess the dataset with the given name and return the result.
 
         Setting <force> to `True` will force a preprocessing even if the
@@ -96,7 +97,8 @@ class Preprocessor:
         return preprocessed
 
     @classmethod
-    def fix_scale(cls, dataset_path: str, data: Dataset, scale: float) -> Dataset:
+    def fix_scale(cls, dataset_path: str,
+                  data: Dataset, scale: float) -> Dataset:
         """Downsizes the inputted dataset.
         """
         images: List[str] = data.images
@@ -110,10 +112,14 @@ class Preprocessor:
 
         for path, list_annotations in data.annotations.items():
             for index in range(len(list_annotations)):
-                annotations[path][index]['x_min'] = int(annotations[path][index]['x_min'] * scale)
-                annotations[path][index]['y_min'] = int(annotations[path][index]['y_min'] * scale)
-                annotations[path][index]['x_max'] = int(annotations[path][index]['x_max'] * scale)
-                annotations[path][index]['y_max'] = int(annotations[path][index]['y_max'] * scale)
+                annotations[path][index]['x_min'] = \
+                    int(annotations[path][index]['x_min'] * scale)
+                annotations[path][index]['y_min'] = \
+                    int(annotations[path][index]['y_min'] * scale)
+                annotations[path][index]['x_max'] = \
+                    int(annotations[path][index]['x_max'] * scale)
+                annotations[path][index]['y_max'] = \
+                    int(annotations[path][index]['y_max'] * scale)
 
             annos = annotations[path]
             del annotations[path]
@@ -137,7 +143,6 @@ class Preprocessor:
                 info[image_index] = os.path.join(new_dir, basename)
 
         return Dataset(data.name, images, detection_classes, annotations)
-
 
 
 class NoPreprocessorException(Exception):

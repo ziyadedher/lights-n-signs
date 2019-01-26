@@ -18,6 +18,7 @@ import itertools
 import statistics
 from PIL import Image
 from xml.etree import ElementTree as ET
+import statistics
 
 from lns_common import config
 
@@ -704,6 +705,12 @@ def annotation_fix(annotations: Dict[str, List[Dict[str, int]]]
         new_annotations[path] = []
         annos_to_process = annotations
 
+        if len(annos_to_process) == 0:
+            continue
+
+        avg_x = sum([a["x_max"] - a["x_min"] for a in annos_to_process]) / len(annos_to_process)
+        avg_y = sum([a["y_max"] - a["y_min"] for a in annos_to_process]) / len(annos_to_process)
+
         while len(annos_to_process) != 0:
             processing = []
 
@@ -724,11 +731,11 @@ def annotation_fix(annotations: Dict[str, List[Dict[str, int]]]
                     processing.append((annos_to_process[i], i))
 
             if len(processing) >= 2:
-                ratio_func = lambda x: (x[0]['y_max'] - x[0]['y_min']) / \
+                ratio_func = lambda x: (x[0]['y_max'] - x[0]['y_min']) ** 0.5 / \
                     (x[0]['x_max'] - x[0]['x_min'])
 
                 processing = sorted(processing, key=ratio_func)
-                # box = processing[int(len(processing) // 2)]
+
                 box = processing[-1]
 
                 new_annotations[path].append(box[0])
