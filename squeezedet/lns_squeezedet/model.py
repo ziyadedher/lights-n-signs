@@ -8,8 +8,15 @@ from typing import List
 import cv2                # type: ignore
 import easydict           # type: ignore
 import numpy as np        # type: ignore
-from keras import models  # type: ignore
-from squeezedet_keras.model import evaluation  # type: ignore
+import tensorflow as tf
+import time
+import sys
+import os
+import glob
+
+from config import lns_squeezedet_config
+from train import _draw_box
+from nets import *
 
 from lns_common.model import Model, PredictedObject2D, Bounds2D
 
@@ -17,52 +24,68 @@ from lns_common.model import Model, PredictedObject2D, Bounds2D
 class SqueezeDetModel(Model):
     """Bounding-box prediction model utilizing SqueezeDet."""
 
-    __model: models.Model
+    __model: SqueezeDet
     __config: easydict.EasyDict
     __classes: List[str]
+    __logdir: str
 
-    def __init__(self, model: models.Model, config: easydict.EasyDict,
-                 classes: List[str]) -> None:
+    def __init__(self, classes: List[str], logdir: str) -> None:
         """Initialize a SqueezeDet model with the given model and config."""
-        self.__model = model
-        self.__config = config
-        self.__classes = classes
+        with tf.Graph().as_default():
+            mc = lns_squeezedet_config()
+            mc.BATCH_SIZE = 1
+            # model parameters will be restored from checkpoint
+            mc.LOAD_PRETRAINED_MODEL = False
+            model = SqueezeDet(mc, FLAGS.gpu)
+            self.__config = mc
+            self.__model = model
+            self.__classes = classes
+            self.__logdir = logdir
 
     def predict(self, image: np.ndarray) -> List[PredictedObject2D]:
         """Predict the required bounding boxes on the given <image>."""
         # Preprocess the image how squeezedet_keras does it
-        image = cv2.resize(
-            image, (self.__config.IMAGE_WIDTH, self.__config.IMAGE_HEIGHT)
-        )
-        image = (image - np.mean(image)) / np.std(image)
-        image = np.expand_dims(image, axis=0)
+        with tf.Graph().as_default():
+            saver = tf.train.Saver(self.__model.model_params)
 
-        # Gather a prediction
-        prediction = self.__model.predict(image)
+            with tf.Session(
+                config=tf.ConfigProto(allow_soft_placement=True)
+            ) as sess:
+                saver.restore(
+                    sess, tf.train.latest_checkpoint(self.__logdir)
+                )
+                image = cv2.resize(
+                    image, 
+                    (self.__config.IMAGE_WIDTH, self.__config.IMAGE_HEIGHT)
+                )
+                image = (image - np.mean(image)) / np.std(image)
+                image = np.expand_dims(image, axis=0)
 
-        # Use squeezedet_keras's prediction filtering on batches
-        past_batch_size = self.__config.BATCH_SIZE
-        self.__config.BATCH_SIZE = 1
-        boxes, classes, scores = evaluation.filter_batch(
-            prediction, self.__config
-        )
-        self.__config.BATCH_SIZE = past_batch_size
+                # Detect
+                det_boxes, det_probs, det_class = sess.run(
+                    [self.__model.det_boxes, self.__model.det_probs, self.__model.det_class],
+                    feed_dict={self.__model.image_input:[image]})
 
-        # Only one batch
-        boxes = boxes[0]
-        classes = classes[0]
-        scores = scores[0]
+                # Filter
+                final_boxes, final_probs, final_class = self.__model.filter_prediction(
+                    det_boxes[0], det_probs[0], det_class[0])
 
-        # Generate the prediction boxes
-        predictions = []
-        for _box, _class, _score in zip(boxes, classes, scores):
-            bounds = Bounds2D(
-                int(_box[0] - (_box[2] / 2)), int(_box[1] - (_box[3] / 2)),
-                int(_box[2]), int(_box[3])
-            )
-            predictions.append(PredictedObject2D(
-                bounds,
-                [self.__classes[_class]],
-                [_score]
-            ))
-        return predictions
+                keep_idx = [idx for idx in range(len(final_probs)) \
+                                if final_probs[idx] > mc.PLOT_PROB_THRESH]
+                final_boxes = [final_boxes[idx] for idx in keep_idx]
+                final_probs = [final_probs[idx] for idx in keep_idx]
+                final_class = [final_class[idx] for idx in keep_idx]
+
+                # Generate the prediction boxes
+                predictions = []
+                for _box, _class, _score in zip(final_boxes, final_class, final_probs):
+                    bounds = Bounds2D(
+                        int(_box[0] - (_box[2] / 2)), int(_box[1] - (_box[3] / 2)),
+                        int(_box[2]), int(_box[3])
+                    )
+                    predictions.append(PredictedObject2D(
+                        bounds,
+                        [self.__classes[_class]],
+                        [_score]
+                    ))
+                return predictions
