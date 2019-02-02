@@ -32,7 +32,7 @@ class SqueezeDetModel(Model):
     def __init__(self, classes: List[str], logdir: str) -> None:
         """Initialize a SqueezeDet model with the given model and config."""
         with tf.Graph().as_default():
-            mc = lns_squeezedet_config()
+            mc = kitti_squeezeDet_config()
             mc.BATCH_SIZE = 1
             # model parameters will be restored from checkpoint
             mc.LOAD_PRETRAINED_MODEL = False
