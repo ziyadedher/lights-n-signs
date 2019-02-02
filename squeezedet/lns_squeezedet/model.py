@@ -14,7 +14,7 @@ import sys
 import os
 import glob
 
-from config import lns_squeezedet_config
+from config import kitti_squeezeDet_config
 from train import _draw_box
 from nets import *
 
