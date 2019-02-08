@@ -195,7 +195,6 @@ def preprocess_LISA(LISA_path: str, proportion: float = 1.0,
                     "x_max": x_max,
                     "y_max": y_max
                 })
-
     annotations, images = delete_empties(annotations, images)
 
     if not testset:
@@ -254,7 +253,6 @@ def preprocess_sim(sim_path: str, proportion: float = 1.0,
                 "x_max": bb[0] + bb[2],
                 "y_max": bb[1] + bb[3]
             })
-
     annotations, images = delete_empties(annotations, images)
 
     if not testset:
@@ -316,7 +314,6 @@ def preprocess_bosch(bosch_path: str, proportion: float = 1.0,
                 "x_max": x_max,
                 "y_max": y_max
             })
-
     annotations, images = delete_empties(annotations, images)
 
     if not testset:
@@ -436,7 +433,6 @@ def preprocess_mturk(mturk_path: str, proportion: float = 1.0,
                     images.append(image_path)
 
     annotations, images = delete_empties(annotations, images)
-
     if not testset:
         return set_proportions("mturk", {"mturk": images},
                                detection_classes, annotations, proportion)
@@ -646,6 +642,21 @@ def preprocess_cities(cities_path: str, proportion: float = 1.0,
                               detection_classes, annotations, proportion)
 
 
+def delete_empties(annotations: Dict[str, List[Dict[str, int]]], \
+                   images: Dict[str, List[str]]) -> Tuple:
+    delete_keys = []
+    for key, anno in annotations.items():
+        if len(anno) == 0:
+            print("deleting {}".format(key))
+            delete_keys.append(key)
+
+    for d in delete_keys:
+        del annotations[d]
+        del images[images.index(d)]
+
+    return annotations, images
+
+
 def set_proportions(name: str,
                     images: Dict[str, List[str]], classes: List[str],
                     annotations: Dict[str, List[Dict[str, int]]],
@@ -705,20 +716,6 @@ def create_testset(name: str,
 
     return Dataset(name, images, classes, new_annotations)
 
-
-def delete_empties(annotations: Dict[str, List[Dict[str, int]]], \
-                   images: Dict[str, List[str]]) -> Tuple:
-    delete_keys = []
-    for key, anno in annotations.items():
-        if len(anno) == 0:
-            print("deleting {}".format(key))
-            delete_keys.append(key)
-
-    for d in delete_keys:
-        del annotations[d]
-        del images[images.index(d)]
-
-    return annotations, images
 
 def annotation_fix(annotations: Dict[str, List[Dict[str, int]]]
                    ) -> Dict:
