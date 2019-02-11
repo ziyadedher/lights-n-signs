@@ -14,64 +14,60 @@ import sys
 import os
 import glob
 
-from config import kitti_squeezeDet_config
-from train import _draw_box
-from nets import *
+from src.config import kitti_squeezeDet_config
+from src.train import _draw_box
+from src.nets import *
 
-from lns_common.model import Model, PredictedObject2D, Bounds2D
+from model_generic import Model, PredictedObject2D, Bounds2D
 
 
 class SqueezeDetModel(Model):
     """Bounding-box prediction model utilizing SqueezeDet."""
 
-    __model: SqueezeDet
-    __config: easydict.EasyDict
     __classes: List[str]
-    __logdir: str
+    __checkpoint: str
 
-    def __init__(self, classes: List[str], logdir: str) -> None:
+    def __init__(self, checkpoint: str, classes: List[str]) -> None:
         """Initialize a SqueezeDet model with the given model and config."""
-        with tf.Graph().as_default():
-            mc = kitti_squeezeDet_config()
-            mc.BATCH_SIZE = 1
-            # model parameters will be restored from checkpoint
-            mc.LOAD_PRETRAINED_MODEL = False
-            model = SqueezeDet(mc, FLAGS.gpu)
-            self.__config = mc
-            self.__model = model
-            self.__classes = classes
-            self.__logdir = logdir
+        self.__classes = classes
+        self.__checkpoint = checkpoint
 
-    def predict(self, image: np.ndarray) -> List[PredictedObject2D]:
+    def predict(self, image: np.ndarray, output_path: str = None) -> List[PredictedObject2D]:
         """Predict the required bounding boxes on the given <image>."""
-        # Preprocess the image how squeezedet_keras does it
+        
         with tf.Graph().as_default():
+        
+            self.__config = kitti_squeezeDet_config()
+            self.__config.BATCH_SIZE = 1
+            # model parameters will be restored from checkpoint
+            self.__config.LOAD_PRETRAINED_MODEL = False
+            self.__config.CLASS_NAMES = tuple(self.__classes)
+            self.__model = SqueezeDet(self.__config)
+
             saver = tf.train.Saver(self.__model.model_params)
 
-            with tf.Session(
-                config=tf.ConfigProto(allow_soft_placement=True)
-            ) as sess:
-                saver.restore(
-                    sess, tf.train.latest_checkpoint(self.__logdir)
-                )
+            with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+
+                saver.restore(sess, self.__checkpoint)
+
                 image = cv2.resize(
                     image, 
                     (self.__config.IMAGE_WIDTH, self.__config.IMAGE_HEIGHT)
                 )
-                image = (image - np.mean(image)) / np.std(image)
-                image = np.expand_dims(image, axis=0)
+                img = image - self.__config.BGR_MEANS
 
                 # Detect
                 det_boxes, det_probs, det_class = sess.run(
                     [self.__model.det_boxes, self.__model.det_probs, self.__model.det_class],
-                    feed_dict={self.__model.image_input:[image]})
+                    feed_dict={self.__model.image_input:[img]}
+                )
 
                 # Filter
                 final_boxes, final_probs, final_class = self.__model.filter_prediction(
                     det_boxes[0], det_probs[0], det_class[0])
 
                 keep_idx = [idx for idx in range(len(final_probs)) \
-                                if final_probs[idx] > mc.PLOT_PROB_THRESH]
+                                if final_probs[idx] > self.__config.PLOT_PROB_THRESH]
                 final_boxes = [final_boxes[idx] for idx in keep_idx]
                 final_probs = [final_probs[idx] for idx in keep_idx]
                 final_class = [final_class[idx] for idx in keep_idx]
@@ -88,4 +84,18 @@ class SqueezeDetModel(Model):
                         [self.__classes[_class]],
                         [_score]
                     ))
+                    
+                if output_path:
+                    
+                    # Draw boxes
+                    _draw_box(
+                        image, final_boxes,
+                        [self.__config.CLASS_NAMES[idx]+': (%.2f)'% prob for idx, prob in zip(final_class, final_probs)]
+                    )
+
+                    out_file_name = os.path.join(output_path, 'model_output.png')
+                    cv2.imwrite(out_file_name, image)
+                    print ('Image detection output saved to {}'.format(out_file_name))
+                    
                 return predictions
+
