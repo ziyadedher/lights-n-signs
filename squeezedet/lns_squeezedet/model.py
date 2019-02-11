@@ -32,7 +32,7 @@ class SqueezeDetModel(Model):
         self.__classes = classes
         self.__checkpoint = checkpoint
 
-    def predict(self, image: np.ndarray, output_path: str = None) -> List[PredictedObject2D]:
+    def predict(self, image: np.ndarray, output_path: str = None, convert = False) -> List[PredictedObject2D]:
         """Predict the required bounding boxes on the given <image>."""
         
         with tf.Graph().as_default():
@@ -86,7 +86,6 @@ class SqueezeDetModel(Model):
                     ))
                     
                 if output_path:
-                    
                     # Draw boxes
                     _draw_box(
                         image, final_boxes,
@@ -97,5 +96,29 @@ class SqueezeDetModel(Model):
                     cv2.imwrite(out_file_name, image)
                     print ('Image detection output saved to {}'.format(out_file_name))
                     
+                if convert:
+                    new_checkpoint = self.__checkpoint + '_new'
+                    saver.save(sess, new_checkpoint)
+                    print ("New checkpoint saved to {}".format(new_checkpoint))
+                    
+                    # Freeze the graph
+                    output_node_names = ['conv12/bias_add']
+                    frozen_graph_def = tf.graph_util.convert_variables_to_constants(
+                        sess,
+                        sess.graph_def,
+                        output_node_names
+                    )
+
+                    # Save the frozen graph
+                    with open(os.path.join(os.path.dirname(self.__checkpoint), "output_graph.pb"), 'wb') as f:
+                        print("Writing file output_graph.pb")
+                        f.write(frozen_graph_def.SerializeToString())
+                    
                 return predictions
+                
+                
+    def convert(self, sample_image: np.ndarray):
+        """Freeze and set the model up for use with the OpenVino framework"""
+        
+        self.predict(sample_image, convert=True)
 
