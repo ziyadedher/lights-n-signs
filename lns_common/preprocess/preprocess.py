@@ -59,7 +59,7 @@ class Preprocessor:
         "sim": preprocessing.preprocess_sim,
         "mturk": preprocessing.preprocess_mturk,
         "cities": preprocessing.preprocess_cities,
-        "KITTI": preprocessing.preprocess_KITTI
+        "LISA_signs": preprocessing.preprocess_LISA_signs
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}

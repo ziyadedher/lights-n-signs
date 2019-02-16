@@ -4,7 +4,7 @@ import sys
 import shutil
 
 curr_dir = os.path.join(os.getcwd(), 'good_unfiltered_data')
-dest_dir = os.path.join(os.getcwd(), 'good_data')
+dest_dir = os.path.join(os.getcwd(), 'LISA_signs')
 
 sign_types = ['pedestrianCrossing', 'stop_', 'turnLeft', 'turnRight', 'speedLimit']
 old_csv_file = open('allAnnotations.csv', 'r')

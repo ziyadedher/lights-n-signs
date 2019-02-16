@@ -629,7 +629,7 @@ def preprocess_cities(cities_path: str, proportion: float = 1.0,
                               detection_classes, annotations, proportion)
 
 
-def preprocess_KITTI(KITTI_path: str) -> Dataset:
+def preprocess_LISA_signs(LISA_signs_path: str) -> Dataset:
     """Preprocess and generate data for our custom dataset at the given path.
 
     Raises `FileNotFoundError` if any of the required files or folders is not
@@ -641,7 +641,7 @@ def preprocess_KITTI(KITTI_path: str) -> Dataset:
     annotations: Dict[str, List[Dict[str, int]]] = {}
 
     #Open up the csv file
-    label_path = os.path.join(KITTI_path,
+    label_path = os.path.join(LISA_signs_path,
                               'relevantAnnotations.csv')  # Assume that CSV is with the rest of the directories
     labels_file = open(label_path, 'r')
     labels_reader = csv.DictReader(labels_file, fieldnames=['filename', 'annotations', 'bounding_box'])
@@ -657,7 +657,7 @@ def preprocess_KITTI(KITTI_path: str) -> Dataset:
             class_name = row['annotations']
 
         img_name = row['filename'].split('/')[2]  #Add to the list of images
-        file_name = os.path.join(os.path.join(KITTI_path, class_name), img_name)
+        file_name = os.path.join(os.path.join(LISA_signs_path, class_name), img_name)
         images.append(file_name)
 
         bounding_box = ast.literal_eval(row['bounding_box'])  #unpack the annotations
@@ -668,7 +668,7 @@ def preprocess_KITTI(KITTI_path: str) -> Dataset:
         temp = {'x_min': x_min, 'y_min': y_min, 'x_max': x_max, 'y_max': y_max}
         annotations[file_name] = [temp]
 
-    return Dataset("KITTI_signs", {"KITTI_signs": images}, detection_classes, annotations)
+    return Dataset("LISA_signs", {"LISA_signs": images}, detection_classes, annotations)
 
 
 def set_proportions(name: str,

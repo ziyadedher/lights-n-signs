@@ -29,7 +29,7 @@ class Data:
 
     # Possible datasets available
     _POSSIBLE_DATASET_FOLDERS: List[str] = [
-        "LISA", "Bosch", "Custom", "Custom_testing", "sim", "mturk", "cities", "KITTI"
+        "LISA", "Bosch", "Custom", "Custom_testing", "sim", "mturk", "cities", "LISA_signs"
     ]
 
     # Current data root and stored datsets
