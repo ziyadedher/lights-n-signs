@@ -251,7 +251,7 @@ def preprocess_lights(lights_path: str, proportion: float = 1.0,
                             id_index = r
                 else:
                     img_id = str(row[id_index])
-                    url = "https://drive.google.com/uc?id={}&export=download".f$
+                    url = "https://drive.google.com/uc?id={}&export=download".format(img_id)
                     print(url)
                     if "{}.png".format(img_id) not in files_created:
                         urllib.request.urlretrieve(
