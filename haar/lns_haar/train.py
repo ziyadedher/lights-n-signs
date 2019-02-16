@@ -38,13 +38,12 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
 
     def __init__(self, name: str,
                  dataset: Union[str, Dataset],
-                 load: bool = False) -> None:
+                 load: bool = True) -> None:
         """Initialize a Haar trainer with the given unique <name>.
 
         Sources data from the <dataset> given which can either be a name of
-        an available dataset or a `Dataset` object. If <load> is set
-        to True attempts to load the trainer with the given ID before
-        overwriting.
+        an available dataset or a `Dataset` object.  If <load> is set
+        to False removes any existing trained cascade files before training.
         """
         super().__init__(name, dataset,
                          _processor=HaarProcessor, _type="haar", _load=load,
