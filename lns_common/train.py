@@ -87,9 +87,17 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         """Get the unique name of this training configuration."""
         return self.__name
 
+    @property
+    def dataset(self) -> Dataset:
+        """Get the dataset that this trainer is operating on."""
+        return self.__dataset
+
     @classmethod
     def _setup(cls, setup_call: SetupFunc) -> SetupFunc:
-        """Set up the trainer for training."""
+        """Decorate the main setup function to set up the trainer for training.
+
+        Ensures that the trainer has been registered as set up.
+        """
         def _setup_wrapper(*args, **kwargs):  # type: ignore
             setup_call(*args, **kwargs)
             args[0].__is_setup = True
@@ -98,7 +106,10 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
 
     @classmethod
     def _train(cls, train_call: TrainFunc) -> TrainFunc:
-        """Begin training the model."""
+        """Decorate the main train function for pretraining checks.
+
+        Makes sure the trainer has been set up.
+        """
         def _train_wrapper(*args, **kwargs):  # type: ignore
             if not args[0].__is_setup:
                 raise TrainerNotSetupException(
