@@ -60,6 +60,7 @@ class Preprocessor:
         "mturk": preprocessing.preprocess_mturk,
         "cities": preprocessing.preprocess_cities,
         "LISA_signs": preprocessing.preprocess_LISA_signs
+        "lights": preprocessing.preprocess_lights
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}

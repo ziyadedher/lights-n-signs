@@ -3,7 +3,7 @@
 This module consists of abstract and container classes that provide a
 common interface for every technique for light and sign detection.
 """
-from typing import TypeVar, List
+from typing import TypeVar, List, Optional
 
 import numpy as np  # type: ignore
 
@@ -39,10 +39,12 @@ class PredictedObject2D:
     predicted_classes: List[str]
 
     def __init__(self, bounding_box: Bounds2D,
-                 predicted_classes: List[str]) -> None:
+                 predicted_classes: List[str],
+                 scores: Optional[List[int]] = None) -> None:
         """Initialize a two-dimensional predicted object."""
         self.bounding_box = bounding_box
         self.predicted_classes = predicted_classes
+        self.scores = scores if scores else [1] * len(predicted_classes)
 
 
 class Model:

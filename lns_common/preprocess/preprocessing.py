@@ -195,6 +195,7 @@ def preprocess_LISA(LISA_path: str, proportion: float = 1.0,
                     "x_max": x_max,
                     "y_max": y_max
                 })
+    annotations, images = delete_empties(annotations, images)
 
     if not testset:
         return set_proportions("LISA", {"LISA": images}, detection_classes,
@@ -202,6 +203,112 @@ def preprocess_LISA(LISA_path: str, proportion: float = 1.0,
     else:
         return create_testset("cities", {"cities": images},
                               detection_classes, annotations, proportion)
+
+def preprocess_lights(lights_path: str, proportion: float = 1.0,
+                      testset: bool = False) -> Dataset:
+    """Preprocess and generate data for our custom dataset at the given path.
+
+    Raises `FileNotFoundError` if any of the required files or folders is not
+    found.
+    """
+    images: List[str] = []
+    detection_classes: List[str] = []
+    annotations: Dict[str, List[Dict[str, int]]] = {}
+
+    if not os.path.isdir(os.path.join(lights_path, "images_new")):
+        os.mkdir(os.path.join(
+            lights_path, "images_new"
+        ))
+
+    annotation_files: List[str] = os.listdir(lights_path)
+
+    if len(annotation_files) == 0:
+        raise FileNotFoundError(
+            f"Could not find annotations file {directory}."
+        )
+
+    files_created: List[str] = os.listdir(os.path.join(
+        lights_path, "images_new"
+    ))
+
+    for f in annotation_files:
+        if os.path.isdir(os.path.join(lights_path, f)):
+            continue
+
+        print("Processing files for {}".format(f))
+
+        with open(os.path.join(lights_path, f)) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            id_index = 0
+            annos = 0
+
+            for row in csv_reader:
+                if id_index == 0:
+                    for r in range(len(row)):
+                        if "Answer.annotatedResult.boundingBoxes" in row[r]:
+                            annos = r
+                        if "Input.image_id" in row[r]:
+                            id_index = r
+                else:
+                    img_id = str(row[id_index])
+                    url = "https://drive.google.com/uc?id={}&export=download".format(img_id)
+                    print(url)
+                    if "{}.png".format(img_id) not in files_created:
+                        urllib.request.urlretrieve(
+                            url, "{}.png".format(os.path.join(
+                                lights_path, 'images_new', img_id
+                            ))
+                        )
+                        print("{}.png Downloaded".format(img_id))
+
+                        files_created.append("{}.png".format(img_id))
+
+                    image_path = os.path.abspath(
+                        os.path.join(
+                            lights_path, "images_new", "{}.png".format(img_id)
+                        )
+                    )
+
+                    data = json.loads(row[annos])
+
+                    if image_path not in annotations:
+                        annotations[image_path] = []
+
+                    for d in data:
+                        c = d["label"]
+
+                        if c not in detection_classes:
+                            detection_classes.append(c)
+
+                        x = d["left"]
+                        y = d["top"]
+                        w = d["width"]
+                        h = d["height"]
+
+                        if config.MIN_SIZE > w * h:
+                            continue
+
+                        annotations[image_path].append({
+                            "class": detection_classes.index(c),
+                            "x_min": x,
+                            "y_min": y,
+                            "x_max": x + w,
+                            "y_max": y + h
+                        })
+
+                    images.append(image_path)
+
+    annotations, images = delete_empties(annotations, images)
+
+    annotations = annotation_fix(annotations)
+
+    if not testset:
+        return set_proportions("lights", {"lights": images},
+                               detection_classes, annotations, proportion)
+    else:
+        return create_testset("lights", {"lights": images},
+                              detection_classes, annotations, proportion)
+
 
 
 def preprocess_sim(sim_path: str, proportion: float = 1.0,
@@ -252,6 +359,7 @@ def preprocess_sim(sim_path: str, proportion: float = 1.0,
                 "x_max": bb[0] + bb[2],
                 "y_max": bb[1] + bb[3]
             })
+    annotations, images = delete_empties(annotations, images)
 
     if not testset:
         return set_proportions("sim", {"sim": images}, detection_classes,
@@ -312,6 +420,7 @@ def preprocess_bosch(bosch_path: str, proportion: float = 1.0,
                 "x_max": x_max,
                 "y_max": y_max
             })
+    annotations, images = delete_empties(annotations, images)
 
     if not testset:
         return set_proportions("Bosch", {"Bosch": images},
@@ -429,6 +538,7 @@ def preprocess_mturk(mturk_path: str, proportion: float = 1.0,
 
                     images.append(image_path)
 
+    annotations, images = delete_empties(annotations, images)
     if not testset:
         return set_proportions("mturk", {"mturk": images},
                                detection_classes, annotations, proportion)
@@ -521,6 +631,8 @@ def preprocess_custom(custom_path: str, proportion: float = 1.0,
                 "x_max": x_max,
                 "y_max": y_max
             })
+
+    annotations, images = delete_empties(annotations, images)
 
     if not testset:
         return set_proportions("Custom", {"Custom": images},
@@ -619,6 +731,8 @@ def preprocess_cities(cities_path: str, proportion: float = 1.0,
 
                     images.append(image_path)
 
+    annotations, images = delete_empties(annotations, images)
+
     annotations = annotation_fix(annotations)
 
     if not testset:
@@ -628,6 +742,19 @@ def preprocess_cities(cities_path: str, proportion: float = 1.0,
         return create_testset("cities", {"cities": images},
                               detection_classes, annotations, proportion)
 
+def delete_empties(annotations: Dict[str, List[Dict[str, int]]], \
+                   images: Dict[str, List[str]]) -> Tuple:
+    delete_keys = []
+    for key, anno in annotations.items():
+        if len(anno) == 0:
+            print("deleting {}".format(key))
+            delete_keys.append(key)
+
+    for d in delete_keys:
+        del annotations[d]
+        del images[images.index(d)]
+
+    return annotations, images
 
 def preprocess_LISA_signs(LISA_signs_path: str) -> Dataset:
     """Preprocess and generate data for our custom dataset at the given path.
@@ -669,7 +796,6 @@ def preprocess_LISA_signs(LISA_signs_path: str) -> Dataset:
         annotations[file_name] = [temp]
 
     return Dataset("LISA_signs", {"LISA_signs": images}, detection_classes, annotations)
-
 
 def set_proportions(name: str,
                     images: Dict[str, List[str]], classes: List[str],
