@@ -146,7 +146,7 @@ def find_classification_accuracy_stats(confusion_matrix, dataset):
         return float(num_acc/num_det)
 
     def find_f1(precision, recall):
-        pass
+        return precision * recall * 2 / (precision + recall)
 
     for det_class in confusion_matrix.keys():
         precision = find_precision(confusion_matrix, det_class)

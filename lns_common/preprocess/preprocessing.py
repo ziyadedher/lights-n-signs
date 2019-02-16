@@ -538,11 +538,6 @@ def preprocess_custom(custom_path: str, proportion: float = 1.0,
 
 def preprocess_cities(cities_path: str, proportion: float = 1.0,
                       testset: bool = False) -> Dataset:
-    """Preprocess and generate data for our custom dataset at the given path.
-
-    Raises `FileNotFoundError` if any of the required files or folders is not
-    found.
-    """
     images: List[str] = []
     detection_classes: List[str] = []
     annotations: Dict[str, List[Dict[str, int]]] = {}
@@ -641,7 +636,6 @@ def preprocess_cities(cities_path: str, proportion: float = 1.0,
         return create_testset("cities", {"cities": images},
                               detection_classes, annotations, proportion)
 
-
 def delete_empties(annotations: Dict[str, List[Dict[str, int]]], \
                    images: Dict[str, List[str]]) -> Tuple:
     delete_keys = []
@@ -655,7 +649,47 @@ def delete_empties(annotations: Dict[str, List[Dict[str, int]]], \
         del images[images.index(d)]
 
     return annotations, images
+    
+def preprocess_KITTI(KITTI_path: str) -> Dataset:
+    """Preprocess and generate data for our custom dataset at the given path.
 
+    Raises `FileNotFoundError` if any of the required files or folders is not
+    found.
+    """
+
+    images: List[str] = []
+    detection_classes: List[str] = ['pedestrianCrossing', 'speedLimit15', 'speedLimit25', 'stop_', 'turnLeft', 'turnRight']
+    annotations: Dict[str, List[Dict[str, int]]] = {}
+
+    #Open up the csv file
+    label_path = os.path.join(KITTI_path,
+                              'relevantAnnotations.csv')  # Assume that CSV is with the rest of the directories
+    labels_file = open(label_path, 'r')
+    labels_reader = csv.DictReader(labels_file, fieldnames=['filename', 'annotations', 'bounding_box'])
+
+    #iterate through the csv file to populate relevant structures
+    for i, row in enumerate(labels_reader):
+        if i == 0:   #First row is just header
+            continue
+
+        if row['annotations'] == 'stop':  #Error handling because of annotations processing
+            class_name = 'stop_'
+        else:
+            class_name = row['annotations']
+
+        img_name = row['filename'].split('/')[2]  #Add to the list of images
+        file_name = os.path.join(os.path.join(KITTI_path, class_name), img_name)
+        images.append(file_name)
+
+        bounding_box = ast.literal_eval(row['bounding_box'])  #unpack the annotations
+        x_min = int(bounding_box[0][0])
+        y_min = int(bounding_box[0][1])
+        x_max = int(bounding_box[1][0])
+        y_max = int(bounding_box[1][1])
+        temp = {'x_min': x_min, 'y_min': y_min, 'x_max': x_max, 'y_max': y_max}
+        annotations[file_name] = [temp]
+
+    return Dataset("KITTI_signs", {"KITTI_signs": images}, detection_classes, annotations)
 
 def set_proportions(name: str,
                     images: Dict[str, List[str]], classes: List[str],
