@@ -5,64 +5,74 @@ SqueezeDet training.
 """
 from typing import List
 
+import os
 import cv2                # type: ignore
 import easydict           # type: ignore
 import numpy as np        # type: ignore
-from keras import models  # type: ignore
-from squeezedet_keras.model import evaluation  # type: ignore
+import tensorflow as tf
 
 from lns_common.model import Model, PredictedObject2D, Bounds2D
 
+from .lib import SqueezeDet, create_config, set_anchors
 
 class SqueezeDetModel(Model):
     """Bounding-box prediction model utilizing SqueezeDet."""
 
-    __model: models.Model
     __config: easydict.EasyDict
-    __classes: List[str]
+    __model: SqueezeDet
+    __saver: tf.train.Saver
+    __sess: tf.Session
 
-    def __init__(self, model: models.Model, config: easydict.EasyDict,
-                 classes: List[str]) -> None:
+    def __init__(self, checkpoint_path: str) -> None:
         """Initialize a SqueezeDet model with the given model and config."""
-        self.__model = model
-        self.__config = config
-        self.__classes = classes
+        self.__config = self._configure()
+        self.__model = SqueezeDet(self.__config, "0")
+
+        self.__saver = tf.train.Saver(self.__model.model_params)
+        self.__sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
+        self.__saver.restore(self.__sess, checkpoint_path)
+
 
     def predict(self, image: np.ndarray) -> List[PredictedObject2D]:
         """Predict the required bounding boxes on the given <image>."""
-        # Preprocess the image how squeezedet_keras does it
-        image = cv2.resize(
-            image, (self.__config.IMAGE_WIDTH, self.__config.IMAGE_HEIGHT)
+        image = image.astype(np.float32, copy=False)
+        image = cv2.resize(image, (self.__config.IMAGE_WIDTH, self.__config.IMAGE_HEIGHT))
+        input_image = image - self.__config.BGR_MEANS
+
+        det_boxes, det_probs, det_class = self.__sess.run(
+            [self.__model.det_boxes, self.__model.det_probs, self.__model.det_class],
+            feed_dict={self.__model.image_input: [input_image]}
         )
-        image = (image - np.mean(image)) / np.std(image)
-        image = np.expand_dims(image, axis=0)
 
-        # Gather a prediction
-        prediction = self.__model.predict(image)
+        final_boxes, final_probs, final_class = self.__model.filter_prediction(det_boxes[0], det_probs[0], det_class[0])
 
-        # Use squeezedet_keras's prediction filtering on batches
-        past_batch_size = self.__config.BATCH_SIZE
-        self.__config.BATCH_SIZE = 1
-        boxes, classes, scores = evaluation.filter_batch(
-            prediction, self.__config
-        )
-        self.__config.BATCH_SIZE = past_batch_size
+        keep_idx    = [idx for idx in range(len(final_probs)) if final_probs[idx] > self.__config.PLOT_PROB_THRESH]
+        final_boxes = [final_boxes[idx] for idx in keep_idx]
+        final_probs = [final_probs[idx] for idx in keep_idx]
+        final_class = [final_class[idx] for idx in keep_idx]
 
-        # Only one batch
-        boxes = boxes[0]
-        classes = classes[0]
-        scores = scores[0]
-
-        # Generate the prediction boxes
         predictions = []
-        for _box, _class, _score in zip(boxes, classes, scores):
-            bounds = Bounds2D(
-                int(_box[0] - (_box[2] / 2)), int(_box[1] - (_box[3] / 2)),
-                int(_box[2]), int(_box[3])
-            )
+        for i in range(len(final_boxes)):
+            bounds = Bounds2D(*(final_boxes[i].tolist()))
             predictions.append(PredictedObject2D(
-                bounds,
-                [self.__classes[_class]],
-                [_score]
+                bounds, [self.__config.CLASS_NAMES[final_class[i]]], [final_probs[i]]
             ))
+
         return predictions
+
+    def _configure(self) -> easydict.EasyDict:
+        cfg = create_config()
+
+        cfg.CLASS_NAMES = ('red', 'green', 'off')
+        cfg.CLASSES = len(cfg.CLASS_NAMES)
+
+        cfg.IMAGE_WIDTH = 1280
+        cfg.IMAGE_HEIGHT = 720
+        cfg.BATCH_SIZE = 1
+        cfg.TOP_N_DETECTION = 8
+        cfg.LOAD_PRETRAINED_MODEL = False
+
+        cfg.ANCHOR_BOX = set_anchors(cfg)
+        cfg.ANCHORS = len(cfg.ANCHOR_BOX)
+
+        return cfg
