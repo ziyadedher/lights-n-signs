@@ -24,7 +24,7 @@ MANIFEST
 
 # IDE stuff
 .vscode*
-
+.idea*
 # Virtual environments
 .venv
 

@@ -18,7 +18,6 @@ import itertools
 import statistics
 from PIL import Image
 from xml.etree import ElementTree as ET
-import statistics
 
 from lns_common import config
 
@@ -639,6 +638,27 @@ def preprocess_cities(cities_path: str, proportion: float = 1.0,
                                detection_classes, annotations, proportion)
     else:
         return create_testset("cities", {"cities": images},
+                              detection_classes, annotations, proportion)
+
+
+def preprocess_scale_lights(scale_lights_path: str, proportion: float = 1.0,
+                            testset: bool = False) -> Dataset:
+    """Preprocess and generate data for our custom dataset at the given path.
+
+    Raises `FileNotFoundError` if any of the required files or folders is not
+    found.
+    """
+    with open(scale_lights_path, "rb") as f:
+        data = pickle.load(f)
+    images: data['images']
+    detection_classes: List[str] = data['classes']
+    annotations: Dict[str, List[Dict[str, int]]] = data['annotations']
+
+    if not testset:
+        return set_proportions("scale_lights", {"scale_lights": images},
+                               detection_classes, annotations, proportion)
+    else:
+        return create_testset("scale_lights", {"scale_lights": images},
                               detection_classes, annotations, proportion)
 
 

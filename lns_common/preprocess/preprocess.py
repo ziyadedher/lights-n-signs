@@ -58,7 +58,8 @@ class Preprocessor:
         "Custom_testing": preprocessing.preprocess_custom,
         "sim": preprocessing.preprocess_sim,
         "mturk": preprocessing.preprocess_mturk,
-        "cities": preprocessing.preprocess_cities
+        "cities": preprocessing.preprocess_cities,
+        "scale_lights": preprocessing.preprocess_scale_lights,
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}
