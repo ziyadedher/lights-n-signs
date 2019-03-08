@@ -80,7 +80,7 @@ while have_next_page:
 
         # Download the image
         local_path = os.path.join(SCALE_LIGHTS_PATH, task_id)
-        urllib.request.urlretriev(img_url, local_path)
+        urllib.request.urlretrieve(img_url, local_path)
 
         ANNOTATIONS[local_path] = []
         # ignore empty images
