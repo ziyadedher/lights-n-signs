@@ -1,7 +1,8 @@
 import scaleapi
 import pickle
 from tqdm import tqdm
-
+import urllib.request
+import os
 
 client = scaleapi.ScaleClient('live_c51c4273f60f4bcb9e86578c372aa51d')
 
@@ -53,6 +54,10 @@ client = scaleapi.ScaleClient('live_c51c4273f60f4bcb9e86578c372aa51d')
     }
 }
 """
+
+SCALE_LIGHTS_PATH = ""
+MAX_TO_PROCESS = 100
+
 DATASET = {}
 ANNOTATIONS = {}
 CLASSES = []
@@ -60,6 +65,9 @@ IMAGES = []
 
 offset = 0
 have_next_page = True
+
+count = 0
+
 while have_next_page:
     tasklist = client.tasks(status="completed", offset=offset)
     print(len(tasklist))
@@ -70,7 +78,11 @@ while have_next_page:
         bbox_list = task.param_dict['response']['annotations']
         img_url = task.param_dict['params']['attachment']
 
-        ANNOTATIONS[img_url] = []
+        # Download the image
+        local_path = os.path.join(SCALE_LIGHTS_PATH, task_id)
+        urllib.request.urlretriev(img_url, local_path)
+
+        ANNOTATIONS[local_path] = []
         # ignore empty images
         if len(bbox_list) != 0:
             for bbox in bbox_list:
@@ -84,17 +96,20 @@ while have_next_page:
                 box_dict['x_max'] = int(bbox['left']) + int(bbox['width'])
                 box_dict['y_max'] = int(bbox['top']) + int(bbox['height'])
 
-                ANNOTATIONS[img_url].append(box_dict)
+                ANNOTATIONS[local_path].append(box_dict)
 
-        IMAGES.append(img_url)
-        # print("Processed {}".format(img_url))
+        IMAGES.append(local_path)
+        print("Processed {}".format(img_url))
+        count += 1
 
-    if len(tasklist) < 100:
+    if len(tasklist) < 100 or count > MAX_TO_PROCESS:
         have_next_page = False
 
 DATASET['images'] = IMAGES
 DATASET['classes'] = CLASSES
 DATASET['annotations'] = ANNOTATIONS
+
+print(DATASET)
 
 with open('scale_dataset.pickle', 'wb') as handle:
     pickle.dump(DATASET, handle, protocol=pickle.HIGHEST_PROTOCOL)
