@@ -5,6 +5,7 @@ import csv
 import json
 from urllib import request
 
+from .fix_dataset import annotation_fix
 from lns.common import config
 from lns.common.dataset import Dataset
 from lns.common.preprocess import Preprocessor

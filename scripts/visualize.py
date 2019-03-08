@@ -59,7 +59,7 @@ if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
     Preprocessor.register_default_preprocessors()
     # bosch = Preprocessor.preprocess("Bosch")
-    lisa = Preprocessor.preprocess("LISA")
+    lisa = Preprocessor.preprocess("lights")
     dataset = lisa
     dataset = dataset.merge_classes({
         "green": [
