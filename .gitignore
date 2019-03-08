@@ -31,7 +31,7 @@ MANIFEST
 # MyPy
 .mypy_cache/
 
-
+*.DS_Store
 # === RESOURCES ===
 resources/
 !resource/data

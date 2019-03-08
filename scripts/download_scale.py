@@ -79,7 +79,7 @@ while have_next_page:
         img_url = task.param_dict['params']['attachment']
 
         # Download the image
-        local_path = os.path.join(SCALE_LIGHTS_PATH, task_id)
+        local_path = "{}.png".format(os.path.join(SCALE_LIGHTS_PATH, task_id))
         urllib.request.urlretrieve(img_url, local_path)
 
         ANNOTATIONS[local_path] = []
