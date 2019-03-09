@@ -14,7 +14,7 @@ RESOURCES_ROOT: str = os.path.abspath(
 )
 
 POSSIBLE_DATASETS: List[str] = [
-    "LISA", "Bosch", "Custom", "Custom_testing", "sim", "mturk", "cities", "LISA_signs", "lights",
+    "LISA", "Bosch", "Custom", "Custom_testing", "sim", "mturk", "cities", "LISA_signs", "lights", "scale_lights"
 ]
 
 SEED = 6
