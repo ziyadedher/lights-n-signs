@@ -12,3 +12,5 @@ for those methods to be agnostic of the data format itself.
 from lns.common.preprocessing import bosch  # noqa
 from lns.common.preprocessing import lights  # noqa
 from lns.common.preprocessing import lisa  # noqa
+from lns.common.preprocessing import mturk  # noqa
+from lns.common.preprocessing import scale_lights

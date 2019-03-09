@@ -13,7 +13,8 @@ cv2.namedWindow("visualization", cv2.WINDOW_NORMAL)
 cv2.resizeWindow("visualization", 1920, 1080)
 
 
-def visualize_image(model: Model, image_path: str, *,
+def visualize_image(image_path: str, *,
+                    model: Optional[Model] = None, visualize_model: bool = False,
                     labels: Optional[Dataset.Labels] = None, show_labels: bool = False) -> None:
     image = cv2.imread(image_path)
 
@@ -22,8 +23,10 @@ def visualize_image(model: Model, image_path: str, *,
             raise ValueError("Labels cannot be none if <show_labels> is set to `True`.")
         image = put_labels_on_image(image, labels)
 
-    predictions = model.predict(image)
-    image = put_predictions_on_image(image, predictions)
+    if visualize_model:
+        if model is None:
+            raise ValueError("Need to set a model if <visualize_model> is set to `True`.")
+        image = put_predictions_on_image(image, model.predict(image))
 
     cv2.imshow("visualization", image)
     key = cv2.waitKey(0)
@@ -35,9 +38,12 @@ def visualize_image(model: Model, image_path: str, *,
 
 if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
-    bosch = Preprocessor.preprocess("Bosch")
-    lights = Preprocessor.preprocess("lights")
-    dataset = lights
+    #bosch = Preprocessor.preprocess("Bosch")
+    #lights = Preprocessor.preprocess("lights")
+    #scale = Preprocessor.preprocess("scale_lights")
+    print(Preprocessor._dataset_preprocessors)
+    mturk = Preprocessor.preprocess("mturk")
+    dataset = mturk
     dataset = dataset.merge_classes({
         "green": [
             "GreenLeft", "Green", "GreenRight", "GreenStraight",
@@ -49,7 +55,7 @@ if __name__ == '__main__':
         ],
         "off": ["off"]
     })
-    dataset = dataset.minimum_area(0.0001)
+    dataset = dataset.minimum_area(0)
 
     from lns.squeezedet.model import SqueezeDetModel
     model = SqueezeDetModel("/home/lns/lns/xiyan/models/alllights-414000/train/model.ckpt-415500")
@@ -57,4 +63,4 @@ if __name__ == '__main__':
     annotations = dataset.annotations
     for image_paths in dataset.image_split(0.1)[0].values():
         for image_path in image_paths:
-            visualize_image(model, image_path, labels=annotations[image_path], show_labels=True)
+            visualize_image(image_path, model=model, visualize_model=False, labels=annotations[image_path], show_labels=True)
