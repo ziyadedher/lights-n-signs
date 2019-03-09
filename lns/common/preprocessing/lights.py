@@ -5,10 +5,10 @@ import csv
 import json
 from urllib import request
 
-from .fix_dataset import annotation_fix
 from lns.common import config
 from lns.common.dataset import Dataset
 from lns.common.preprocess import Preprocessor
+from lns.common.preprocessing.fix_dataset import annotation_fix
 
 
 DATASET_NAME = "lights"
@@ -89,6 +89,4 @@ def _lights(path: str) -> Dataset:
                     if image_path in annotations:
                         images[DATASET_NAME].append(image_path)
 
-    annotations = annotation_fix(annotations)
-
-    return Dataset(DATASET_NAME, images, classes, annotations)
+    return Dataset(DATASET_NAME, images, classes, annotation_fix(annotations))

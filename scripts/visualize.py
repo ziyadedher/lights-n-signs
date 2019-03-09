@@ -6,16 +6,11 @@ import cv2  # type: ignore
 
 from lns.common.model import Model
 from lns.common.dataset import Dataset
+from lns.common.utils.visualization import put_labels_on_image, put_predictions_on_image
 
 
-STROKE_WIDTH = 1
-COLOR_MAP = {
-    "red": (0, 0, 255),
-    "green": (0, 255, 0),
-    "off": (0, 0, 0),
-}
-TEXT_OFFSET = (0, 15)
-TEXT_SIZE = 0.5
+cv2.namedWindow("visualization", cv2.WINDOW_NORMAL)
+cv2.resizeWindow("visualization", 1920, 1080)
 
 
 def visualize_image(model: Model, image_path: str, *,
@@ -25,42 +20,24 @@ def visualize_image(model: Model, image_path: str, *,
     if show_labels:
         if labels is None:
             raise ValueError("Labels cannot be none if <show_labels> is set to `True`.")
-
-        for label in labels:
-            cv2.rectangle(
-                image, (int(label["x_min"]), int(label["y_min"])), (int(label["x_max"]), int(label["y_max"])),
-                (255, 255, 255), STROKE_WIDTH
-            )
+        image = put_labels_on_image(image, labels)
 
     predictions = model.predict(image)
-    for prediction in predictions:
-        predicted_class = prediction.predicted_classes[0]
-        confidence = prediction.scores[0]
-        box = prediction.bounding_box
-        color = COLOR_MAP.get(predicted_class, (255, 255, 255))
-
-        cv2.rectangle(
-            image, (int(box.left), int(box.top)), (int(box.right), int(box.bottom)),
-            color, STROKE_WIDTH
-        )
-        cv2.putText(
-            image, f"{predicted_class}:{confidence:.2f}",
-            (int(box.left + TEXT_OFFSET[0]), int(box.bottom + TEXT_OFFSET[1])),
-            cv2.FONT_HERSHEY_SIMPLEX, TEXT_SIZE, color
-        )
+    image = put_predictions_on_image(image, predictions)
 
     cv2.imshow("visualization", image)
     key = cv2.waitKey(0)
-    if key == 27:
-        sys.exit(0)
+    while key != ord("a"):
+        key = cv2.waitKey(0)
+        if key == 27:
+            sys.exit(0)
 
 
 if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
-    Preprocessor.register_default_preprocessors()
-    # bosch = Preprocessor.preprocess("Bosch")
-    lisa = Preprocessor.preprocess("lights")
-    dataset = lisa
+    bosch = Preprocessor.preprocess("Bosch")
+    lights = Preprocessor.preprocess("lights")
+    dataset = lights
     dataset = dataset.merge_classes({
         "green": [
             "GreenLeft", "Green", "GreenRight", "GreenStraight",
@@ -72,6 +49,7 @@ if __name__ == '__main__':
         ],
         "off": ["off"]
     })
+    dataset = dataset.minimum_area(0.0001)
 
     from lns.squeezedet.model import SqueezeDetModel
     model = SqueezeDetModel("/home/lns/lns/xiyan/models/alllights-414000/train/model.ckpt-415500")

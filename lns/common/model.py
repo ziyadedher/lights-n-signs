@@ -13,7 +13,6 @@ class Bounds2D:
 
     Represents two-dimensional bounding box coordinates.
     """
-
     __left: float
     __top: float
     __width: float
@@ -81,16 +80,16 @@ class PredictedObject2D:
     Consists of a two-dimensional bounding box and the classes of the object
     predicted to be contained within that bounding box.
     """
-
     bounding_box: Bounds2D
     predicted_classes: List[str]
+    scores: List[float]
 
     def __init__(self, bounding_box: Bounds2D, predicted_classes: List[str],
-                 scores: Optional[List[int]] = None) -> None:
+                 scores: Optional[List[float]] = None) -> None:
         """Initialize a two-dimensional predicted object."""
         self.bounding_box = bounding_box
         self.predicted_classes = predicted_classes
-        self.scores = scores if scores else [1] * len(predicted_classes)
+        self.scores = scores if scores else [1.0] * len(predicted_classes)
 
 
 class Model:
