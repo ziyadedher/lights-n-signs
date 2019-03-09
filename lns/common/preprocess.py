@@ -96,3 +96,6 @@ class Preprocessor:
             dataset = dataset.scale(scale)
 
         return dataset
+
+
+Preprocessor.register_default_preprocessors()

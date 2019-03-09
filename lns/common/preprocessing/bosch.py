@@ -45,9 +45,9 @@ def _bosch(path: str) -> Dataset:
                 classes.append(label)
 
             # Package the detection
-            images[DATASET_NAME].append(image_path)
             if image_path not in annotations:
                 annotations[image_path] = []
+                images[DATASET_NAME].append(image_path)
             annotations[image_path].append({
                 "class": class_index,
                 "x_min": x_min,
