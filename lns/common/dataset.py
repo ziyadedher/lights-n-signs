@@ -195,6 +195,31 @@ class Dataset:
 
         return Dataset(self.name, images, classes, annotations)
 
+    def minimum_area(self, proportion: float) -> 'Dataset':
+        """Return a new dataset with small annotations pruned.
+
+        Removes all annotations that have a proportion in the image less than <proportion>.
+        """
+        images: Dataset.Images = {dataset_name: [] for dataset_name in self.images.keys()}
+        annotations: Dataset.Annotations = {}
+
+        image_shape = cv2.imread(list(self.images.values())[0][0]).shape
+        image_area = image_shape[0] * image_shape[1]
+
+        old_annotations = self.annotations
+        for dataset_name, image_paths in self.images.items():
+            for image_path in image_paths:
+                annotation = old_annotations[image_path]
+                for detection in annotation:
+                    area = (detection["x_max"] - detection["x_min"]) * (detection["y_max"] - detection["y_min"])
+                    if area / image_area >= proportion:
+                        if image_path not in annotations:
+                            images[dataset_name].append(image_path)
+                            annotations[image_path] = []
+                        annotations[image_path].append(detection)
+
+        return Dataset(self.name, images, self.classes, annotations)
+
     def shuffle_images(self, seed: int) -> None:
         """Shuffle the images in this `Dataset` in place.
 

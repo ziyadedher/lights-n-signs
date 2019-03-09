@@ -5,9 +5,13 @@ from tqdm import tqdm  # type: ignore
 
 from lns.common.model import Model, Bounds2D, PredictedObject2D
 from lns.common.dataset import Dataset
+from lns.common.utils.visualization import put_labels_on_image, put_predictions_on_image
 
 
 ConfusionMatrix = Dict[str, Dict[str, int]]
+
+cv2.namedWindow("visualization", cv2.WINDOW_NORMAL)
+cv2.resizeWindow("visualization", 1920, 1080)
 
 
 def benchmark(model: Model, dataset: Dataset, *,
@@ -22,6 +26,9 @@ def benchmark(model: Model, dataset: Dataset, *,
         }
         for class_name in classes
     }
+
+    total_iou = 0.0
+    count = 0
 
     # Flatten the images from the different datasets and iterate through each
     image_paths = [
@@ -42,9 +49,8 @@ def benchmark(model: Model, dataset: Dataset, *,
         detected = [False] * len(ground_truths)
 
         # Predict on this image and iterate through each prediction to check for matches
-        total_iou = 0.0
-        count = 0
-        predictions = model.predict(cv2.imread(image_path))
+        image = cv2.imread(image_path)
+        predictions = model.predict(image)
         for prediction in predictions:
             any_detected = False
 
@@ -61,12 +67,20 @@ def benchmark(model: Model, dataset: Dataset, *,
                     any_detected = True
                     total_iou += iou
                     count += 1
+
             if not any_detected:
+                image = put_labels_on_image(image, annotations[image_path])
+                image = put_predictions_on_image(image, [prediction])
+                cv2.imshow("visualization", image)
+                key = cv2.waitKey(0)
+                while key != 10:
+                    key = cv2.waitKey(0)
                 confusion_matrix["__none__"][prediction.predicted_classes[0]] += 1
 
         for i, is_detected in enumerate(detected):
             if not is_detected:
                 confusion_matrix[ground_truths[i].predicted_classes[0]]["__none__"] += 1
+
     return total_iou / count, confusion_matrix
 
 
@@ -117,10 +131,9 @@ def print_confusion_matrix(confusion_matrix: ConfusionMatrix, spaces: int = 12) 
 
 if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
-    Preprocessor.register_default_preprocessors()
     bosch = Preprocessor.preprocess("Bosch")
-    # lisa = Preprocessor.preprocess("LISA")
-    dataset = bosch  # + lisa
+    lights = Preprocessor.preprocess("lights")
+    dataset = lights
     dataset = dataset.merge_classes({
         "green": [
             "GreenLeft", "Green", "GreenRight", "GreenStraight",
@@ -132,6 +145,7 @@ if __name__ == '__main__':
         ],
         "off": ["off"]
     })
+    dataset = dataset.minimum_area(0.0001)
 
     from lns.squeezedet.model import SqueezeDetModel
     model = SqueezeDetModel("/home/lns/lns/xiyan/models/alllights-414000/train/model.ckpt-415500")
