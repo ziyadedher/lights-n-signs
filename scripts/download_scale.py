@@ -55,8 +55,8 @@ client = scaleapi.ScaleClient('live_c51c4273f60f4bcb9e86578c372aa51d')
 }
 """
 
-SCALE_LIGHTS_PATH = ""
-MAX_TO_PROCESS = 100
+SCALE_LIGHTS_PATH = "/home/lns/lns/resources/data/scale_lights"
+MAX_TO_PROCESS = 999999
 
 DATASET = {}
 ANNOTATIONS = {}
@@ -72,7 +72,7 @@ while have_next_page:
     tasklist = client.tasks(status="completed", offset=offset)
     print(len(tasklist))
 
-    for obj in tqdm(tasklist):
+    for obj in tasklist:
         task_id = obj.param_dict['task_id']
         task = client.fetch_task(task_id)
         bbox_list = task.param_dict['response']['annotations']
@@ -113,5 +113,5 @@ DATASET['annotations'] = ANNOTATIONS
 
 print(DATASET)
 
-with open('scale_dataset.pickle', 'wb') as handle:
+with open(os.path.join(SCALE_LIGHTS_PATH, 'scale_dataset.pickle'), 'wb') as handle:
     pickle.dump(DATASET, handle, protocol=pickle.HIGHEST_PROTOCOL)
