@@ -104,6 +104,8 @@ while have_next_page:
 
     if len(tasklist) < 100 or count > MAX_TO_PROCESS:
         have_next_page = False
+    else
+        offset += 1
 
 DATASET['images'] = IMAGES
 DATASET['classes'] = CLASSES

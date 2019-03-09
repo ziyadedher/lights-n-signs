@@ -2,6 +2,8 @@ import pickle
 
 DATASET_NAME = "scale_lights"
 
+
+@Preprocessor.register_dataset_preprocessor(DATASET_NAME)
 def preprocess_scale_lights(scale_lights_path: str, proportion: float = 1.0,
                             testset: bool = False) -> Dataset:
     """Preprocess and generate data for our custom dataset at the given path.
