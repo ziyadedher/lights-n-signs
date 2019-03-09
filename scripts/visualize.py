@@ -40,8 +40,10 @@ if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
     #bosch = Preprocessor.preprocess("Bosch")
     #lights = Preprocessor.preprocess("lights")
-    scale = Preprocessor.preprocess("scale_lights")
-    dataset = scale
+    #scale = Preprocessor.preprocess("scale_lights")
+    print(Preprocessor._dataset_preprocessors)
+    mturk = Preprocessor.preprocess("mturk")
+    dataset = mturk
     dataset = dataset.merge_classes({
         "green": [
             "GreenLeft", "Green", "GreenRight", "GreenStraight",
