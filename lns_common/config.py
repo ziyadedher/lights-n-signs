@@ -9,7 +9,7 @@ import os
 
 
 RESOURCES_ROOT = os.path.abspath(
-    os.path.join(os.path.expanduser("~"), ".lns-training/resources")
+    os.path.join(os.path.expanduser("~"), "lns/resources")
 )
 
 RAND_SEED = 6
