@@ -1,4 +1,6 @@
 import pickle
+from lns.common.preprocess import Preprocessor
+from lns.common.dataset import Dataset
 
 DATASET_NAME = "scale_lights"
 

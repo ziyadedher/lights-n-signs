@@ -4,6 +4,7 @@ from numpy.random import randn
 from random import randint as rand
 
 # Hyperparameters
+AREA_THRESHOLD=0.5
 WARP = 0.05
 NOISE_SIGMA = 5
 BRIGHTNESS_SIGMA = 25
@@ -36,6 +37,9 @@ def augment(sign_image: np.ndarray, background_image: str, output_image: str):
         cnts = sorted(cnts, key=cv.contourArea, reverse=True)
         if len(cnts) == 0: return None
         cnts = [cv.convexHull(cnts[0])]
+        # Check if mask is large enough
+        area_ratio = cv.contourArea(cnts[0]) / (sign_image.shape[0]*sign_image.shape[1])
+        if area_ratio < AREA_THRESHOLD: return None
         # Draw mask of the enclosing shape
         mask = np.zeros_like(sign_img)
         cv.drawContours(mask, cnts, 0, (255, 255, 255), -1)

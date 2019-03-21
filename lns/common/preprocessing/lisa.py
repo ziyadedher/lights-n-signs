@@ -1,8 +1,12 @@
 import os
 import csv
 
+import numpy as np
+import cv2 as cv
+
 from lns.common.dataset import Dataset
 from lns.common.preprocess import Preprocessor
+from lns.common.preprocessing.augment_lisa import augment
 
 
 DATASET_NAME = "LISA"
@@ -46,6 +50,8 @@ def _lisa(path: str) -> Dataset:
 
                 image_name = row[0].split("/")[-1]
                 image_path = os.path.join(frames_path, image_name)
+                print(image_path)
+                if i > 10: break
 
                 detection_class = row[1]
 
@@ -74,5 +80,32 @@ def _lisa(path: str) -> Dataset:
                     "x_max": x_max,
                     "y_max": y_max
                 })
+
+    for image in images[DATASET_NAME]:
+        train_image = cv.imread(image)
+        new_path = image + f".aug.png"
+        print(new_path)
+
+        box = []
+        for ant in annotations[image]:
+            box.append([ant['x_min'], ant['y_min'], 1])
+            box.append([ant['x_max'], ant['y_max'], 1])
+        box = np.array(box)
+        a = augment(train_image, box, new_path)
+        
+        i = 0
+        new_ants = []
+        for ant in annotations[image]:
+            new_ant = {
+                'x_min': box[i, 0],
+                'y_min': box[i, 1],
+                'x_max': box[i+1, 0],
+                'y_max': box[i+1, 1],
+                'class': ant['class']
+            }
+            new_ants.append(new_ant)
+            i+=2
+        
+        annotations[new_path] = new_ants
 
     return Dataset(DATASET_NAME, images, classes, annotations)

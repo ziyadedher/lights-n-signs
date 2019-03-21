@@ -11,7 +11,7 @@ from urllib import request
 from lns.common import config
 from lns.common.dataset import Dataset
 from lns.common.preprocess import Preprocessor
-from lns.common.preprocessing.augment import augment
+from lns.common.preprocessing.augment_mturk import augment
 
 DATASET_NAME = "mturk"
 PRODUCT_DIM = 50
@@ -64,10 +64,7 @@ def _mturk(mturk_path: str, proportion: float = 1.0,
             annos = 0
             classification = 0
             orientation = 0
-            count = 0
             for row in csv_reader:
-                count += 1
-                if count > 25: break
                 if url_index == 0:
                     for r in range(len(row)):
                         if "Input.image_url" in row[r]:
@@ -142,13 +139,13 @@ def _mturk(mturk_path: str, proportion: float = 1.0,
             for ant in annotations[image]:
                 # Setup new path
                 new_path = image + f".aug{i}.png"
-                print(new_path)
                 # Extract ROI
                 x1, y1, x2, y2 = ant['x_min'], ant['y_min'], ant['x_max'], ant['y_max']
                 sign_image = train_image[y1:y2, x1:x2]
                 # Augment and modify class
                 a = augment(sign_image, bg, new_path)
                 if a is None: continue
+                print(new_path)
 
                 a['class'] = ant['class']
                 # Add annotation
