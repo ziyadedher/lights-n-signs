@@ -11,7 +11,7 @@ def preprocess_scale_lights(scale_lights_path: str, proportion: float = 1.0,
     Raises `FileNotFoundError` if any of the required files or folders is not
     found.
     """
-    with open(os.join.path(scale_lights_path, 'scale_dataset.pickle'), "rb") as f:
+    with open(os.join.path(scale_lights_path, 'scale_lights.pickle'), "rb") as f:
         data = pickle.load(f)
 
     images: List[str] = data['images']

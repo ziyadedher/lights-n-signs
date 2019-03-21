@@ -55,8 +55,8 @@ client = scaleapi.ScaleClient('live_c51c4273f60f4bcb9e86578c372aa51d')
 }
 """
 
-SCALE_LIGHTS_PATH = ""
-MAX_TO_PROCESS = 100
+SCALE_LIGHTS_PATH = "/home/lns/lns/resources/data/scale_lights"
+MAX_TO_PROCESS = 999999
 
 DATASET = {}
 ANNOTATIONS = {}
@@ -68,18 +68,23 @@ have_next_page = True
 
 count = 0
 
+if not os.path.exists(os.path.join(SCALE_LIGHTS_PATH, 'images')):
+    os.makedirs(os.path.join(SCALE_LIGHTS_PATH, 'images'))
+
 while have_next_page:
     tasklist = client.tasks(status="completed", offset=offset)
+    offset += 100
     print(len(tasklist))
 
-    for obj in tqdm(tasklist):
+    for obj in tasklist:
         task_id = obj.param_dict['task_id']
         task = client.fetch_task(task_id)
         bbox_list = task.param_dict['response']['annotations']
         img_url = task.param_dict['params']['attachment']
 
         # Download the image
-        local_path = "{}.png".format(os.path.join(SCALE_LIGHTS_PATH, task_id))
+        # local_path = "{}.png".format(os.path.join(SCALE_LIGHTS_PATH, 'images', img_url))
+        local_path = os.path.join(SCALE_LIGHTS_PATH, 'images', img_url.rsplit('/', 1)[-1])
         urllib.request.urlretrieve(img_url, local_path)
 
         ANNOTATIONS[local_path] = []
@@ -99,13 +104,11 @@ while have_next_page:
                 ANNOTATIONS[local_path].append(box_dict)
 
         IMAGES.append(local_path)
-        print("Processed {}".format(img_url))
+        print("Processed {}".format(local_path))
         count += 1
 
     if len(tasklist) < 100 or count > MAX_TO_PROCESS:
         have_next_page = False
-    else
-        offset += 1
 
 DATASET['images'] = IMAGES
 DATASET['classes'] = CLASSES
@@ -113,5 +116,6 @@ DATASET['annotations'] = ANNOTATIONS
 
 print(DATASET)
 
-with open('scale_dataset.pickle', 'wb') as handle:
+with open(os.path.join(SCALE_LIGHTS_PATH, 'scale_dataset.pickle'), 'wb') as handle:
     pickle.dump(DATASET, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
