@@ -1,3 +1,6 @@
+from lns.common.dataset import Dataset
+from lns.common.preprocess import Preprocessor
+
 import pickle
 
 DATASET_NAME = "scale_lights"
@@ -19,3 +22,4 @@ def preprocess_scale_lights(scale_lights_path: str, proportion: float = 1.0,
     annotations: Dict[str, List[Dict[str, int]]] = data['annotations']
 
     return Dataset(DATASET_NAME, images, classes, annotations)
+
