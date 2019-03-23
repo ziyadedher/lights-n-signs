@@ -1,0 +1,94 @@
+from typing import List
+
+from lns.common.model import Model, PredictedObject2D, Bounds2D
+from lns.squeezedet.model import SqueezeDetModel
+# from lns.common.preprocessing.lisa import preprocess
+
+import cv2 as cv
+import numpy as np
+
+import time
+
+# Tunable parameters
+PADDING = 2
+CANNY_START_LOW = 5
+CANNY_INCREMENT = 3
+CANNY_RATIO = 3
+RED_GREEN_THRESHOLD = 1.2
+
+class LightStateModel(Model):
+
+    def __init__(self, checkpoint_path: str) -> None:
+        """Classifier to label light color after applying SqueezeDet model"""
+
+        self.squeezedet_model = SqueezeDetModel(checkpoint_path)
+
+    def predict(self, image: np.ndarray) -> List[PredictedObject2D]:
+        """Predict the color of the on light"""
+
+        output = []
+        preds = self.squeezedet_model.predict(image)
+        for prediction in preds:
+            # Get on light's bounding box
+            box = prediction.bounding_box
+            light = image[int(box.top):int(box.bottom), int(box.left):int(box.right)]
+            rect = self.find_light(light)
+
+            # Label color and save prediction
+            if rect == 'off': color = 'off'
+            else: color = self.get_color(light, rect)[0]
+            output.append(PredictedObject2D(box, [color]))
+        return output
+
+
+    def find_light(self, img):
+        # Work on LAB colorspace channel
+        lightness = cv.cvtColor(img, cv.COLOR_BGR2LAB)[:, :, 1]
+
+        # Loop till the salient contour is found
+        low, high, num_cnts = CANNY_START_LOW, CANNY_START_LOW * CANNY_RATIO, -1
+        while num_cnts > 1 or num_cnts == -1:
+            # Detect edges
+            canny = cv.Canny(lightness, low, high)
+            # Find contours and sort them
+            cnts = cv.findContours(canny, method=cv.CHAIN_APPROX_SIMPLE, mode=cv.RETR_LIST)[1]
+            cnts = sorted(cnts, key=cv.contourArea, reverse=True)
+            # Break if we ran out of contours
+            if len(cnts) == 0:
+                if num_cnts == -1: return 'off'
+                else: break
+            # Tighten edge detection to improvise
+            x, y, w, h = cv.boundingRect(cnts[0])
+            num_cnts = len(cnts)
+            low += CANNY_INCREMENT
+            high = low * CANNY_RATIO
+
+        # Return the best contour found
+        return max(0, x-PADDING), max(0, y-PADDING), w+PADDING*2, h+PADDING*2
+
+    def get_color(self, img, rect):
+        # Expand the region of interest
+        x, y, w, h = rect
+        square = cv.resize(img[y:y+h,x:x+w,:], (200, 200))
+
+        # Calculate mean color
+        b, g, r = square[:, :, 0], square[:, :, 1], square[:, :, 2]
+        b, g, r = b.mean(), g.mean(), r.mean()
+
+        # Make a decision
+        if r/g < RED_GREEN_THRESHOLD: return 'green', square
+        else: return 'red', square
+
+# if __name__ == '__main__':
+#     CHECKPOINT_PATH = '/mnt/ssd2/vinit/model.ckpt-496000'
+
+#     from lns_common.preprocess.preprocess import Preprocessor
+#     dataset = Preprocessor.preprocess("LISA")
+#     dataset = dataset.merge_classes({
+#         'green': ['go', 'goLeft'],
+#         'red': ['stop', 'stopLeft', 'warningLeft', 'warning']
+#     })
+#     print(dataset.classes)
+    
+#     model = LightStateModel(CHECKPOINT_PATH)
+#     benchmark_model(dataset, model)
