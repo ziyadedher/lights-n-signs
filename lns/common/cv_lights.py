@@ -1,4 +1,5 @@
 from typing import List
+from tqdm import tqdm
 
 from lns.common.model import Model, PredictedObject2D, Bounds2D
 from lns.squeezedet.model import SqueezeDetModel
@@ -40,7 +41,7 @@ class LightStateModel(Model):
             output.append(PredictedObject2D(box, [color]))
         return output
 
-
+    @classmethod
     def find_light(self, img):
         # Work on LAB colorspace channel
         lightness = cv.cvtColor(img, cv.COLOR_BGR2LAB)[:, :, 1]
@@ -66,6 +67,7 @@ class LightStateModel(Model):
         # Return the best contour found
         return max(0, x-PADDING), max(0, y-PADDING), w+PADDING*2, h+PADDING*2
 
+    @classmethod
     def get_color(self, img, rect):
         # Expand the region of interest
         x, y, w, h = rect
@@ -78,6 +80,45 @@ class LightStateModel(Model):
         # Make a decision
         if r/g < RED_GREEN_THRESHOLD: return 'green', square
         else: return 'red', square
+
+def test_classification(dataset: str):
+    from lns.common.preprocess import Preprocessor
+    dataset = Preprocessor.preprocess(dataset)
+    print(dataset.classes)
+    dataset = dataset.merge_classes({
+        'green': ['Green'],
+        'red': ['Red', 'Yellow']
+    })
+    success = 0
+    count = 0
+    window = cv.namedWindow('image')
+    print(dataset.classes)
+    for path, annotation in tqdm(dataset.annotations.items()):
+        img = cv.imread(path)
+        for a in annotation:
+            x1 = a['x_min']
+            x2 = a['x_max']
+            y1 = a['y_min']
+            y2 = a['y_max']
+            partial = img[y1:y2, x1:x2, :]
+            #cv.imshow('image', partial)
+            #print(dataset.classes[a['class']])
+            rect = LightStateModel.find_light(partial)
+            if rect == 'off': 
+                color = 'off'
+            else: color = LightStateModel.get_color(partial, rect)[0]
+
+            if color == dataset.classes[a['class']]:
+                success += 1
+            else:
+                print("{} confused for {} for image of size {}".format(
+                    dataset.classes[a['class']], color, partial.shape
+                ))
+            count += 1
+
+    return success / count
+
+            #cv.waitKey(0)
 
 # if __name__ == '__main__':
 #     CHECKPOINT_PATH = '/mnt/ssd2/vinit/model.ckpt-496000'
@@ -92,3 +133,6 @@ class LightStateModel(Model):
     
 #     model = LightStateModel(CHECKPOINT_PATH)
 #     benchmark_model(dataset, model)
+
+if __name__ == "__main__":
+    print(test_classification('scale_lights'))
