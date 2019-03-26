@@ -60,6 +60,7 @@ class Preprocessor:
         "mturk": preprocessing.preprocess_mturk,
         "cities": preprocessing.preprocess_cities,
         "scale_lights": preprocessing.preprocess_scale_lights,
+        "scale_signs": preprocessing.preprocess_scale_signs
     }
 
     _preprocessing_data: Dict[str, Dataset] = {}
