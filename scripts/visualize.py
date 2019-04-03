@@ -42,7 +42,7 @@ if __name__ == '__main__':
     #lights = Preprocessor.preprocess("lights")
     #scale = Preprocessor.preprocess("scale_lights")
     print(Preprocessor._dataset_preprocessors)
-    mturk = Preprocessor.preprocess("mturk")
+    mturk = Preprocessor.preprocess("scale_signs")
     dataset = mturk
     dataset = dataset.merge_classes({
         "green": [
