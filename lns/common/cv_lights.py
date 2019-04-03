@@ -91,6 +91,14 @@ def test_classification(dataset: str):
     })
     success = 0
     count = 0
+    green_for_red = 0
+    red_for_green = 0
+    other = 0
+    average_width = 0
+    average_height = 0
+    average_wrong_height = 0
+    average_wrong_width = 0
+
     window = cv.namedWindow('image')
     print(dataset.classes)
     for path, annotation in tqdm(dataset.annotations.items()):
@@ -110,11 +118,33 @@ def test_classification(dataset: str):
 
             if color == dataset.classes[a['class']]:
                 success += 1
+                average_height += partial.shape[1]
+                average_width += partial.shape[0]
             else:
-                print("{} confused for {} for image of size {}".format(
-                    dataset.classes[a['class']], color, partial.shape
-                ))
+                #print("{} confused for {} for image of size {}".format(
+                #    dataset.classes[a['class']], color, partial.shape
+                #))
+                average_wrong_width += partial.shape[1]
+                average_wrong_height += partial.shape[0]
+                if dataset.classes[a['class']] == 'green' and color == 'red':
+                    green_for_red += 1
+                elif dataset.classes[a['class']] == 'red' and color == 'green':
+                    red_for_green += 1
+                else:
+                    other += 1
+
             count += 1
+
+    average_wrong_width /= (count - success)
+    average_wrong_height /= (count - success)
+    average_width /= success
+    average_height /= success
+
+    print("{} of the images were green lights confused for red lights".format(green_for_red/count))
+    print("{} of the images were red lights confused for green lights".format(red_for_green/count))
+    print("{} of the images were other mistakes".format(other/count))
+    print("The wrong images had an average pixel size of {},{}".format(average_wrong_width, average_wrong_height))
+    print("The correct images had an average pixel size of {},{}".format(average_width, average_height))
 
     return success / count
 
