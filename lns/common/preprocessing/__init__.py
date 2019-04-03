@@ -13,4 +13,5 @@ from lns.common.preprocessing import bosch  # noqa
 from lns.common.preprocessing import lights  # noqa
 from lns.common.preprocessing import lisa  # noqa
 from lns.common.preprocessing import mturk  # noqa
-from lns.common.preprocessing import scale_lights
+from lns.common.preprocessing import scale_lights # noqa
+from lns.common.preprocessing import scale_signs # noqa
