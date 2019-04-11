@@ -6,7 +6,7 @@ import numpy as np  # type: ignore
 from lns.common.model import PredictedObject2D
 from lns.common.dataset import Dataset
 
-STROKE_WIDTH = 1
+STROKE_WIDTH = 3
 COLOR_MAP = {
     "red": (0, 0, 255),
     "green": (0, 255, 0),

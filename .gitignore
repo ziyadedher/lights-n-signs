@@ -105,3 +105,6 @@ venv.bak/
 
 # ftp
 .ftp*
+
+scripts/annotations.txt
+scripts/classes.txt

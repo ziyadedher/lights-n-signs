@@ -40,5 +40,5 @@ def run_process(datasets: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    run_process(["scale_lights"])
+    run_process(["scale_signs"])
 

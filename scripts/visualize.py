@@ -42,7 +42,7 @@ if __name__ == '__main__':
     #lights = Preprocessor.preprocess("lights")
     #scale = Preprocessor.preprocess("scale_lights")
     print(Preprocessor._dataset_preprocessors)
-    mturk = Preprocessor.preprocess("scale_signs")
+    mturk = Preprocessor.preprocess("scale_lights")
     dataset = mturk
     dataset = dataset.merge_classes({
         "green": [
@@ -57,10 +57,10 @@ if __name__ == '__main__':
     })
     dataset = dataset.minimum_area(0)
 
-    from lns.squeezedet.model import SqueezeDetModel
-    model = SqueezeDetModel("/home/lns/lns/xiyan/models/alllights-414000/train/model.ckpt-415500")
+    #from lns.squeezedet.model import SqueezeDetModel
+    #model = SqueezeDetModel("/home/lns/lns/xiyan/models/alllights-414000/train/model.ckpt-415500")
 
     annotations = dataset.annotations
     for image_paths in dataset.image_split(0.1)[0].values():
         for image_path in image_paths:
-            visualize_image(image_path, model=model, visualize_model=False, labels=annotations[image_path], show_labels=True)
+            visualize_image(image_path, model=None, visualize_model=False, labels=annotations[image_path], show_labels=True)

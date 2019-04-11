@@ -15,7 +15,9 @@ PADDING = 2
 CANNY_START_LOW = 5
 CANNY_INCREMENT = 3
 CANNY_RATIO = 3
-RED_GREEN_THRESHOLD = 1.2
+RED_GREEN_THRESHOLD = 1.0
+CUTOFF_THRESHOLD = 200
+FOCUS_FACTOR = 0.2 #between 0 and 0.5
 
 class LightStateModel(Model):
 
@@ -75,10 +77,20 @@ class LightStateModel(Model):
 
         # Calculate mean color
         b, g, r = square[:, :, 0], square[:, :, 1], square[:, :, 2]
-        b, g, r = b.mean(), g.mean(), r.mean()
+        #cv.imshow('image', square)
+        #cv.waitKey()
+        w, h = b.shape
+        
+        b, g, r = b[int(w*FOCUS_FACTOR):int((1-FOCUS_FACTOR)*w), int(h*FOCUS_FACTOR):int((1-FOCUS_FACTOR)*h)], \
+                  g[int(w*FOCUS_FACTOR):int((1-FOCUS_FACTOR)*w), int(h*FOCUS_FACTOR):int((1-FOCUS_FACTOR)*h)], \
+                  r[int(w*FOCUS_FACTOR):int((1-FOCUS_FACTOR)*w), int(h*FOCUS_FACTOR):int((1-FOCUS_FACTOR)*h)]
+
+        tb, tg, tr = b > CUTOFF_THRESHOLD, g > CUTOFF_THRESHOLD, r > CUTOFF_THRESHOLD
+
+        b, g, r = (b * tb + b*0.01).mean(), (g*tg + g*0.01).mean(), (r*tr + r*0.01).mean()
 
         # Make a decision
-        if r/g < RED_GREEN_THRESHOLD: return 'green', square
+        if (r) / (g) < RED_GREEN_THRESHOLD: return 'green', square
         else: return 'red', square
 
 def test_classification(dataset: str):
@@ -108,8 +120,16 @@ def test_classification(dataset: str):
             x2 = a['x_max']
             y1 = a['y_min']
             y2 = a['y_max']
+            h = (y2 - y1) * 0
+            w = (x2 - x1) * 0
+            h_max = img.shape[0]
+            w_max = img.shape[1]
+            x1 = max(0,int(x1 - w/2))
+            x2 = min(w_max,int(x2 + w/2))
+            y1 = max(0,int(y1 - h/2))
+            y2 = min(h_max,int(y2 + h/2))
             partial = img[y1:y2, x1:x2, :]
-            #cv.imshow('image', partial)
+            cv.imshow('image', partial)
             #print(dataset.classes[a['class']])
             rect = LightStateModel.find_light(partial)
             if rect == 'off': 
@@ -124,6 +144,9 @@ def test_classification(dataset: str):
                 #print("{} confused for {} for image of size {}".format(
                 #    dataset.classes[a['class']], color, partial.shape
                 #))
+                #cv.imshow('image', partial)
+                #cv.waitKey()
+
                 average_wrong_width += partial.shape[1]
                 average_wrong_height += partial.shape[0]
                 if dataset.classes[a['class']] == 'green' and color == 'red':
@@ -134,6 +157,7 @@ def test_classification(dataset: str):
                     other += 1
 
             count += 1
+            #print(success/count)
 
     average_wrong_width /= (count - success)
     average_wrong_height /= (count - success)
