@@ -55,9 +55,9 @@ client = scaleapi.ScaleClient('live_c51c4273f60f4bcb9e86578c372aa51d')
 }
 """
 
-SCALE_LIGHTS_PATH = "/home/lns/lns/resources/data/scale_lights"
+SCALE_LIGHTS_PATH = "/home/lns/lns/resources/data/scale_all"
 MAX_TO_PROCESS = 999999
-
+PROJECT = 'sign_labeling'
 DATASET = {}
 ANNOTATIONS = {}
 CLASSES = []
@@ -72,7 +72,7 @@ if not os.path.exists(os.path.join(SCALE_LIGHTS_PATH, 'images')):
     os.makedirs(os.path.join(SCALE_LIGHTS_PATH, 'images'))
 
 while have_next_page:
-    tasklist = client.tasks(status="completed", offset=offset)
+    tasklist = client.tasks(project=PROJECT, status="completed", offset=offset)
     offset += 100
     print(len(tasklist))
 
@@ -81,11 +81,26 @@ while have_next_page:
         task = client.fetch_task(task_id)
         bbox_list = task.param_dict['response']['annotations']
         img_url = task.param_dict['params']['attachment']
-
+        
+        # if len(bbox_list) == 0 or 'Railroad Sign' not in task.param_dict['params']['objects_to_annotate']:
+        #    print('ignore ', img_url)
+        #    continue
         # Download the image
         # local_path = "{}.png".format(os.path.join(SCALE_LIGHTS_PATH, 'images', img_url))
-        local_path = os.path.join(SCALE_LIGHTS_PATH, 'images', img_url.rsplit('/', 1)[-1])
-        urllib.request.urlretrieve(img_url, local_path)
+        # local_path = os.path.join(SCALE_LIGHTS_PATH, 'images', img_url.rsplit('/', 1)[-1])
+        if len(bbox_list) == 0:
+            print('ignore', img_url)
+            continue
+        local_path = os.path.join(SCALE_LIGHTS_PATH, 'images', '{}.png'.format(task_id))
+        if not os.path.exists(local_path):
+            try:
+              urllib.request.urlretrieve(img_url, local_path)
+            except HTTPError as e:
+              print('cannot download', img_url)
+              continue
+            except:
+              print('unexpected error downloading', img_url)
+              continue
 
         ANNOTATIONS[local_path] = []
         # ignore empty images
@@ -116,5 +131,5 @@ DATASET['annotations'] = ANNOTATIONS
 
 print(DATASET)
 
-with open(os.path.join(SCALE_LIGHTS_PATH, 'scale_dataset.pickle'), 'wb') as handle:
+with open(os.path.join(SCALE_LIGHTS_PATH, 'scale_dataset2.pickle'), 'wb') as handle:
     pickle.dump(DATASET, handle, protocol=pickle.HIGHEST_PROTOCOL)
