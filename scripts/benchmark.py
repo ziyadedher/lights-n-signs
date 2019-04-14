@@ -35,7 +35,9 @@ def benchmark(model: Model, dataset: Dataset, *,
         image_path for image_paths in dataset.image_split(proportion)[0].values()
         for image_path in image_paths
     ]
+    total_processed = 0
     for image_path in tqdm(image_paths):
+        total_processed += 1
         # Grab the ground truths for this image and package them under a `PredictedObject2D`
         # to make statistics easier to work with
         ground_truths = [PredictedObject2D(
@@ -51,7 +53,10 @@ def benchmark(model: Model, dataset: Dataset, *,
         # Predict on this image and iterate through each prediction to check for matches
         image = cv2.imread(image_path)
         predictions = model.predict(image)
+        image = put_labels_on_image(image, annotations[image_path])
         for prediction in predictions:
+            if 0.15*image.shape[1] > prediction.bounding_box.left or 0.85*image.shape[1] < (prediction.bounding_box.left + prediction.bounding_box.width):
+                continue
             any_detected = False
 
             # Look through
@@ -60,26 +65,26 @@ def benchmark(model: Model, dataset: Dataset, *,
                 overlapping = iou >= overlap_threshold
                 same_class = prediction.predicted_classes[0] == ground_truth.predicted_classes[0]
 
-                if same_class and overlapping:
+                if overlapping:
+                    any_detected = True
                     if not detected[i]:
                         confusion_matrix[ground_truth.predicted_classes[0]][prediction.predicted_classes[0]] += 1
                         detected[i] = True
-                    any_detected = True
-                    total_iou += iou
-                    count += 1
+                    if same_class:
+                        total_iou += iou
+                        count += 1
 
+            image = put_predictions_on_image(image, [prediction])
             if not any_detected:
-                image = put_labels_on_image(image, annotations[image_path])
-                image = put_predictions_on_image(image, [prediction])
-                cv2.imshow("visualization", image)
-                key = cv2.waitKey(0)
-                while key != 10:
-                    key = cv2.waitKey(0)
                 confusion_matrix["__none__"][prediction.predicted_classes[0]] += 1
 
         for i, is_detected in enumerate(detected):
             if not is_detected:
                 confusion_matrix[ground_truths[i].predicted_classes[0]]["__none__"] += 1
+        # cv2.imshow("visualization", image)
+        # key = cv2.waitKey(0)
+        # while key != 27:
+        #     key = cv2.waitKey(0)
 
     return total_iou / count, confusion_matrix
 
@@ -100,12 +105,19 @@ def print_confusion_matrix(confusion_matrix: ConfusionMatrix, spaces: int = 12) 
 
     print("\n\n")
     stats: Dict[str, Dict[str, float]] = {}
+    aggregate_true_positive = 0
+    aggregate_false_positive = 0
+    aggregate_false_negative = 0
     for name in names:
         stats[name] = {}
 
         true_positive = confusion_matrix[name][name]
         false_positive = sum(confusion_matrix[other_name][name] for other_name in names if other_name != name)
         false_negative = sum(confusion_matrix[name][other_name] for other_name in names if other_name != name)
+        if name != '__none__':
+            aggregate_true_positive += true_positive
+            aggregate_false_positive += false_positive
+            aggregate_false_negative += false_negative
 
         stats[name]["precision"] = (
             true_positive / (true_positive + false_positive)
@@ -128,12 +140,14 @@ def print_confusion_matrix(confusion_matrix: ConfusionMatrix, spaces: int = 12) 
             print(f"{value:.5f}".ljust(spaces), end="")
         print("")
 
+    print("Total precision: " + str(aggregate_true_positive/(aggregate_true_positive + aggregate_false_positive)))
+    print("Total recall: " + str(aggregate_true_positive/(aggregate_true_positive + aggregate_false_negative)))
+
 
 if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
-    bosch = Preprocessor.preprocess("Bosch")
-    lights = Preprocessor.preprocess("lights")
-    dataset = lights
+    scale_lights = Preprocessor.preprocess("scale_lights")
+    dataset = scale_lights
     dataset = dataset.merge_classes({
         "green": [
             "GreenLeft", "Green", "GreenRight", "GreenStraight",
@@ -145,10 +159,12 @@ if __name__ == '__main__':
         ],
         "off": ["off"]
     })
-    dataset = dataset.minimum_area(0.0001)
+    dataset = dataset.minimum_area(0.0005)
+    dataset = dataset.remove_perpendicular_lights(0.7)
 
+    from lns.common.cv_lights import LightStateModel
     from lns.squeezedet.model import SqueezeDetModel
-    model = SqueezeDetModel("/home/lns/lns/xiyan/models/alllights-414000/train/model.ckpt-415500")
+    model = SqueezeDetModel("/home/autoronto/training/model.ckpt-414000")
 
     average_iou, confusion_matrix = benchmark(model, dataset, proportion=0.1, overlap_threshold=0.1)
     print_confusion_matrix(confusion_matrix)

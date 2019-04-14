@@ -6,6 +6,7 @@ import random
 
 import cv2  # type: ignore
 
+import magic, re
 from lns.common import config
 
 
@@ -195,6 +196,30 @@ class Dataset:
 
         return Dataset(self.name, images, classes, annotations)
 
+    def remove_perpendicular_lights(self, inner_section: float) -> 'Dataset':
+        """Return a new dataset with annotations outside of inner_section pruned
+        """
+        images: Dataset.Images = {dataset_name: [] for dataset_name in self.images.keys()}
+        annotations: Dataset.Annotations = {}
+
+        old_annotations = self.annotations
+        for dataset_name, image_paths in self.images.items():
+            for image_path in image_paths:
+                t = magic.from_file(image_path)
+                size = (re.search('(\d+)x(\d+)', t[80:]) or re.search('(\d+) x (\d+)', t)).groups()
+                width = int(size[0])
+                lower_bound = width*(1-inner_section)/2
+                upper_bound = width*(1-(1-inner_section)/2)
+                annotation = old_annotations[image_path]
+                for detection in annotation:
+                    if detection["x_max"] > lower_bound and detection["x_min"] < upper_bound:
+                        if image_path not in annotations:
+                            images[dataset_name].append(image_path)
+                            annotations[image_path] = []
+                        annotations[image_path].append(detection)
+
+        return Dataset(self.name, images, self.classes, annotations)
+
     def minimum_area(self, proportion: float) -> 'Dataset':
         """Return a new dataset with small annotations pruned.
 
@@ -203,12 +228,12 @@ class Dataset:
         images: Dataset.Images = {dataset_name: [] for dataset_name in self.images.keys()}
         annotations: Dataset.Annotations = {}
 
-        image_shape = cv2.imread(list(self.images.values())[0][0]).shape
-        image_area = image_shape[0] * image_shape[1]
-
         old_annotations = self.annotations
         for dataset_name, image_paths in self.images.items():
             for image_path in image_paths:
+                t = magic.from_file(image_path)
+                size = (re.search('(\d+)x(\d+)', t[80:]) or re.search('(\d+) x (\d+)', t)).groups()
+                image_area = int(size[0])*int(size[1])
                 annotation = old_annotations[image_path]
                 for detection in annotation:
                     area = (detection["x_max"] - detection["x_min"]) * (detection["y_max"] - detection["y_min"])
