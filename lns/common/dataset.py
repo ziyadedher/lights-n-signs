@@ -70,8 +70,7 @@ class Dataset:
         by the respective key.
         """
         images = self.images
-        classes = list(set(self.classes) - set([c for l in list(mapping.values()) for c in l])
-                + set(mapping.keys()))
+        classes = list(set(self.classes) - set(c for l in list(mapping.values()) for c in l) | set(mapping.keys()))
         annotations = self.annotations
 
         for image in images:
