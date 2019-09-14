@@ -70,7 +70,8 @@ class Dataset:
         by the respective key.
         """
         images = self.images
-        classes = self.classes
+        classes = list(set(self.classes) - set([c for l in list(mapping.values()) for c in l])
+                + set(mapping.keys()))
         annotations = self.annotations
 
         for image in images:
@@ -80,6 +81,7 @@ class Dataset:
                     if self.classes[detection.class_index] in mapping_classes:
                         detection["class"] = classes.index(new_class)
                         break
+                detection["class"] = classes.index(self.classes[detection["class"]])
 
         return Dataset(self.name, images, classes, annotations)
 
