@@ -7,8 +7,6 @@ from typing import Optional, Union
 import os
 import subprocess
 
-import cv2  # type: ignore
-
 from lns.common.train import Trainer
 from lns.common.dataset import Dataset
 from lns.haar.model import HaarModel
@@ -22,15 +20,15 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
     """
 
     _feature_size: Optional[int]
-    _class_index: Optional[str]
+    _class_index: Optional[int]
 
     SUBPATHS = {
-        "vector_file": Subpath(
-            path="positive.vec", temporal=False, required=False, Trainer.PathType.FILE),
-        "cascade_folder": Subpath(
-            path="cascade", temporal=False, required=True, Trainer.PathType.FOLDER),
-        "cascade_file": Subpath(
-            path=os.path.join("cascade", "cascade.xml"), temoral=False, required=True, Trainer.PathType.FILE),
+        "vector_file": Trainer.Subpath(
+            path="positive.vec", temporal=False, required=False, path_type=Trainer.PathType.FILE),
+        "cascade_folder": Trainer.Subpath(
+            path="cascade", temporal=False, required=True, path_type=Trainer.PathType.FOLDER),
+        "cascade_file": Trainer.Subpath(
+            path="cascade/cascade.xml", temporal=False, required=True, path_type=Trainer.PathType.FILE),
     }
 
     def __init__(self, name: str, dataset: Union[str, Dataset], load: bool = True) -> None:
@@ -80,7 +78,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         generating the trained model. Train on <num_positive> positive samples
         and <num_negative> negative samples.
         """
-        assert self._light_type is not None
+        assert self._class_index is not None
 
         vector_file = self._paths["vector_file"]
         cascade_folder = self._paths["cascade_folder"]
