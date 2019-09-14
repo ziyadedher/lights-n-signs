@@ -1,7 +1,7 @@
 """Bosch data preprocessor."""
 
 import os
-import yaml  # XXX: this could be sped up by using PyYaml C-bindings (LibYAML)
+import yaml  # XXX: this could be sped up by using PyYaml C-bindings (LibYAML)  # noqa
 
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
