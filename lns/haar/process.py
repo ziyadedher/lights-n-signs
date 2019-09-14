@@ -61,8 +61,8 @@ class HaarProcessor(Processor[HaarData]):
         """Get the training method this processor is for."""
         return cls.METHOD
 
-    @classmethod
-    def _process(cls, dataset: Dataset) -> HaarData:
+    @classmethod  # noqa: R701
+    def _process(cls, dataset: Dataset) -> HaarData:  # noqa: R914
         # Register all folders
         processed_data_folder = os.path.join(cls.get_processed_data_path(), dataset.name)
         annotations_folder = os.path.join(processed_data_folder, "annotations")

@@ -58,7 +58,7 @@ class Bounds2D:
         return self.width * self.height
 
 
-class Object2D:
+class Object2D:  # noqa: R903
     """Two-dimensional object bounds.
 
     Consists of a two-dimensional bounding box and the classes of the object contained within that bounding box.

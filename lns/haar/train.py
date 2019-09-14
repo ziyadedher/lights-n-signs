@@ -71,7 +71,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         ]
         subprocess.run(command)
 
-    def train(self, num_stages: int, num_positive: int, num_negative: int) -> None:
+    def train(self, num_stages: int, num_positive: int, num_negative: int) -> None:  # noqa: R701
         """Begin training the model.
 
         Train for <num_stages> stages before automatically stopping and

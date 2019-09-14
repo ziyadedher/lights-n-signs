@@ -5,7 +5,7 @@ methods following in the spirit of streamlining the training and testing
 process.
 """
 from typing import (
-    Generic, TypeVar, Type, Callable, Optional, Union, Dict, Tuple, NamedTuple
+    Generic, TypeVar, Type, Callable, Optional, Union, Dict, NamedTuple
 )
 
 import os
@@ -55,7 +55,6 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         required: bool
         path_type: 'Trainer.PathType'
 
-    # TODO(ziyadedher): Might want to have the dictionary be a NamedTuple as well.
     def __init__(self, name: str, dataset: Union[str, Dataset], *,
                  _processor: Type[Processor[ProcessedDataType]], _method: str, _load: bool,
                  _subpaths: Dict[str, Subpath]) -> None:
@@ -104,7 +103,7 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         """
         raise NotImplementedError
 
-    def _generate_filestructure(self, load: bool, method: str, subpaths: Dict[str, Subpath]) -> None:
+    def _generate_filestructure(self, load: bool, method: str, subpaths: Dict[str, Subpath]) -> None:  # noqa: R701
         trainer_root = os.path.join(
             config.RESOURCES_ROOT, config.TRAINERS_FOLDER_NAME, method, self.__name
         )

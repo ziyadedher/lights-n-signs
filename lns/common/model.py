@@ -10,7 +10,7 @@ import numpy as np  # type: ignore
 from lns.common.structs import Object2D
 
 
-class Model:
+class Model:  # noqa: R903
     """Abstract bounding-box prediction model."""
 
     def predict(self, image: np.ndarray) -> List[Object2D]:

@@ -12,7 +12,7 @@ from lns.common.model import Model
 from lns.common.structs import Object2D, Bounds2D
 
 
-class HaarModel(Model):
+class HaarModel(Model):  # noqa: R903
     """Bounding-box prediction model utilizing Haar cascades."""
 
     scale_factor: float
