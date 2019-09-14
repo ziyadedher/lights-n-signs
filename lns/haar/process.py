@@ -3,183 +3,124 @@
 Manages all data processing for the generation of data ready to be trained
 on with OpenCV Haar training scripts.
 """
-from typing import List, Dict
+from typing import ClassVar, List, Dict
 
 import os
-import shutil
 
 import cv2             # type: ignore
 from tqdm import tqdm  # type: ignore
 
-from lns_common import config
-from lns_common.process import ProcessedData, Processor
-from lns_common.preprocess.preprocessing import Dataset
+from lns.common.structs import Object2D
+from lns.common.dataset import Dataset
+from lns.common.process import ProcessedData, Processor
 
 
 class HaarData(ProcessedData):
     """Data container for all Haar processed data.
 
-    Contains positive annotations for each type of light and negative
-    annotations for each type of light as well from the dataset
+    Contains positive annotations for each type of class and negative
+    annotations for each type of class as well from the dataset.
     """
 
-    __positive_annotations: Dict[str, str]
-    __negative_annotations: Dict[str, str]
+    __positive_annotations: List[str]
+    __negative_annotations: List[str]
 
-    def __init__(self,
-                 positive_annotations: Dict[str, str],
-                 negative_annotations: Dict[str, str]) -> None:
+    def __init__(self, positive_annotations: List[str], negative_annotations: List[str]) -> None:
         """Initialize the data structure."""
         self.__positive_annotations = positive_annotations
         self.__negative_annotations = negative_annotations
 
-    def get_positive_annotation(self, light_type: str) -> str:
-        """Get the path to a positive annotation file for the given light type.
+    def get_positive_annotation(self, class_index: int) -> str:
+        """Get the path to a positive annotation file for the given class index.
 
-        Raises `KeyError` if no such light type is available.
+        Raises `KeyError` if no such class index is available.
         """
         try:
-            return self.__positive_annotations[light_type]
-        except KeyError as e:
-            raise e
+            return self.__positive_annotations[class_index]
+        except IndexError as err:
+            raise err
 
-    def get_negative_annotation(self, light_type: str) -> str:
-        """Get the path to a negative annotation file for the given light type.
+    def get_negative_annotation(self, class_index: int) -> str:
+        """Get the path to a negative annotation file for the given class index.
 
-        Raises `KeyError` if no such light type is available.
+        Raises `KeyError` if no such class index is available.
         """
         try:
-            return self.__negative_annotations[light_type]
-        except KeyError as e:
-            raise e
+            return self.__negative_annotations[class_index]
+        except IndexError as err:
+            raise err
 
 
 class HaarProcessor(Processor[HaarData]):
     """Haar processor responsible for data processing to Haar-valid formats."""
 
-    BASE_DATA_FOLDER = os.path.join(config.RESOURCES_ROOT, "haar/data")
+    METHOD: ClassVar[str] = "haar"
 
     @classmethod
-    def process(cls, dataset: Dataset, force: bool = False) -> HaarData:
-        """Process all required data from the dataset with the given name.
+    def method(cls) -> str:
+        """Get the training method this processor is for."""
+        return cls.METHOD
 
-        Setting <force> to `True` will force a processing even if the images
-        already exist on file.
-
-        Raises `NoPreprocessorException` if a preprocessor for the dataset does
-        not exist.
-        """
-        # TODO: structure this function better
-
+    @classmethod
+    def _process(cls, dataset: Dataset) -> HaarData:
         # Register all folders
-        data_folder = os.path.join(cls.BASE_DATA_FOLDER, dataset.name)
-        annotations_folder = os.path.join(data_folder, "annotations")
-        images_folder = os.path.join(data_folder, "images")
-
-        # Create base data folder if it does not exist
-        if not os.path.exists(cls.BASE_DATA_FOLDER):
-            os.makedirs(cls.BASE_DATA_FOLDER)
-        # Create required folders if they do not exist
-        if not os.path.exists(data_folder):
-            os.makedirs(data_folder)
-        if not os.path.exists(images_folder):
-            os.makedirs(images_folder)
-
-        # Remove annotations folder to be regenerated
-        if os.path.exists(annotations_folder):
-            shutil.rmtree(annotations_folder)
+        processed_data_folder = os.path.join(cls.get_processed_data_path(), dataset.name)
+        annotations_folder = os.path.join(processed_data_folder, "annotations")
+        images_folder = os.path.join(processed_data_folder, "images")
         os.makedirs(annotations_folder)
+        os.makedirs(images_folder)
 
         # Open the positive and negative annotation files
-        positive_annotations_files = {
-            class_name: open(os.path.join(
-                annotations_folder, class_name + "_positive"
-            ), "w") for class_name in dataset.classes
-        }
-        negative_annotations_files = {
-            class_name: open(os.path.join(
-                annotations_folder, class_name + "_negative"
-            ), "w") for class_name in dataset.classes
-        }
+        pos_files = [open(os.path.join(annotations_folder, name + "_positive"), "w") for name in dataset.classes]
+        neg_files = [open(os.path.join(annotations_folder, name + "_negative"), "w") for name in dataset.classes]
 
         # Set up for reading annotations
         clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
-        enumeration = enumerate(dataset.annotations.items())
 
         # Read all annotations
-        with tqdm(desc="Preprocessing",
-                  total=len(dataset.annotations.keys()),
-                  miniters=1) as bar:
-            for i, (image_path, labels) in enumeration:
+        with tqdm(desc="Processing", total=len(dataset.annotations.keys()), miniters=1) as tqdm_bar:
+            for i, (image_path, labels) in enumerate(dataset.annotations.items()):
                 # Update the progress bar
-                bar.update()
+                tqdm_bar.update()
 
                 # Create gray images
-                new_image_path = os.path.abspath(os.path.join(
-                    images_folder, f"{i}.png"
-                ))
-                # Skip image creation if force is not set to True and
-                # the image already exists
-                if not force and not os.path.exists(new_image_path):
-                    cv2.imwrite(new_image_path,
-                                clahe.apply(cv2.imread(image_path, 0)))
+                new_image_path = os.path.join(images_folder, f"{i}.png")
+                cv2.imwrite(new_image_path, clahe.apply(cv2.imread(image_path, 0)))
 
-                # Get relative path to image
-                image_relative = os.path.relpath(
-                    os.path.join(images_folder, f"{i}.png"),
-                    start=annotations_folder
-                )
+                image_relative = os.path.relpath(os.path.join(images_folder, f"{i}.png"), start=annotations_folder)
 
                 # Store the annotations in a way easier to represent for Haar
-                light_detections: Dict[str, List[List[int]]] = {}
+                class_annotations = cls._reformat_labels(labels, dataset)
 
-                # Go through each detection and populate the above dictionary
-                for label in labels:
-                    class_name = dataset.classes[label["class"]]
-                    x_min = label["x_min"]
-                    y_min = label["y_min"]
-                    width = label["x_max"] - x_min
-                    height = label["y_max"] - y_min
-
-                    if class_name not in light_detections:
-                        light_detections[class_name] = []
-                    light_detections[class_name].append(
-                        [x_min, y_min, width, height]
-                    )
-
-                # Append to the positive annotations file
-                for light_type, detections in light_detections.items():
+                for j, annotations in enumerate(class_annotations):
                     detections_string = " ".join(
-                        " ".join(str(item) for item in detection)
-                        for detection in detections
-                    )
-                    positive_annotations_files[light_type].write(
-                        "{} {} {}\n".format(
-                            image_relative, len(detections), detections_string
-                        )
-                    )
-
-                # Append to the negative annotations file
-                for light_type in dataset.classes:
-                    if light_type not in light_detections.keys():
-                        negative_annotations_files[light_type].write(
-                            f"{new_image_path}\n"
-                        )
+                        " ".join(str(item) for item in annotation) for annotation in annotations)
+                    pos_files[j].write(f"{image_relative} {len(annotations)} {detections_string}\n")
+                for j, _ in enumerate(dataset.classes):
+                    if i not in class_annotations:
+                        neg_files[j].write(f"{new_image_path}\n")
 
         # Close the positive and negative annotation files
-        for file in positive_annotations_files.values():
+        for file in pos_files.values():
             file.close()
-        for file in negative_annotations_files.values():
+        for file in neg_files.values():
             file.close()
 
         # Generate the light type to absolute annotations path mapping
-        positive_annotations = {
-            light_type: os.path.join(annotations_folder, file.name)
-            for light_type, file in positive_annotations_files.items()
-        }
-        negative_annotations = {
-            light_type: os.path.join(annotations_folder, file.name)
-            for light_type, file in negative_annotations_files.items()
-        }
+        positive_annotations = [os.path.join(annotations_folder, file.name) for file in pos_files]
+        negative_annotations = [os.path.join(annotations_folder, file.name) for file in neg_files]
 
         return HaarData(positive_annotations, negative_annotations)
+
+    @classmethod
+    def _reformat_labels(cls, labels: List[Object2D], dataset: Dataset) -> List[List[List[int]]]:
+        annotations: List[List[List[int]]] = [[] for _ in dataset.classes]
+        for label in labels:
+            class_index = label.class_index
+            x_min = label.bounds.left
+            y_min = label.bounds.top
+            width = label.bounds.width
+            height = label.bounds.height
+            if class_index
+            annotations.append([x_min, y_min, width, height])
+        return annotations
