@@ -1,7 +1,10 @@
+"""Bosch data preprocessor."""
+
 import os
-import yaml  # XXX: this could be sped up by using PyYaml C-bindings
+import yaml  # XXX: this could be sped up by using PyYaml C-bindings (LibYAML)
 
 from lns.common.dataset import Dataset
+from lns.common.structs import Object2D, Bounds2D
 from lns.common.preprocess import Preprocessor
 
 
@@ -9,13 +12,8 @@ DATASET_NAME = "Bosch"
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
-def _bosch(path: str) -> Dataset:
-    """Preprocess and generate data for a Bosch dataset at the given path.
-
-    Raises `FileNotFoundError` if any of the required Bosch files or
-    folders is not found.
-    """
-    images: Dataset.Images = {DATASET_NAME: []}
+def _bosch(path: str) -> Dataset:  # noqa
+    images: Dataset.Images = []
     classes: Dataset.Classes = []
     annotations: Dataset.Annotations = {}
 
@@ -36,8 +34,7 @@ def _bosch(path: str) -> Dataset:
             y_min = round(detection["y_min"])
             y_max = round(detection["y_max"])
 
-            # Get the class index if it has already been registered
-            # otherwise register it and select the index
+            # Get the class index if it has already been registered otherwise register it and select the index
             try:
                 class_index = classes.index(label)
             except ValueError:
@@ -47,13 +44,8 @@ def _bosch(path: str) -> Dataset:
             # Package the detection
             if image_path not in annotations:
                 annotations[image_path] = []
-                images[DATASET_NAME].append(image_path)
-            annotations[image_path].append({
-                "class": class_index,
-                "x_min": x_min,
-                "y_min": y_min,
-                "x_max": x_max,
-                "y_max": y_max
-            })
+                images.append(image_path)
+            annotations[image_path].append(
+                Object2D(Bounds2D(x_min, y_min, x_max - x_min, y_max - y_min), class_index))
 
     return Dataset(DATASET_NAME, images, classes, annotations)

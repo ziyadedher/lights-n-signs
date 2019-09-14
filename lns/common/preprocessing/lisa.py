@@ -1,7 +1,10 @@
+"""LISA data preprocessor."""
+
 import os
 import csv
 
 from lns.common.dataset import Dataset
+from lns.common.structs import Object2D, Bounds2D
 from lns.common.preprocess import Preprocessor
 
 
@@ -9,14 +12,8 @@ DATASET_NAME = "LISA"
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
-def _lisa(path: str) -> Dataset:
-    """Preprocess and generate data for a LISA dataset at the given path.
-
-    Only uses the `dayTrain` data subset.
-    Raises `FileNotFoundError` if any of the required LISA files or folders
-    is not found.
-    """
-    images: Dataset.Images = {DATASET_NAME: []}
+def _lisa(path: str) -> Dataset:  # noqa
+    images: Dataset.Images = []
     classes: Dataset.Classes = []
     annotations: Dataset.Annotations = {}
 
@@ -50,10 +47,10 @@ def _lisa(path: str) -> Dataset:
                 detection_class = row[1]
 
                 # Calculate the position and dimensions of the bounding box
-                x_min = int(row[2])      # x-coordinate of top left corner
-                y_min = int(row[3])      # y-coordinate of top left corner
-                x_max = int(row[4])      # x-coordinate of bottom right corner
-                y_max = int(row[5])      # y-coordinate of bottom right corner
+                x_min = int(row[2])  # x-coordinate of top left corner
+                y_min = int(row[3])  # y-coordinate of top left corner
+                x_max = int(row[4])  # x-coordinate of bottom right corner
+                y_max = int(row[5])  # y-coordinate of bottom right corner
 
                 # Get the class index if it has already been registered
                 # otherwise register it and select the index
@@ -64,15 +61,10 @@ def _lisa(path: str) -> Dataset:
                     classes.append(detection_class)
 
                 # Package the detection
-                images[DATASET_NAME].append(image_path)
+                images.append(image_path)
                 if image_path not in annotations:
                     annotations[image_path] = []
-                annotations[image_path].append({
-                    "class": class_index,
-                    "x_min": x_min,
-                    "y_min": y_min,
-                    "x_max": x_max,
-                    "y_max": y_max
-                })
+                annotations[image_path].append(
+                    Object2D(Bounds2D(x_min, y_min, x_max - x_min, y_max - y_min), class_index))
 
     return Dataset(DATASET_NAME, images, classes, annotations)

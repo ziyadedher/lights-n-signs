@@ -30,15 +30,6 @@ POSSIBLE_DATASETS: List[str] = [
     "mocked",
     "LISA",
     "Bosch",
-    "Custom",
-    "Custom_testing",
-    "sim",
-    "mturk",
-    "cities",
-    "LISA_signs",
-    "lights",
-    "scale_lights",
-    "scale_signs",
 ]
 
 SEED = 6

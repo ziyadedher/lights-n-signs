@@ -1,12 +1,12 @@
 """Mocked dataset preprocessor.
 
 Preprocesses a spoofed dataset which is assumed to be in the following format:
-    spoofed/
+    mocked/
         class_1/
             img1
             img2
             ...
-        class_2
+        class_2/
             img1
             img2
             ...
