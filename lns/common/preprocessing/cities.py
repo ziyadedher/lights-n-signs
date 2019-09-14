@@ -1,5 +1,8 @@
+from typing import List
+
 import os
 import csv
+import urllib
 
 from lns.common.dataset import Dataset
 from lns.common.preprocess import Preprocessor
@@ -21,29 +24,26 @@ def _cities(path: str) -> Dataset:
     classes: Dataset.Classes = []
     annotations: Dataset.Annotations = {}
 
-    if not os.path.isdir(os.path.join(cities_path, "images_new")):
+    if not os.path.isdir(os.path.join(path, "images_new")):
         os.mkdir(os.path.join(
-            cities_path, "images_new"
+            path, "images_new"
         ))
 
-    annotation_files: List[str] = os.listdir(cities_path)
-
-    if len(annotation_files) == 0:
-        raise FileNotFoundError(
-            f"Could not find annotations file {directory}."
-        )
+    annotation_files: List[str] = os.listdir(path)
+    if not annotation_files:
+        raise FileNotFoundError(f"Could not find annotations file {directory}.")
 
     files_created: List[str] = os.listdir(os.path.join(
-        cities_path, "images_new"
+        path, "images_new"
     ))
 
     for f in annotation_files:
-        if os.path.isdir(os.path.join(cities_path, f)):
+        if os.path.isdir(os.path.join(path, f)):
             continue
 
         print("Processing files for {}".format(f))
 
-        with open(os.path.join(cities_path, f)) as csv_file:
+        with open(os.path.join(path, f)) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             id_index = 0
             annos = 0
@@ -57,12 +57,12 @@ def _cities(path: str) -> Dataset:
                             id_index = r
                 else:
                     img_id = str(row[id_index])
-                    url = "https://drive.google.com/uc?id={}&export=download".format(img_$
+                    url = "https://drive.google.com/uc?id={}&export=download".format(img_)
                     print(url)
                     if "{}.png".format(img_id) not in files_created:
                         urllib.request.urlretrieve(
                             url, "{}.png".format(os.path.join(
-                                cities_path, 'images_new', img_id
+                                path, 'images_new', img_id
                             ))
                         )
                         print("{}.png Downloaded".format(img_id))
@@ -71,7 +71,7 @@ def _cities(path: str) -> Dataset:
 
                     image_path = os.path.abspath(
                         os.path.join(
-                            cities_path, "images_new", "{}.png".format(img_id)
+                            path, "images_new", "{}.png".format(img_id)
                         )
                     )
 

@@ -5,30 +5,29 @@ methods following in the spirit of streamlining the training and testing
 process.
 """
 from typing import (
-    Generic, TypeVar, Type, Callable, Optional, Union, Dict, Tuple, cast
+    Generic, TypeVar, Type, Callable, Optional, Union, Dict, Tuple, NamedTuple
 )
 
 import os
 import shutil
+from enum import Enum
 
 from lns.common import config
 from lns.common.preprocess import Preprocessor
 from lns.common.dataset import Dataset
-from lns.common.process import ProcessedDataType, Processor
-from lns.common.model import ModelType
+from lns.common.process import ProcessedData, Processor
+from lns.common.model import Model
 
 
-SetupArgsType = TypeVar("SetupArgsType")
-TrainArgsType = TypeVar("TrainArgsType")
+ModelType = TypeVar("ModelType", bound=Model)
+ProcessedDataType = TypeVar("ProcessedDataType", bound=ProcessedData)
 
 
 class TrainerNotSetupException(Exception):
     """Raised when training is attemped to be started without setup."""
 
-    pass
 
-
-class Trainer(Generic[ModelType, ProcessedDataType, SetupArgsType, TrainArgsType]):
+class Trainer(Generic[ModelType, ProcessedDataType]):
     """Abstract trainer class managing high level aspects of training."""
 
     model: Optional[ModelType]
@@ -38,36 +37,42 @@ class Trainer(Generic[ModelType, ProcessedDataType, SetupArgsType, TrainArgsType
 
     __name: str
     __dataset: Dataset
-    __is_setup: bool
 
-    SetupFunc = TypeVar("SetupFunc", bound=Callable[..., None])  # type: ignore
-    TrainFunc = TypeVar("TrainFunc", bound=Callable[..., None])  # type: ignore
+    SetupFunc = TypeVar("SetupFunc", bound=Callable[..., None])
+    TrainFunc = TypeVar("TrainFunc", bound=Callable[..., None])
 
+    class PathType(Enum):
+        """Represents the type of path in the subpaths dictionary."""
+
+        FOLDER = 0
+        FILE = 1
+
+    class Subpath(NamedTuple):
+        """Represents a single subpath in the trainer."""
+
+        path: str
+        temporal: bool
+        required: bool
+        path_type: 'Trainer.PathType'
+
+    # TODO(ziyadedher): Might want to have the dictionary be a NamedTuple as well.
     def __init__(self, name: str, dataset: Union[str, Dataset], *,
-                 _processor: Type[Processor[ProcessedDataType]], _type: str, _load: bool,
-                 _subpaths: Dict[str, Tuple[str, bool, bool, str]]) -> None:
+                 _processor: Type[Processor[ProcessedDataType]], _method: str, _load: bool,
+                 _subpaths: Dict[str, Subpath]) -> None:
         """Initialize a trainer.
 
         Generates a trainer with the given <name> on the given <dataset> which
-        could be either a `Dataset` object or a string represented a dataset
-        name.
+        could be either a `Dataset` object or the name of a dataset.
 
         Needs some metadata to function correctly including the following:
-        <_processor> is the specific processor class that is used for this
-        method of training. <_type> is the unique name of the type of
-        classifier we are training. <_load> determines whether to keep the
-        folders and files that are marked as able to be kept in the next
-        argument. <_subpaths> is a dictionary of unique path name to path
-        description; the path description is a quadruple of relative path
-        of file or folder, whether or not this file or folder should be
-        preserved if <_load> is set to True, whether or not this file or folder
-        should be regenerated if it does not exist, and the type of path
-        which could be either "file" or "folder".
+        <_processor> is the specific processor class that is used for this method of training.
+        <_method> is the unique name of the method we are training.
+        <_load> determines whether to keep non-temporal folders and files.
+        <_subpaths> is a dictionary of unique path name to `Subpath`.
         """
         self.model = None
         self._paths = {}
         self.__name = name
-        self.__is_setup = False
 
         # Get preprocess data if required
         if isinstance(dataset, str):
@@ -75,16 +80,12 @@ class Trainer(Generic[ModelType, ProcessedDataType, SetupArgsType, TrainArgsType
         elif isinstance(dataset, Dataset):
             self.__dataset = dataset
         else:
-            raise ValueError(
-                "`dataset` may only be `str` or `Dataset`, not" +
-                f"{type(dataset)}"
-            )
-
+            raise ValueError(f"<dataset> may only be `str` or `Dataset`, not {type(dataset)}")
         # Get processed data from the preprocessed dataset
         self._data = _processor.process(self.__dataset)
 
         # Find the training root folder with the trainer name
-        self._generate_filestructure(_load, _type,  _subpaths)
+        self._generate_filestructure(_load, _method, _subpaths)
 
     @property
     def name(self) -> str:
@@ -96,30 +97,6 @@ class Trainer(Generic[ModelType, ProcessedDataType, SetupArgsType, TrainArgsType
         """Get the dataset that this trainer is operating on."""
         return self.__dataset
 
-    @classmethod
-    def _setup(cls, setup_call: 'Trainer'.SetupFunc) -> 'Trainer'.SetupFunc:
-        """Decorate the main setup function to set up the trainer for training.
-
-        Ensures that the trainer has been registered as set up.
-        """
-        def _setup_wrapper(*args, **kwargs):  # type: ignore
-            setup_call(*args, **kwargs)
-            args[0].__is_setup = True
-
-        return cast(Trainer.SetupFunc, _setup_wrapper)
-
-    @classmethod
-    def _train(cls, train_call: 'Trainer'.TrainFunc) -> 'Trainer'.TrainFunc:
-        """Decorate the main train function for pretraining checks.
-
-        Makes sure the trainer has been set up.
-        """
-        def _train_wrapper(*args, **kwargs):  # type: ignore
-            if not args[0].__is_setup:
-                raise TrainerNotSetupException(f"Trainer has not been set up yet.")
-            train_call(*args, **kwargs)
-        return cast(Trainer.TrainFunc, _train_wrapper)
-
     def generate_model(self) -> Optional[ModelType]:
         """Generate and return the currently available model.
 
@@ -127,35 +104,29 @@ class Trainer(Generic[ModelType, ProcessedDataType, SetupArgsType, TrainArgsType
         """
         raise NotImplementedError
 
-    def _generate_filestructure(self, _load: bool, _type: str,
-                                _subpaths: Dict[str,
-                                                Tuple[str, bool, bool, str]]
-                                ) -> None:
-
-        __trainer_root = os.path.join(
-            config.RESOURCES_ROOT, f"{_type}", "trainers", self.__name
+    def _generate_filestructure(self, load: bool, method: str, subpaths: Dict[str, Subpath]) -> None:
+        trainer_root = os.path.join(
+            config.RESOURCES_ROOT, config.TRAINERS_FOLDER_NAME, method, self.__name
         )
-        self._paths["trainer_root"] = __trainer_root
+        self._paths["trainer_root"] = trainer_root
 
-        for name, (subpath, keep, generate, type) in _subpaths.items():
+        for name, subpath in subpaths.items():
             # Generate absolute paths to each file we want to track
-            if type not in ("file", "folder"):
-                continue
-            path = os.path.join(self._paths["trainer_root"], subpath)
+            path = os.path.join(trainer_root, subpath.path)
             self._paths[name] = path
 
             # Remove files and folders that we do not want to keep,
             # based on whether or not we are loading from previously trained
-            if not _load or not keep:
+            if subpath.temporal or not load:
                 if os.path.isdir(path):
                     shutil.rmtree(path)
                 elif os.path.isfile(path):
                     os.remove(path)
-            if not os.path.exists(path) and generate:
-                if type == "file":
+            if subpath.required and not os.path.exists(path):
+                if subpath.path_type == Trainer.PathType.FILE:
                     directory = os.path.dirname(path)
                     if not os.path.exists(directory):
                         os.makedirs(directory)
                     os.mknod(path)
-                elif type == "folder":
+                elif subpath.path_type == Trainer.PathType.FOLDER:
                     os.makedirs(path)
