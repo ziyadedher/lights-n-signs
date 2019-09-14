@@ -27,7 +27,7 @@ DATASET_NAME = "mocked"
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
-def _spoofed(path: str) -> Dataset:
+def _mocked(path: str) -> Dataset:
     images: Dataset.Images = []
     classes: Dataset.Classes = []
     annotations: Dataset.Annotations = {}
