@@ -123,3 +123,6 @@ class HaarProcessor(Processor[HaarData]):
             height = label.bounds.height
             annotations[class_index].append([x_min, y_min, width, height])
         return annotations
+
+
+HaarProcessor.init_cached_processed_data()

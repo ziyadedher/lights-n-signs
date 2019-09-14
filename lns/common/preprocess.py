@@ -58,6 +58,8 @@ class Preprocessor:
         """Initialize the preprocessor with previously cached preprocessed data from disk."""
         preprocessed_data_path = os.path.join(Resources.get_root(), config.PREPROCESSED_DATA_FOLDER_NAME)
         for dataset_pkl in os.listdir(preprocessed_data_path):
+            if not dataset_pkl.endswith(config.PKL_EXTENSION):
+                continue
             name = dataset_pkl.strip(config.PKL_EXTENSION)
             with open(os.path.join(preprocessed_data_path, dataset_pkl), "rb") as file:
                 dataset = pickle.load(file)

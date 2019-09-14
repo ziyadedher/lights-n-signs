@@ -41,6 +41,8 @@ class Processor(Generic[ProcessedDataType]):
         """Initialize the processor with previously cached processed data from disk."""
         processed_data_path = cls.get_processed_data_path()
         for processed_data_pkl in os.listdir(processed_data_path):
+            if not processed_data_pkl.endswith(config.PKL_EXTENSION):
+                continue
             name = processed_data_pkl.strip(config.PKL_EXTENSION)
             with open(os.path.join(processed_data_path, processed_data_pkl), "rb") as file:
                 processed_data = pickle.load(file)
