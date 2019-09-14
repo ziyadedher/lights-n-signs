@@ -3,7 +3,7 @@
 Manages all data processing for the generation of data ready to be trained
 on with OpenCV Haar training scripts.
 """
-from typing import ClassVar, List, Dict
+from typing import ClassVar, List
 
 import os
 
@@ -101,9 +101,9 @@ class HaarProcessor(Processor[HaarData]):
                         neg_files[j].write(f"{new_image_path}\n")
 
         # Close the positive and negative annotation files
-        for file in pos_files.values():
+        for file in pos_files:
             file.close()
-        for file in neg_files.values():
+        for file in neg_files:
             file.close()
 
         # Generate the light type to absolute annotations path mapping
@@ -121,6 +121,5 @@ class HaarProcessor(Processor[HaarData]):
             y_min = label.bounds.top
             width = label.bounds.width
             height = label.bounds.height
-            if class_index
-            annotations.append([x_min, y_min, width, height])
+            annotations[class_index].append([x_min, y_min, width, height])
         return annotations
