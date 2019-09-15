@@ -24,13 +24,13 @@ def visualize(dataset: Union[Dataset, str], model: Optional[Model] = None, *,
 
     if isinstance(dataset, str):
         dataset = Preprocessor.preprocess(dataset)
-    window_name = f"visualization_{dataset.name()}"
+    window_name = f"visualization_{dataset.name}"
 
-    images = dataset.images()
+    images = dataset.images
     if shuffle:
         random.shuffle(images)
 
-    annotations = dataset.annotations()
+    annotations = dataset.annotations
     for image_path in images:
         image = cv2.imread(image_path)
 
