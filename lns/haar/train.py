@@ -62,7 +62,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         self._class_index = class_index
 
         command = [
-            "opencv_createsamples",
+            "/usr/bin/opencv_createsamples",
             "-info", str(annotations_file),
             "-w", str(feature_size),
             "-h", str(feature_size),
@@ -90,7 +90,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
             return
 
         command = [
-            "opencv_traincascade",
+            "/usr/bin/opencv_traincascade",
             "-numPos", str(num_positive),
             "-numNeg", str(num_negative),
             "-numStages", str(num_stages),

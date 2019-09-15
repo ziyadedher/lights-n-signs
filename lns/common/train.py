@@ -96,6 +96,11 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         """Get the dataset that this trainer is operating on."""
         return self.__dataset
 
+    @property
+    def processed_data(self) -> ProcessedDataType:
+        """Get the processed dataset that this trainer is operating on."""
+        return self._data
+
     def generate_model(self) -> Optional[ModelType]:
         """Generate and return the currently available model.
 
