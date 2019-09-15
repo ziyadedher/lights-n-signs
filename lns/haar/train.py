@@ -90,7 +90,8 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
             return
 
         # Hack to get around issue with opencv_traincascade needing relative path for `-bg`
-        negative_annotations_file = os.path.relpath(negative_annotations_file, os.getcwd())
+        os.chdir(os.path.dirname(negative_annotations_file))
+        negative_annotations_file = os.path.basename(negative_annotations_file)
         command = [
             "/usr/bin/opencv_traincascade",
             "-numPos", str(num_positive),
