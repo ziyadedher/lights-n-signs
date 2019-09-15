@@ -1,13 +1,8 @@
 before_script:
-  - pip install flake8
-  - pip install mypy
+  - pip install tox
 
-haar:
+lint:
   image: jjanzic/docker-python3-opencv:latest
   script:
     - cd /builds/aUToronto/autonomy/lights-n-signs-training
-    - cd haar
-    - pip install .
-    - flake8 lns_haar
-    - mypy lns_haar
-    - python setup.py test
+    - tox
