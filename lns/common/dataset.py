@@ -78,9 +78,9 @@ class Dataset:
                 # Change the detection class if required
                 for new_class, mapping_classes in mapping.items():
                     if self.classes[detection.class_index] in mapping_classes:
-                        detection["class"] = classes.index(new_class)
+                        detection.class_index = classes.index(new_class)
                         break
-                detection["class"] = classes.index(self.classes[detection["class"]])
+                detection.class_index = classes.index(self.classes[detection.class_index])
 
         return Dataset(self.name, images, classes, annotations)
 
