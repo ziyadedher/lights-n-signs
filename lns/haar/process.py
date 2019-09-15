@@ -87,7 +87,7 @@ class HaarProcessor(Processor[HaarData]):
                 new_image_path = os.path.join(images_folder, f"{i}.png")
                 cv2.imwrite(new_image_path, clahe.apply(cv2.imread(image_path, 0)))
 
-                image_relative = os.path.join(images_folder, f"{i}.png")
+                image_relative = os.path.relpath(os.path.join(images_folder, f"{i}.png"), start=annotations_folder)
 
                 # Store the annotations in a way easier to represent for Haar
                 class_annotations = cls._reformat_labels(labels, dataset)
