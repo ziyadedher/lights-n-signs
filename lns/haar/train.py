@@ -89,8 +89,6 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
             print(f"No negative annotations for class index `{self._class_index}` available.")
             return
 
-        # Hack to get around issue with opencv_traincascade needing relative path for `-bg`
-        negative_annotations_file = os.path.relpath(negative_annotations_file, os.getcwd())
         command = [
             "/usr/bin/opencv_traincascade",
             "-numPos", str(num_positive),
