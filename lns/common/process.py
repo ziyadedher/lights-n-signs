@@ -34,17 +34,21 @@ class Processor(Generic[ProcessedDataType]):
     @classmethod
     def get_processed_data_path(cls) -> str:
         """Get the folder with all the processed datasets for this processor."""
-        return os.path.join(Resources.get_root(), config.PROCESSED_DATA_FOLDER_NAME, cls.method())
+        path = os.path.join(Resources.get_root(), config.PROCESSED_DATA_FOLDER_NAME, cls.method())
+        print(path)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
 
     @classmethod
     def init_cached_processed_data(cls) -> None:
         """Initialize the processor with previously cached processed data from disk."""
-        processed_data_path = cls.get_processed_data_path()
-        for processed_data_pkl in os.listdir(processed_data_path):
+        processed_path = cls.get_processed_data_path()
+        for processed_data_pkl in os.listdir(processed_path):
             if not processed_data_pkl.endswith(config.PKL_EXTENSION):
                 continue
             name = processed_data_pkl.strip(config.PKL_EXTENSION)
-            with open(os.path.join(processed_data_path, processed_data_pkl), "rb") as file:
+            with open(os.path.join(processed_path, processed_data_pkl), "rb") as file:
                 processed_data = pickle.load(file)
             cls._processed_data[name] = processed_data
 
