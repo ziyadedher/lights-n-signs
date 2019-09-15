@@ -11,6 +11,9 @@ from lns.common.dataset import Dataset
 from lns.common.preprocess import Preprocessor
 
 
+QUIT_KEY = "q"
+
+
 def visualize(dataset: Union[Dataset, str], model: Optional[Model] = None, *,
               shuffle: bool = False) -> None:
     """Visualize the given <dataset>.
@@ -44,4 +47,5 @@ def visualize(dataset: Union[Dataset, str], model: Optional[Model] = None, *,
                 )
 
         cv2.imshow(window_name, image)
-        cv2.waitKey()
+        if cv2.waitKey() == ord(QUIT_KEY):
+            break
