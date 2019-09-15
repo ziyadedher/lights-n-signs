@@ -39,7 +39,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         to False removes any existing trained cascade files before training.
         """
         super().__init__(name, dataset,
-                         _processor=HaarProcessor, _type="haar", _load=load,
+                         _processor=HaarProcessor, _method=HaarProcessor.method(), _load=load,
                          _subpaths=HaarTrainer.SUBPATHS)
 
         self._feature_size = None
