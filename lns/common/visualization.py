@@ -1,4 +1,4 @@
-""""""
+"""Collection of visualization utility functions."""
 
 from typing import Tuple, List, Optional, Union
 
