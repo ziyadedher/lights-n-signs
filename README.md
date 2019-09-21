@@ -19,7 +19,6 @@ Here is a sequence of commands to quickly get started with developing the reposi
 
 Download and navigate to the repository:
 1. `git clone git@gitlab.com:aUToronto/autonomy/lights-n-signs-training.git`
-  * You might run into issues with this step, just follow the instructions with the reported error.
 2. `cd lights-n-signs-training`
 
 Create a virtual environment for development:
