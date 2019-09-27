@@ -47,9 +47,13 @@ class Processor(Generic[ProcessedDataType]):
             if not processed_data_pkl.endswith(config.PKL_EXTENSION):
                 continue
             name = processed_data_pkl.strip(config.PKL_EXTENSION)
-            with open(os.path.join(processed_path, processed_data_pkl), "rb") as file:
-                processed_data = pickle.load(file)
-            cls._processed_data[name] = processed_data
+            try:
+                with open(os.path.join(processed_path, processed_data_pkl), "rb") as file:
+                    processed_data = pickle.load(file)
+            except pickle.PickleError as e:
+                print(f"Something went wrong while reading `{name}` from processor cache, skipping.")
+            else:
+                cls._processed_data[name] = processed_data
 
     @classmethod
     def cache_processed_data(cls, name: str, processed_data: ProcessedDataType) -> None:
