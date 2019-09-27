@@ -7,27 +7,17 @@ from typing import Union, Optional, List
 import os
 import pickle
 import inspect
+import easydict                     
+import numpy as np     
 
-import easydict                                                # type: ignore
-import numpy as np                                             # type: ignore
-import tensorflow as tf                                        # type: ignore
-import keras.backend as K                                      # type: ignore
-from keras import optimizers
-from keras.callbacks import (                                  # type: ignore
-    Callback, TensorBoard, ModelCheckpoint, ReduceLROnPlateau
-)
-import squeezedet_keras                                        # type: ignore
-from squeezedet_keras.model.squeezeDet import SqueezeDet       # type: ignore
-from squeezedet_keras.model.modelLoading import (              # type: ignore
-    load_only_possible_weights
-)
-from squeezedet_keras.config import create_config              # type: ignore
+from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras import optimizers
 
-from lns_common.train import Trainer
-from lns_common.preprocess.preprocessing import Dataset
-from lns_squeezedet.model import SqueezeDetModel
-from lns_squeezedet.process import SqueezeDetData, SqueezeDetProcessor
-
+from lns.common.train import Trainer
+from lns.common.dataset import Dataset
+from lns.squeezedet.model import SqueezeDetModel
+from lns.squeezedet.process import SqueezeDetData, SqueezeDetProcessor
+from lns.squeezedet.lib import SqueezeDet
 
 class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
     """Manages the SqueezeDet training environment.
@@ -36,24 +26,19 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
     """
 
     _WEIGHTS_INIT_FILE = os.path.join(
-        os.path.dirname(inspect.getfile(squeezedet_keras)),
-        "model", "imagenet.h5"
+        os.path.dirname(__file__), "imagenet.h5"
     )
 
-    _config: easydict.EasyDict
     _squeeze: SqueezeDet
     _load: bool
 
-    __subpaths = {
-        "checkpoint_folder": (
-            "checkpoint", True, True, "folder"
-        ),
-        "tensorboard_folder": (
-            "tensorboard", True, True, "folder"
-        ),
-        "config_file": (
-            "config", True, False, "file"
-        )
+    SUBPATHS = {
+        "checkpoint_folder": Trainer.Subpath(
+            path="checkpoint", temporal=True, required=True, path_type=Trainer.PathType.FOLDER),
+        "tensorboard_folder": Trainer.Subpath(
+            path="tensorboard", temporal=True, required=True, path_type=Trainer.PathType.FOLDER),
+        "config_file": Trainer.Subpath(
+            path="config", temporal=True, required=False, path_type=Trainer.PathType.FILE),
     }
 
     def __init__(self, name: str,
@@ -66,26 +51,18 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         to `False` removes any existing trained checkpoints before training.
         """
         super().__init__(name, dataset,
-                         _processor=SqueezeDetProcessor, _type="squeezedet",
-                         _load=load, _subpaths=SqueezeDetTrainer.__subpaths)
+                         _processor=SqueezeDetProcessor, _method="squeezedet",
+                         _load=load, _subpaths=self.SUBPATHS)
 
         self._squeeze = None
         self._load = (
             load and
-            os.path.isdir(self._paths["checkpoint_folder"]) and
-            len(os.listdir(self._paths["checkpoint_folder"])) > 0
+            os.path.isdir(self.SUBPATHS["checkpoint_folder"].path) and
+            len(os.listdir(self.SUBPATHS["checkpoint_folder"].path)) > 0
         )
 
-        if self._load and os.path.isfile(self._paths["config_file"]):
-            with open(self._paths["config_file"], "rb") as file:
-                self._config = pickle.load(file)
-            self._load_model()
-            self.generate_model()
-        else:
-            self._config = create_config.squeezeDet_config("squeeze")
-
-    @Trainer._setup
-    def setup_squeezedet(self,) -> None:
+    # @Trainer._setup
+    def setup(self,) -> None:
         """Set up training the SqueezeDet model by populating the configuration.
 
         If <use_pretrained_weights> is set to `True` then the model will load
@@ -93,20 +70,45 @@ class SqueezeDetTrainer(Trainer[SqueezeDetModel, SqueezeDetData]):
         `True` then the learning rate will be slowly decreased as we train if
         we hit a plateau.
         """
-        raise NotImplementedError
+        self._squeeze = SqueezeDetModel(self.SUBPATHS["checkpoint_folder"].path)
 
-    @Trainer._train
-    def train_squeezedet(self, epochs: int = 100) -> None:
+    # @Trainer._train
+    def train(self, epochs: int = 100, nbatches_train : int = 100) -> None:
         """Begin training the model.
 
         Train for <epochs> epochs before automatically stopping and
         generating the trained model.
         """
-        raise NotImplementedError
+        tbCallBack = TensorBoard(log_dir=self.SUBPATHS['tensorboard_folder'].path, histogram_freq=0, write_graph=True, write_images=True)
+
+        squeeze = self._squeeze.model
+        squeeze.model.compile(
+            optimizer=self.get_optimizer(),
+            loss=[squeeze.loss], 
+            metrics=[squeeze.loss_without_regularization, squeeze.bbox_loss, squeeze.class_loss, squeeze.conf_loss]
+        )
+
+        squeeze.model.fit_generator(
+            self._data.generate_data(self._squeeze.config), 
+            epochs=epochs,
+            steps_per_epoch=nbatches_train, callbacks=[
+                tbCallBack
+            ]
+        )
 
     def generate_model(self) -> Optional[SqueezeDetModel]:
         """Generate and return the currently available prediction model.
 
         Model may be `None` if there is no currently available model.
         """
-        raise NotImplementedError
+        return SqueezeDetModel(checkpoint_path=self.SUBPATHS['checkpoint_folder'].path)
+
+    def get_optimizer(self):
+        opt = optimizers.Adam(lr=0.001,  clipnorm=self._squeeze.config.MAX_GRAD_NORM)
+        return opt
+
+
+if __name__ == '__main__':
+    trainer = SqueezeDetTrainer('trainer', 'Bosch')
+    trainer.setup()
+    trainer.train()

@@ -1,105 +1,663 @@
-# flake8: noqa
 # Author: Bichen Wu (bichen@berkeley.edu) 08/25/2016
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import os
-import sys
-import time
-
-import cv2
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, MaxPool2D,  Conv2D, Dropout, concatenate, Reshape, Lambda, AveragePooling2D
+from tensorflow.keras import backend as K
+from tensorflow.keras.initializers import TruncatedNormal
+from tensorflow.keras.regularizers import l2
+import utils
 import numpy as np
 import tensorflow as tf
 from easydict import EasyDict as edict
+import json
+import argparse
+
+#class that wraps config and model
+class SqueezeDet():
+    #initialize model from config file
+    def __init__(self, config):
+        """Init of SqueezeDet Class
+        
+        Arguments:
+            config {[type]} -- dict containing hyperparameters for network building
+        """
+
+        #hyperparameter config file
+        self.config = config
+        #create Keras model
+        self.model = self._create_model()
+
+    #creates keras model
+    def _create_model(self):
+        """
+        #builds the Keras model from config
+        #return: squeezeDet in Keras
+        """
+        input_layer = Input(shape=( self.config.IMAGE_HEIGHT, self.config.IMAGE_WIDTH, self.config.N_CHANNELS), name="input")
+
+        conv1 = Conv2D(filters=64, kernel_size=(3, 3), strides=(2, 2), padding="SAME", activation='relu',
+                       use_bias=True, kernel_initializer=TruncatedNormal(stddev=0.001),
+                       kernel_regularizer=l2(self.config.WEIGHT_DECAY))(input_layer)
 
 
-def create_config():
-  cfg = edict()
+        pool1 = MaxPool2D(pool_size=(3,3), strides=(2, 2), padding='SAME', name="pool1")(conv1)
 
-  cfg.CLASS_NAMES = ('red', 'green', 'off')
-  cfg.CLASSES = len(cfg.CLASS_NAMES)
 
-  cfg.IMAGE_WIDTH = 1280
-  cfg.IMAGE_HEIGHT = 720
-  cfg.BATCH_SIZE = 20
-  cfg.TOP_N_DETECTION = 8
+        fire2 = self._fire_layer(name="fire2", input = pool1, s1x1=16, e1x1=64, e3x3=64)
 
-  cfg.DATASET = "CUSTOM"
 
-  cfg.GRID_POOL_WIDTH = 7
-  cfg.GRID_POOL_HEIGHT = 7
+        fire3 = self._fire_layer(
+            'fire3', fire2, s1x1=16, e1x1=64, e3x3=64)
+        pool3 = MaxPool2D(
+            pool_size=(3, 3), strides=(2, 2), padding='SAME', name='pool3')(fire3)
 
-  cfg.LEAKY_COEF = 0.1
+        fire4 = self._fire_layer(
+            'fire4', pool3, s1x1=32, e1x1=128, e3x3=128)
+        fire5 = self._fire_layer(
+            'fire5', fire4, s1x1=32, e1x1=128, e3x3=128)
 
-  cfg.KEEP_PROB = 0.5
+        pool5 = MaxPool2D(pool_size=(3, 3), strides=(2, 2), padding='SAME', name="pool5")(fire5)
 
-  cfg.PROB_THRESH = 0.005
-  cfg.PLOT_PROB_THRESH = 0.4
-  cfg.NMS_THRESH = 0.4
+        fire6 = self._fire_layer(
+            'fire6', pool5, s1x1=48, e1x1=192, e3x3=192)
+        fire7 = self._fire_layer(
+            'fire7', fire6, s1x1=48, e1x1=192, e3x3=192)
+        fire8 = self._fire_layer(
+            'fire8', fire7, s1x1=64, e1x1=256, e3x3=256)
+        fire9 = self._fire_layer(
+            'fire9', fire8, s1x1=64, e1x1=256, e3x3=256)
 
-  cfg.BGR_MEANS = np.array([[[103.939, 116.779, 123.68]]])
+        # Two extra fire modules that are not trained before
+        fire10 = self._fire_layer(
+            'fire10', fire9, s1x1=96, e1x1=384, e3x3=384)
+        fire11 = self._fire_layer(
+            'fire11', fire10, s1x1=96, e1x1=384, e3x3=384)
 
-  cfg.LOSS_COEF_CONF = 1.0
-  cfg.LOSS_COEF_CONF_POS = 75.0
-  cfg.LOSS_COEF_CONF_NEG = 100.0
-  cfg.LOSS_COEF_CLASS = 1.0
-  cfg.LOSS_COEF_BBOX = 5.0
 
-  cfg.DECAY_STEPS = 10000
-  cfg.LR_DECAY_FACTOR = 0.5
+        dropout11 = Dropout( rate=self.config.KEEP_PROB, name='drop11')(fire11)
 
-  cfg.LEARNING_RATE = 0.01
-  cfg.MOMENTUM = 0.9
-  cfg.WEIGHT_DECAY = 0.0001
 
-  cfg.LOAD_PRETRAINED_MODEL = True
-  cfg.PRETRAINED_MODEL_PATH = ''
+        #compute the number of output nodes from number of anchors, classes, confidence score and bounding box corners
+        num_output = self.config.ANCHOR_PER_GRID * (self.config.CLASSES + 1 + 4)
 
-  cfg.DEBUG_MODE = False
+        preds = Conv2D(
+            name='conv12', filters=num_output, kernel_size=(3, 3), strides=(1, 1), activation=None, padding="SAME",
+            use_bias=True, kernel_initializer=TruncatedNormal(stddev=0.001),
+            kernel_regularizer=l2(self.config.WEIGHT_DECAY))(dropout11)
 
-  cfg.EPSILON = 1e-16
-  cfg.EXP_THRESH=1.0
 
-  cfg.MAX_GRAD_NORM = 1.0
+        
+        #reshape
+        pred_reshaped = Reshape((self.config.ANCHORS, -1))(preds)
 
-  cfg.DATA_AUGMENTATION = False
-  cfg.DRIFT_X = 150
-  cfg.DRIFT_Y = 100
+        #pad for loss function so y_pred and y_true have the same dimensions, wrap in lambda layer
+        pred_padded = Lambda(self._pad)( pred_reshaped)
 
-  cfg.EXCLUDE_HARD_EXAMPLES = True
+        model = Model(inputs=input_layer, outputs=pred_padded)
 
-  cfg.BATCH_NORM_EPSILON = 1e-5
 
-  cfg.NUM_THREAD = 4
+        return model
 
-  cfg.QUEUE_CAPACITY = 100
+    def _fire_layer(self, name, input, s1x1, e1x1, e3x3, stdd=0.01):
+            """
+            wrapper for fire layer constructions
+            :param name: name for layer
+            :param input: previous layer
+            :param s1x1: number of filters for squeezing
+            :param e1x1: number of filter for expand 1x1
+            :param e3x3: number of filter for expand 3x3
+            :param stdd: standard deviation used for intialization
+            :return: a keras fire layer
+            """
 
-  cfg.IS_TRAINING = False
+            sq1x1 = Conv2D(
+                name = name + '/squeeze1x1', filters=s1x1, kernel_size=(1, 1), strides=(1, 1), use_bias=True,
+                padding='SAME', kernel_initializer=TruncatedNormal(stddev=stdd), activation="relu",
+                kernel_regularizer=l2(self.config.WEIGHT_DECAY))(input)
 
-  cfg.ANCHOR_PER_GRID = 9
-  cfg.ANCHOR_BOX = set_anchors(
-    cfg, [[  36.,  37.], [ 366., 174.], [ 115.,  59.],
-          [ 162.,  87.], [  38.,  90.], [ 258., 173.],
-          [ 224., 108.], [  78., 170.], [  72.,  43.]]
-  )
-  cfg.ANCHORS = len(cfg.ANCHOR_BOX)
+            ex1x1 = Conv2D(
+                name = name + '/expand1x1', filters=e1x1, kernel_size=(1, 1), strides=(1, 1), use_bias=True,
+                padding='SAME',  kernel_initializer=TruncatedNormal(stddev=stdd), activation="relu",
+                kernel_regularizer=l2(self.config.WEIGHT_DECAY))(sq1x1)
 
-  cfg.USE_DECONV = False
+            ex3x3 = Conv2D(
+                name = name + '/expand3x3',  filters=e3x3, kernel_size=(3, 3), strides=(1, 1), use_bias=True,
+                padding='SAME', kernel_initializer=TruncatedNormal(stddev=stdd), activation="relu",
+                kernel_regularizer=l2(self.config.WEIGHT_DECAY))(sq1x1)
 
-  return cfg
+            return concatenate([ex1x1, ex3x3], axis=3)
 
-def set_anchors(mc, anchors):
-  H, W, B = mc.IMAGE_HEIGHT // 16, mc.IMAGE_WIDTH // 16, mc.ANCHOR_PER_GRID
+    #wrapper for padding, written in tensorflow. If you want to change to theano you need to rewrite this!
+    def _pad(self, input):
+        """
+        pads the network output so y_pred and y_true have the same dimensions
+        :param input: previous layer
+        :return: layer, last dimensions padded for 4
+        """
+
+        #pad = K.placeholder( (None,self.config.ANCHORS, 4))
+
+
+        #pad = np.zeros ((self.config.BATCH_SIZE,self.config.ANCHORS, 4))
+        #return K.concatenate( [input, pad], axis=-1)
+
+
+        padding = np.zeros((3,2))
+        padding[2,1] = 4
+        return tf.pad(input, padding ,"CONSTANT")
+
+
+
+    #loss function to optimize
+    def loss(self, y_true, y_pred):
+        """
+        squeezeDet loss function for object detection and classification
+        :param y_true: ground truth with shape [batchsize, #anchors, classes+8+labels]
+        :param y_pred:
+        :return: a tensor of the total loss
+        """
+
+        #handle for config
+        mc = self.config
+
+        #slice y_true
+        input_mask = y_true[:, :, 0]
+        input_mask = K.expand_dims(input_mask, axis=-1)
+        box_input = y_true[:, :, 1:5]
+        box_delta_input = y_true[:, :, 5:9]
+        labels = y_true[:, :, 9:]
+
+        #number of objects. Used to normalize bbox and classification loss
+        num_objects = K.sum(input_mask)
+
+
+        #before computing the losses we need to slice the network outputs
+        pred_class_probs, pred_conf, pred_box_delta = utils.slice_predictions(y_pred, mc)
+
+        #compute boxes
+        det_boxes = utils.boxes_from_deltas(pred_box_delta, mc)
+
+        #again unstack is not avaible in pure keras backend
+        unstacked_boxes_pred = []
+        unstacked_boxes_input = []
+
+        for i in range(4):
+            unstacked_boxes_pred.append(det_boxes[:, :, i])
+            unstacked_boxes_input.append(box_input[:, :, i])
+
+
+
+        #compute the ious
+        ious = utils.tensor_iou(utils.bbox_transform(unstacked_boxes_pred),
+                                utils.bbox_transform(unstacked_boxes_input),
+                                input_mask,
+                                mc
+                                )
+
+
+        
+        #compute class loss,add a small value into log to prevent blowing up
+        class_loss = K.sum(labels * (-K.log(pred_class_probs + mc.EPSILON))
+                 + (1 - labels) * (-K.log(1 - pred_class_probs + mc.EPSILON))
+                * input_mask * mc.LOSS_COEF_CLASS) / num_objects
+
+        #bounding box loss
+        bbox_loss = (K.sum(mc.LOSS_COEF_BBOX * K.square(input_mask * (pred_box_delta - box_delta_input))) / num_objects)
+
+        #reshape input for correct broadcasting
+        input_mask = K.reshape(input_mask, [mc.BATCH_SIZE, mc.ANCHORS])
+
+        #confidence score loss
+        conf_loss = K.mean(
+            K.sum(
+                K.square((ious - pred_conf))
+                * (input_mask * mc.LOSS_COEF_CONF_POS / num_objects
+                   + (1 - input_mask) * mc.LOSS_COEF_CONF_NEG / (mc.ANCHORS - num_objects)),
+                axis=[1]
+            ),
+        )
+
+        # add above losses
+        total_loss = class_loss + conf_loss + bbox_loss
+
+        return total_loss
+
+
+    #the sublosses, to be used as metrics during training
+
+    def bbox_loss(self, y_true, y_pred):
+        """
+        squeezeDet loss function for object detection and classification
+        :param y_true: ground truth with shape [batchsize, #anchors, classes+8+labels]
+        :param y_pred:
+        :return: a tensor of the bbox loss
+        """
+
+        #handle for config
+        mc = self.config
+
+        #calculate non padded entries
+        n_outputs = mc.CLASSES + 1 + 4
+
+        #slice and reshape network output
+        y_pred = y_pred[:, :, 0:n_outputs]
+        y_pred = K.reshape(y_pred, (mc.BATCH_SIZE, mc.N_ANCHORS_HEIGHT, mc.N_ANCHORS_WIDTH, -1))
+
+
+        #slice y_true
+        input_mask = y_true[:, :, 0]
+        input_mask = K.expand_dims(input_mask, axis=-1)
+        box_delta_input = y_true[:, :, 5:9]
+
+        #number of objects. Used to normalize bbox and classification loss
+        num_objects = K.sum(input_mask)
+
+
+        #before computing the losses we need to slice the network outputs
+
+        #number of class probabilities, n classes for each anchor
+        num_class_probs = mc.ANCHOR_PER_GRID * mc.CLASSES
+
+        #number of confidence scores, one for each anchor + class probs
+        num_confidence_scores = mc.ANCHOR_PER_GRID+num_class_probs
+
+        #slice the confidence scores and put them trough a sigmoid for probabilities
+        pred_conf = K.sigmoid(
+            K.reshape(
+                  y_pred[:, :, :, num_class_probs:num_confidence_scores],
+                  [mc.BATCH_SIZE, mc.ANCHORS]
+              )
+          )
+
+        #slice remaining bounding box_deltas
+        pred_box_delta = K.reshape(
+              y_pred[:, :, :, num_confidence_scores:],
+              [mc.BATCH_SIZE, mc.ANCHORS, 4]
+          )
+
+
+        # cross-entropy: q * -log(p) + (1-q) * -log(1-p)
+        # add a small value into log to prevent blowing up
+
+
+        #bounding box loss
+        bbox_loss = (K.sum(mc.LOSS_COEF_BBOX * K.square(input_mask * (pred_box_delta - box_delta_input))) / num_objects)
+
+
+
+
+        return bbox_loss
+
+
+    def conf_loss(self, y_true, y_pred):
+        """
+        squeezeDet loss function for object detection and classification
+        :param y_true: ground truth with shape [batchsize, #anchors, classes+8+labels]
+        :param y_pred:
+        :return: a tensor of the conf loss
+        """
+
+        #handle for config
+        mc = self.config
+
+        #calculate non padded entries
+        n_outputs = mc.CLASSES + 1 + 4
+
+        #slice and reshape network output
+        y_pred = y_pred[:, :, 0:n_outputs]
+        y_pred = K.reshape(y_pred, (mc.BATCH_SIZE, mc.N_ANCHORS_HEIGHT, mc.N_ANCHORS_WIDTH, -1))
+
+
+        #slice y_true
+        input_mask = y_true[:, :, 0]
+        input_mask = K.expand_dims(input_mask, axis=-1)
+        box_input = y_true[:, :, 1:5]
+
+        #number of objects. Used to normalize bbox and classification loss
+        num_objects = K.sum(input_mask)
+
+
+        #before computing the losses we need to slice the network outputs
+
+        #number of class probabilities, n classes for each anchor
+        num_class_probs = mc.ANCHOR_PER_GRID * mc.CLASSES
+
+
+
+        #number of confidence scores, one for each anchor + class probs
+        num_confidence_scores = mc.ANCHOR_PER_GRID+num_class_probs
+
+        #slice the confidence scores and put them trough a sigmoid for probabilities
+        pred_conf = K.sigmoid(
+            K.reshape(
+                  y_pred[:, :, :, num_class_probs:num_confidence_scores],
+                  [mc.BATCH_SIZE, mc.ANCHORS]
+              )
+          )
+
+        #slice remaining bounding box_deltas
+        pred_box_delta = K.reshape(
+              y_pred[:, :, :, num_confidence_scores:],
+              [mc.BATCH_SIZE, mc.ANCHORS, 4]
+          )
+
+        #compute boxes
+        det_boxes = utils.boxes_from_deltas(pred_box_delta, mc)
+
+
+        #again unstack is not avaible in pure keras backend
+        unstacked_boxes_pred = []
+        unstacked_boxes_input = []
+
+        for i in range(4):
+            unstacked_boxes_pred.append(det_boxes[:, :, i])
+            unstacked_boxes_input.append(box_input[:, :, i])
+
+
+
+        #compute the ious
+        ious = utils.tensor_iou(utils.bbox_transform(unstacked_boxes_pred),
+                                utils.bbox_transform(unstacked_boxes_input),
+                                input_mask,
+                                mc
+                                )
+
+
+
+        #reshape input for correct broadcasting
+        input_mask = K.reshape(input_mask, [mc.BATCH_SIZE, mc.ANCHORS])
+
+        #confidence score loss
+        conf_loss = K.mean(
+            K.sum(
+                K.square((ious - pred_conf))
+                * (input_mask * mc.LOSS_COEF_CONF_POS / num_objects
+                   + (1 - input_mask) * mc.LOSS_COEF_CONF_NEG / (mc.ANCHORS - num_objects)),
+                axis=[1]
+            ),
+        )
+
+
+
+        return conf_loss
+
+
+    def class_loss(self, y_true, y_pred):
+        """
+        squeezeDet loss function for object detection and classification
+        :param y_true: ground truth with shape [batchsize, #anchors, classes+8+labels]
+        :param y_pred:
+        :return: a tensor of the class loss
+        """
+
+        #handle for config
+        mc = self.config
+
+        #calculate non padded entries
+        n_outputs = mc.CLASSES + 1 + 4
+
+        #slice and reshape network output
+        y_pred = y_pred[:, :, 0:n_outputs]
+        y_pred = K.reshape(y_pred, (mc.BATCH_SIZE, mc.N_ANCHORS_HEIGHT, mc.N_ANCHORS_WIDTH, -1))
+
+
+        #slice y_true
+        input_mask = y_true[:, :, 0]
+        input_mask = K.expand_dims(input_mask, axis=-1)
+        labels = y_true[:, :, 9:]
+
+        #number of objects. Used to normalize bbox and classification loss
+        num_objects = K.sum(input_mask)
+
+
+        #before computing the losses we need to slice the network outputs
+
+        #number of class probabilities, n classes for each anchor
+        num_class_probs = mc.ANCHOR_PER_GRID * mc.CLASSES
+
+        #slice pred tensor to extract class pred scores and then normalize them
+        pred_class_probs = K.reshape(
+            K.softmax(
+                K.reshape(
+                    y_pred[:, :, :, :num_class_probs],
+                    [-1, mc.CLASSES]
+                )
+            ),
+            [mc.BATCH_SIZE, mc.ANCHORS, mc.CLASSES],
+        )
+
+
+
+        # cross-entropy: q * -log(p) + (1-q) * -log(1-p)
+        # add a small value into log to prevent blowing up
+
+
+        #compute class loss
+        class_loss = K.sum((labels * (-K.log(pred_class_probs + mc.EPSILON))
+                 + (1 - labels) * (-K.log(1 - pred_class_probs + mc.EPSILON)))
+                * input_mask * mc.LOSS_COEF_CLASS) / num_objects
+
+
+
+
+        return class_loss
+
+
+    #loss function again, used for metrics to show loss without regularization cost, just of copy of the original loss
+    def loss_without_regularization(self, y_true, y_pred):
+        """
+        squeezeDet loss function for object detection and classification
+        :param y_true: ground truth with shape [batchsize, #anchors, classes+8+labels]
+        :param y_pred:
+        :return: a tensor of the total loss
+        """
+
+        #handle for config
+        mc = self.config
+
+        #slice y_true
+        input_mask = y_true[:, :, 0]
+        input_mask = K.expand_dims(input_mask, axis=-1)
+        box_input = y_true[:, :, 1:5]
+        box_delta_input = y_true[:, :, 5:9]
+        labels = y_true[:, :, 9:]
+
+        #number of objects. Used to normalize bbox and classification loss
+        num_objects = K.sum(input_mask)
+
+
+        #before computing the losses we need to slice the network outputs
+
+        pred_class_probs, pred_conf, pred_box_delta = utils.slice_predictions(y_pred, mc)
+
+        #compute boxes
+        det_boxes = utils.boxes_from_deltas(pred_box_delta, mc)
+
+        #again unstack is not avaible in pure keras backend
+        unstacked_boxes_pred = []
+        unstacked_boxes_input = []
+
+        for i in range(4):
+            unstacked_boxes_pred.append(det_boxes[:, :, i])
+            unstacked_boxes_input.append(box_input[:, :, i])
+
+
+
+        #compute the ious
+        ious = utils.tensor_iou(utils.bbox_transform(unstacked_boxes_pred),
+                                utils.bbox_transform(unstacked_boxes_input),
+                                input_mask,
+                                mc)
+
+
+        # cross-entropy: q * -log(p) + (1-q) * -log(1-p)
+        # add a small value into log to prevent blowing up
+
+
+        #compute class loss
+        class_loss = K.sum(labels * (-K.log(pred_class_probs + mc.EPSILON))
+                 + (1 - labels) * (-K.log(1 - pred_class_probs + mc.EPSILON))
+                * input_mask * mc.LOSS_COEF_CLASS) / num_objects
+
+
+
+        #bounding box loss
+        bbox_loss = (K.sum(mc.LOSS_COEF_BBOX * K.square(input_mask * (pred_box_delta - box_delta_input))) / num_objects)
+
+        #reshape input for correct broadcasting
+        input_mask = K.reshape(input_mask, [mc.BATCH_SIZE, mc.ANCHORS])
+
+        #confidence score loss
+        conf_loss = K.mean(
+            K.sum(
+                K.square((ious - pred_conf))
+                * (input_mask * mc.LOSS_COEF_CONF_POS / num_objects
+                   + (1 - input_mask) * mc.LOSS_COEF_CONF_NEG / (mc.ANCHORS - num_objects)),
+                axis=[1]
+            ),
+        )
+
+        # add above losses 
+        total_loss = class_loss + conf_loss + bbox_loss
+
+        return total_loss
+
+
+
+def create_config(name='squeeze.config'):
+    """Specify the parameters to tune below."""
+    cfg = edict()
+
+    #we only care about these, others are omiited
+    cfg.CLASS_NAMES = ['cyclist', 'pedestrian', 'car']
+
+    # number of categories to classify
+    cfg.CLASSES = len(cfg.CLASS_NAMES)
+
+    # classes to class index dict
+    cfg.CLASS_TO_IDX = dict(zip(cfg.CLASS_NAMES, range(cfg.CLASSES)))
+
+    # Probability to keep a node in dropout
+    cfg.KEEP_PROB = 0.5
+
+    # a small value used to prevent numerical instability
+    cfg.EPSILON = 1e-16
+
+    # threshold for safe exponential operation
+    cfg.EXP_THRESH = 1.0
+
+    #image properties
+    cfg.IMAGE_WIDTH           = 1248
+    cfg.IMAGE_HEIGHT          = 384
+    cfg.N_CHANNELS            = 3
+
+    #batch sizes
+    cfg.BATCH_SIZE            = 4
+    cfg.VISUALIZATION_BATCH_SIZE = 16
+
+    #SGD + Momentum parameters
+    cfg.WEIGHT_DECAY          = 0.001
+    cfg.LEARNING_RATE         = 0.01
+    cfg.MAX_GRAD_NORM         = 1.0
+    cfg.MOMENTUM              = 0.9
+
+    #coefficients of loss function
+    cfg.LOSS_COEF_BBOX        = 5.0
+    cfg.LOSS_COEF_CONF_POS    = 75.0
+    cfg.LOSS_COEF_CONF_NEG    = 100.0
+    cfg.LOSS_COEF_CLASS       = 1.0
+
+    #thesholds for evaluation
+    cfg.NMS_THRESH            = 0.4
+    cfg.PROB_THRESH           = 0.005
+    cfg.TOP_N_DETECTION       = 64
+    cfg.IOU_THRESHOLD         = 0.5
+    cfg.FINAL_THRESHOLD       = 0.0
+
+    cfg.ANCHOR_SEED = np.array([[  36.,  37.], [ 366., 174.], [ 115.,  59.],
+                                [ 162.,  87.], [  38.,  90.], [ 258., 173.],
+                                [ 224., 108.], [  78., 170.], [  72.,  43.]])
+
+    cfg.ANCHOR_PER_GRID       = len(cfg.ANCHOR_SEED)
+
+    cfg.ANCHORS_HEIGHT = 24
+    cfg.ANCHORS_WIDTH = 78
+
+    return cfg
+
+
+def create_config_from_dict(dictionary = {}, name="squeeze.config"):
+    """Creates a config and saves it
+    
+    Keyword Arguments:
+        dictionary {dict} -- [description] (default: {{}})
+        name {str} -- [description] (default: {"squeeze.config"})
+    """
+
+    cfg = squeezeDet_config(name)
+
+    for key, value in dictionary.items():
+
+        cfg[key] = value
+
+    save_dict(cfg, name)
+
+#save a config files to json
+def save_dict(dict, name="squeeze.config"):
+
+    #change np arrays to lists for storing
+    for key, val, in dict.items():
+
+        if type(val) is np.ndarray:
+
+            dict[key] = val.tolist()
+
+    with open( name, "w") as f:
+        json.dump(dict, f, sort_keys=True, indent=0 )  ### this saves the array in .json format
+
+
+def load_dict(path):
+    """Loads a dictionary from a given path name
+    Arguments:
+        path {[type]} -- string of path
+    Returns:
+        [type] -- [description]
+    """
+
+    with open(path, "r") as f:
+        cfg = json.load(f)  ### this loads the array from .json format
+
+    #changes lists back
+    for key, val, in cfg.items():
+        if type(val) is list:
+            cfg[key] = np.array(val)
+
+    #cast do easydict
+    cfg = edict(cfg)
+
+    #create full anchors from seed
+    cfg.ANCHOR_BOX, cfg.N_ANCHORS_HEIGHT, cfg.N_ANCHORS_WIDTH = set_anchors(cfg)
+    cfg.ANCHORS = len(cfg.ANCHOR_BOX)
+
+    #if you added a class in the config manually, but were to lazy to update
+    cfg.CLASSES = len(cfg.CLASS_NAMES)
+    cfg.CLASS_TO_IDX = dict(zip(cfg.CLASS_NAMES, range(cfg.CLASSES)))
+
+    return cfg
+
+
+#compute the anchors for the grid from the seed
+def set_anchors(cfg):
+  H, W, B = cfg.ANCHORS_HEIGHT, cfg.ANCHORS_WIDTH, cfg.ANCHOR_PER_GRID
+
   anchor_shapes = np.reshape(
-      [np.array(anchors)] * H * W,
+      [cfg.ANCHOR_SEED] * H * W,
       (H, W, B, 2)
   )
   center_x = np.reshape(
       np.transpose(
           np.reshape(
-              np.array([np.arange(1, W+1)*float(mc.IMAGE_WIDTH)/(W+1)]*H*B),
+              np.array([np.arange(1, W+1)*float(cfg.IMAGE_WIDTH)/(W+1)]*H*B),
               (B, H, W)
           ),
           (1, 2, 0)
@@ -109,7 +667,7 @@ def set_anchors(mc, anchors):
   center_y = np.reshape(
       np.transpose(
           np.reshape(
-              np.array([np.arange(1, H+1)*float(mc.IMAGE_HEIGHT)/(H+1)]*W*B),
+              np.array([np.arange(1, H+1)*float(cfg.IMAGE_HEIGHT)/(H+1)]*W*B),
               (B, W, H)
           ),
           (2, 1, 0)
@@ -121,923 +679,5 @@ def set_anchors(mc, anchors):
       (-1, 4)
   )
 
-  return anchors
+  return anchors, H, W
 
-def batch_iou(boxes, box):
-  """Compute the Intersection-Over-Union of a batch of boxes with another
-  box.
-
-  Args:
-    box1: 2D array of [cx, cy, width, height].
-    box2: a single array of [cx, cy, width, height]
-  Returns:
-    ious: array of a float number in range [0, 1].
-  """
-  lr = np.maximum(
-      np.minimum(boxes[:,0]+0.5*boxes[:,2], box[0]+0.5*box[2]) - \
-      np.maximum(boxes[:,0]-0.5*boxes[:,2], box[0]-0.5*box[2]),
-      0
-  )
-  tb = np.maximum(
-      np.minimum(boxes[:,1]+0.5*boxes[:,3], box[1]+0.5*box[3]) - \
-      np.maximum(boxes[:,1]-0.5*boxes[:,3], box[1]-0.5*box[3]),
-      0
-  )
-  inter = lr*tb
-  union = boxes[:,2]*boxes[:,3] + box[2]*box[3] - inter
-  return inter/union
-
-def nms(boxes, probs, threshold):
-  """Non-Maximum supression.
-  Args:
-    boxes: array of [cx, cy, w, h] (center format)
-    probs: array of probabilities
-    threshold: two boxes are considered overlapping if their IOU is largher than
-        this threshold
-    form: 'center' or 'diagonal'
-  Returns:
-    keep: array of True or False.
-  """
-
-  order = probs.argsort()[::-1]
-  keep = [True]*len(order)
-
-  for i in range(len(order)-1):
-    ovps = batch_iou(boxes[order[i+1:]], boxes[order[i]])
-    for j, ov in enumerate(ovps):
-      if ov > threshold:
-        keep[order[j+i+1]] = False
-  return keep
-
-def bbox_transform(bbox):
-  """convert a bbox of form [cx, cy, w, h] to [xmin, ymin, xmax, ymax]. Works
-  for numpy array or list of tensors.
-  """
-  with tf.variable_scope('bbox_transform') as scope:
-    cx, cy, w, h = bbox
-    out_box = [[]]*4
-    out_box[0] = cx-w/2
-    out_box[1] = cy-h/2
-    out_box[2] = cx+w/2
-    out_box[3] = cy+h/2
-
-  return out_box
-
-def bbox_transform_inv(bbox):
-  """convert a bbox of form [xmin, ymin, xmax, ymax] to [cx, cy, w, h]. Works
-  for numpy array or list of tensors.
-  """
-  with tf.variable_scope('bbox_transform_inv') as scope:
-    xmin, ymin, xmax, ymax = bbox
-    out_box = [[]]*4
-
-    width       = xmax - xmin + 1.0
-    height      = ymax - ymin + 1.0
-    out_box[0]  = xmin + 0.5*width
-    out_box[1]  = ymin + 0.5*height
-    out_box[2]  = width
-    out_box[3]  = height
-
-  return out_box
-
-def safe_exp(w, thresh):
-  """Safe exponential function for tensors."""
-
-  slope = np.exp(thresh)
-  with tf.variable_scope('safe_exponential'):
-    lin_bool = w > thresh
-    lin_region = tf.to_float(lin_bool)
-
-    lin_out = slope*(w - thresh + 1.)
-    exp_out = tf.exp(tf.where(lin_bool, tf.zeros_like(w), w))
-
-    out = lin_region*lin_out + (1.-lin_region)*exp_out
-  return out
-
-def _add_loss_summaries(total_loss):
-  """Add summaries for losses
-  Generates loss summaries for visualizing the performance of the network.
-  Args:
-    total_loss: Total loss from loss().
-  """
-  losses = tf.get_collection('losses')
-
-  # Attach a scalar summary to all individual losses and the total loss; do the
-  # same for the averaged version of the losses.
-  for l in losses + [total_loss]:
-    tf.summary.scalar(l.op.name, l)
-
-def _variable_on_device(name, shape, initializer, trainable=True):
-  """Helper to create a Variable.
-
-  Args:
-    name: name of the variable
-    shape: list of ints
-    initializer: initializer for Variable
-
-  Returns:
-    Variable Tensor
-  """
-  # TODO(bichen): fix the hard-coded data type below
-  dtype = tf.float32
-  if not callable(initializer):
-    var = tf.get_variable(name, initializer=initializer, trainable=trainable)
-  else:
-    var = tf.get_variable(
-        name, shape, initializer=initializer, dtype=dtype, trainable=trainable)
-  return var
-
-def _variable_with_weight_decay(name, shape, wd, initializer, trainable=True):
-  """Helper to create an initialized Variable with weight decay.
-
-  Note that the Variable is initialized with a truncated normal distribution.
-  A weight decay is added only if one is specified.
-
-  Args:
-    name: name of the variable
-    shape: list of ints
-    wd: add L2Loss weight decay multiplied by this float. If None, weight
-        decay is not added for this Variable.
-
-  Returns:
-    Variable Tensor
-  """
-  var = _variable_on_device(name, shape, initializer, trainable)
-  if wd is not None and trainable:
-    weight_decay = tf.multiply(tf.nn.l2_loss(var), wd, name='weight_loss')
-    tf.add_to_collection('losses', weight_decay)
-  return var
-
-class ModelSkeleton:
-  """Base class of NN detection models."""
-  def __init__(self, mc):
-    self.mc = mc
-    # a scalar tensor in range (0, 1]. Usually set to 0.5 in training phase and
-    # 1.0 in evaluation phase
-    self.keep_prob = 0.5 if mc.IS_TRAINING else 1.0
-
-    # image batch input
-    self.ph_image_input = tf.placeholder(
-        tf.float32, [mc.BATCH_SIZE, mc.IMAGE_HEIGHT, mc.IMAGE_WIDTH, 3],
-        name='image_input'
-    )
-    # A tensor where an element is 1 if the corresponding box is "responsible"
-    # for detection an object and 0 otherwise.
-    self.ph_input_mask = tf.placeholder(
-        tf.float32, [mc.BATCH_SIZE, mc.ANCHORS, 1], name='box_mask')
-    # Tensor used to represent bounding box deltas.
-    self.ph_box_delta_input = tf.placeholder(
-        tf.float32, [mc.BATCH_SIZE, mc.ANCHORS, 4], name='box_delta_input')
-    # Tensor used to represent bounding box coordinates.
-    self.ph_box_input = tf.placeholder(
-        tf.float32, [mc.BATCH_SIZE, mc.ANCHORS, 4], name='box_input')
-    # Tensor used to represent labels
-    self.ph_labels = tf.placeholder(
-        tf.float32, [mc.BATCH_SIZE, mc.ANCHORS, mc.CLASSES], name='labels')
-
-    # IOU between predicted anchors with ground-truth boxes
-    self.ious = tf.Variable(
-      initial_value=np.zeros((mc.BATCH_SIZE, mc.ANCHORS)), trainable=False,
-      name='iou', dtype=tf.float32
-    )
-
-    self.FIFOQueue = tf.FIFOQueue(
-        capacity=mc.QUEUE_CAPACITY,
-        dtypes=[tf.float32, tf.float32, tf.float32,
-                tf.float32, tf.float32],
-        shapes=[[mc.IMAGE_HEIGHT, mc.IMAGE_WIDTH, 3],
-                [mc.ANCHORS, 1],
-                [mc.ANCHORS, 4],
-                [mc.ANCHORS, 4],
-                [mc.ANCHORS, mc.CLASSES]],
-    )
-
-    self.enqueue_op = self.FIFOQueue.enqueue_many(
-        [self.ph_image_input, self.ph_input_mask,
-         self.ph_box_delta_input, self.ph_box_input, self.ph_labels]
-    )
-
-    self.image_input, self.input_mask, self.box_delta_input, \
-        self.box_input, self.labels = tf.train.batch(
-            self.FIFOQueue.dequeue(), batch_size=mc.BATCH_SIZE,
-            capacity=mc.QUEUE_CAPACITY)
-
-    # model parameters
-    self.model_params = []
-
-    # model size counter
-    self.model_size_counter = [] # array of tuple of layer name, parameter size
-    # flop counter
-    self.flop_counter = [] # array of tuple of layer name, flop number
-    # activation counter
-    self.activation_counter = [] # array of tuple of layer name, output activations
-    self.activation_counter.append(('input', mc.IMAGE_WIDTH*mc.IMAGE_HEIGHT*3))
-
-
-  def _add_forward_graph(self):
-    """NN architecture specification."""
-    raise NotImplementedError
-
-  def _add_interpretation_graph(self):
-    """Interpret NN output."""
-    mc = self.mc
-
-    with tf.variable_scope('interpret_output') as scope:
-      preds = self.preds
-
-      # probability
-      num_class_probs = mc.ANCHOR_PER_GRID*mc.CLASSES
-      self.pred_class_probs = tf.reshape(
-          tf.nn.softmax(
-              tf.reshape(
-                  preds[:, :, :, :num_class_probs],
-                  [-1, mc.CLASSES]
-              )
-          ),
-          [mc.BATCH_SIZE, mc.ANCHORS, mc.CLASSES],
-          name='pred_class_probs'
-      )
-
-      # confidence
-      num_confidence_scores = mc.ANCHOR_PER_GRID+num_class_probs
-      self.pred_conf = tf.sigmoid(
-          tf.reshape(
-              preds[:, :, :, num_class_probs:num_confidence_scores],
-              [mc.BATCH_SIZE, mc.ANCHORS]
-          ),
-          name='pred_confidence_score'
-      )
-
-      # bbox_delta
-      self.pred_box_delta = tf.reshape(
-          preds[:, :, :, num_confidence_scores:],
-          [mc.BATCH_SIZE, mc.ANCHORS, 4],
-          name='bbox_delta'
-      )
-
-      # number of object. Used to normalize bbox and classification loss
-      self.num_objects = tf.reduce_sum(self.input_mask, name='num_objects')
-
-    with tf.variable_scope('bbox') as scope:
-      with tf.variable_scope('stretching'):
-        delta_x, delta_y, delta_w, delta_h = tf.unstack(
-            self.pred_box_delta, axis=2)
-
-        anchor_x = mc.ANCHOR_BOX[:, 0]
-        anchor_y = mc.ANCHOR_BOX[:, 1]
-        anchor_w = mc.ANCHOR_BOX[:, 2]
-        anchor_h = mc.ANCHOR_BOX[:, 3]
-
-        box_center_x = tf.identity(
-            anchor_x + delta_x * anchor_w, name='bbox_cx')
-        box_center_y = tf.identity(
-            anchor_y + delta_y * anchor_h, name='bbox_cy')
-        box_width = tf.identity(
-            anchor_w * safe_exp(delta_w, mc.EXP_THRESH),
-            name='bbox_width')
-        box_height = tf.identity(
-            anchor_h * safe_exp(delta_h, mc.EXP_THRESH),
-            name='bbox_height')
-
-        self._activation_summary(delta_x, 'delta_x')
-        self._activation_summary(delta_y, 'delta_y')
-        self._activation_summary(delta_w, 'delta_w')
-        self._activation_summary(delta_h, 'delta_h')
-
-        self._activation_summary(box_center_x, 'bbox_cx')
-        self._activation_summary(box_center_y, 'bbox_cy')
-        self._activation_summary(box_width, 'bbox_width')
-        self._activation_summary(box_height, 'bbox_height')
-
-      with tf.variable_scope('trimming'):
-        xmins, ymins, xmaxs, ymaxs = bbox_transform(
-            [box_center_x, box_center_y, box_width, box_height])
-
-        # The max x position is mc.IMAGE_WIDTH - 1 since we use zero-based
-        # pixels. Same for y.
-        xmins = tf.minimum(
-            tf.maximum(0.0, xmins), mc.IMAGE_WIDTH-1.0, name='bbox_xmin')
-        self._activation_summary(xmins, 'box_xmin')
-
-        ymins = tf.minimum(
-            tf.maximum(0.0, ymins), mc.IMAGE_HEIGHT-1.0, name='bbox_ymin')
-        self._activation_summary(ymins, 'box_ymin')
-
-        xmaxs = tf.maximum(
-            tf.minimum(mc.IMAGE_WIDTH-1.0, xmaxs), 0.0, name='bbox_xmax')
-        self._activation_summary(xmaxs, 'box_xmax')
-
-        ymaxs = tf.maximum(
-            tf.minimum(mc.IMAGE_HEIGHT-1.0, ymaxs), 0.0, name='bbox_ymax')
-        self._activation_summary(ymaxs, 'box_ymax')
-
-        self.det_boxes = tf.transpose(
-            tf.stack(bbox_transform_inv([xmins, ymins, xmaxs, ymaxs])),
-            (1, 2, 0), name='bbox'
-        )
-
-    with tf.variable_scope('IOU'):
-      def _tensor_iou(box1, box2):
-        with tf.variable_scope('intersection'):
-          xmin = tf.maximum(box1[0], box2[0], name='xmin')
-          ymin = tf.maximum(box1[1], box2[1], name='ymin')
-          xmax = tf.minimum(box1[2], box2[2], name='xmax')
-          ymax = tf.minimum(box1[3], box2[3], name='ymax')
-
-          w = tf.maximum(0.0, xmax-xmin, name='inter_w')
-          h = tf.maximum(0.0, ymax-ymin, name='inter_h')
-          intersection = tf.multiply(w, h, name='intersection')
-
-        with tf.variable_scope('union'):
-          w1 = tf.subtract(box1[2], box1[0], name='w1')
-          h1 = tf.subtract(box1[3], box1[1], name='h1')
-          w2 = tf.subtract(box2[2], box2[0], name='w2')
-          h2 = tf.subtract(box2[3], box2[1], name='h2')
-
-          union = w1*h1 + w2*h2 - intersection
-
-        return intersection/(union+mc.EPSILON) \
-            * tf.reshape(self.input_mask, [mc.BATCH_SIZE, mc.ANCHORS])
-
-      self.ious = self.ious.assign(
-          _tensor_iou(
-              bbox_transform(tf.unstack(self.det_boxes, axis=2)),
-              bbox_transform(tf.unstack(self.box_input, axis=2))
-          )
-      )
-      self._activation_summary(self.ious, 'conf_score')
-
-    with tf.variable_scope('probability') as scope:
-      self._activation_summary(self.pred_class_probs, 'class_probs')
-
-      probs = tf.multiply(
-          self.pred_class_probs,
-          tf.reshape(self.pred_conf, [mc.BATCH_SIZE, mc.ANCHORS, 1]),
-          name='final_class_prob'
-      )
-
-      self._activation_summary(probs, 'final_class_prob')
-
-      self.det_probs = tf.reduce_max(probs, 2, name='score')
-      self.det_class = tf.argmax(probs, 2, name='class_idx')
-
-  def _add_loss_graph(self):
-    """Define the loss operation."""
-    mc = self.mc
-
-    with tf.variable_scope('class_regression') as scope:
-      # cross-entropy: q * -log(p) + (1-q) * -log(1-p)
-      # add a small value into log to prevent blowing up
-      self.class_loss = tf.truediv(
-          tf.reduce_sum(
-              (self.labels*(-tf.log(self.pred_class_probs+mc.EPSILON))
-               + (1-self.labels)*(-tf.log(1-self.pred_class_probs+mc.EPSILON)))
-              * self.input_mask * mc.LOSS_COEF_CLASS),
-          self.num_objects,
-          name='class_loss'
-      )
-      tf.add_to_collection('losses', self.class_loss)
-
-    with tf.variable_scope('confidence_score_regression') as scope:
-      input_mask = tf.reshape(self.input_mask, [mc.BATCH_SIZE, mc.ANCHORS])
-      self.conf_loss = tf.reduce_mean(
-          tf.reduce_sum(
-              tf.square((self.ious - self.pred_conf))
-              * (input_mask*mc.LOSS_COEF_CONF_POS/self.num_objects
-                 +(1-input_mask)*mc.LOSS_COEF_CONF_NEG/(mc.ANCHORS-self.num_objects)),
-              reduction_indices=[1]
-          ),
-          name='confidence_loss'
-      )
-      tf.add_to_collection('losses', self.conf_loss)
-      tf.summary.scalar('mean iou', tf.reduce_sum(self.ious)/self.num_objects)
-
-    with tf.variable_scope('bounding_box_regression') as scope:
-      self.bbox_loss = tf.truediv(
-          tf.reduce_sum(
-              mc.LOSS_COEF_BBOX * tf.square(
-                  self.input_mask*(self.pred_box_delta-self.box_delta_input))),
-          self.num_objects,
-          name='bbox_loss'
-      )
-      tf.add_to_collection('losses', self.bbox_loss)
-
-    # add above losses as well as weight decay losses to form the total loss
-    self.loss = tf.add_n(tf.get_collection('losses'), name='total_loss')
-
-  def _add_train_graph(self):
-    """Define the training operation."""
-    mc = self.mc
-
-    self.global_step = tf.Variable(0, name='global_step', trainable=False)
-    lr = tf.train.exponential_decay(mc.LEARNING_RATE,
-                                    self.global_step,
-                                    mc.DECAY_STEPS,
-                                    mc.LR_DECAY_FACTOR,
-                                    staircase=True)
-
-    tf.summary.scalar('learning_rate', lr)
-
-    _add_loss_summaries(self.loss)
-
-    opt = tf.train.MomentumOptimizer(learning_rate=lr, momentum=mc.MOMENTUM)
-    grads_vars = opt.compute_gradients(self.loss, tf.trainable_variables())
-
-    with tf.variable_scope('clip_gradient') as scope:
-      for i, (grad, var) in enumerate(grads_vars):
-        grads_vars[i] = (tf.clip_by_norm(grad, mc.MAX_GRAD_NORM), var)
-
-    apply_gradient_op = opt.apply_gradients(grads_vars, global_step=self.global_step)
-
-    for var in tf.trainable_variables():
-        tf.summary.histogram(var.op.name, var)
-
-    for grad, var in grads_vars:
-      if grad is not None:
-        tf.summary.histogram(var.op.name + '/gradients', grad)
-
-    with tf.control_dependencies([apply_gradient_op]):
-      self.train_op = tf.no_op(name='train')
-
-  def _add_viz_graph(self):
-    """Define the visualization operation."""
-    mc = self.mc
-    self.image_to_show = tf.placeholder(
-        tf.float32, [None, mc.IMAGE_HEIGHT, mc.IMAGE_WIDTH, 3],
-        name='image_to_show'
-    )
-    self.viz_op = tf.summary.image('sample_detection_results',
-        self.image_to_show, collections='image_summary',
-        max_outputs=mc.BATCH_SIZE)
-
-  def _conv_bn_layer(
-      self, inputs, conv_param_name, bn_param_name, scale_param_name, filters,
-      size, stride, padding='SAME', freeze=False, relu=True,
-      conv_with_bias=False, stddev=0.001):
-    """ Convolution + BatchNorm + [relu] layer. Batch mean and var are treated
-    as constant. Weights have to be initialized from a pre-trained model or
-    restored from a checkpoint.
-
-    Args:
-      inputs: input tensor
-      conv_param_name: name of the convolution parameters
-      bn_param_name: name of the batch normalization parameters
-      scale_param_name: name of the scale parameters
-      filters: number of output filters.
-      size: kernel size.
-      stride: stride
-      padding: 'SAME' or 'VALID'. See tensorflow doc for detailed description.
-      freeze: if true, then do not train the parameters in this layer.
-      xavier: whether to use xavier weight initializer or not.
-      relu: whether to use relu or not.
-      conv_with_bias: whether or not add bias term to the convolution output.
-      stddev: standard deviation used for random weight initializer.
-    Returns:
-      A convolutional layer operation.
-    """
-    mc = self.mc
-
-    with tf.variable_scope(conv_param_name) as scope:
-      channels = inputs.get_shape()[3]
-
-      if mc.LOAD_PRETRAINED_MODEL:
-        cw = self.caffemodel_weight
-        kernel_val = np.transpose(cw[conv_param_name][0], [2,3,1,0])
-        if conv_with_bias:
-          bias_val = cw[conv_param_name][1]
-        mean_val   = cw[bn_param_name][0]
-        var_val    = cw[bn_param_name][1]
-        gamma_val  = cw[scale_param_name][0]
-        beta_val   = cw[scale_param_name][1]
-      else:
-        kernel_val = tf.truncated_normal_initializer(
-            stddev=stddev, dtype=tf.float32)
-        if conv_with_bias:
-          bias_val = tf.constant_initializer(0.0)
-        mean_val   = tf.constant_initializer(0.0)
-        var_val    = tf.constant_initializer(1.0)
-        gamma_val  = tf.constant_initializer(1.0)
-        beta_val   = tf.constant_initializer(0.0)
-
-      # re-order the caffe kernel with shape [out, in, h, w] -> tf kernel with
-      # shape [h, w, in, out]
-      kernel = _variable_with_weight_decay(
-          'kernels', shape=[size, size, int(channels), filters],
-          wd=mc.WEIGHT_DECAY, initializer=kernel_val, trainable=(not freeze))
-      self.model_params += [kernel]
-      if conv_with_bias:
-        biases = _variable_on_device('biases', [filters], bias_val,
-                                     trainable=(not freeze))
-        self.model_params += [biases]
-      gamma = _variable_on_device('gamma', [filters], gamma_val,
-                                  trainable=(not freeze))
-      beta  = _variable_on_device('beta', [filters], beta_val,
-                                  trainable=(not freeze))
-      mean  = _variable_on_device('mean', [filters], mean_val, trainable=False)
-      var   = _variable_on_device('var', [filters], var_val, trainable=False)
-      self.model_params += [gamma, beta, mean, var]
-
-      conv = tf.nn.conv2d(
-          inputs, kernel, [1, stride, stride, 1], padding=padding,
-          name='convolution')
-      if conv_with_bias:
-        conv = tf.nn.bias_add(conv, biases, name='bias_add')
-
-      conv = tf.nn.batch_normalization(
-          conv, mean=mean, variance=var, offset=beta, scale=gamma,
-          variance_epsilon=mc.BATCH_NORM_EPSILON, name='batch_norm')
-
-      self.model_size_counter.append(
-          (conv_param_name, (1+size*size*int(channels))*filters)
-      )
-      out_shape = conv.get_shape().as_list()
-      num_flops = \
-        (1+2*int(channels)*size*size)*filters*out_shape[1]*out_shape[2]
-      if relu:
-        num_flops += 2*filters*out_shape[1]*out_shape[2]
-      self.flop_counter.append((conv_param_name, num_flops))
-
-      self.activation_counter.append(
-          (conv_param_name, out_shape[1]*out_shape[2]*out_shape[3])
-      )
-
-      if relu:
-        return tf.nn.relu(conv)
-      else:
-        return conv
-
-
-  def _conv_layer(
-      self, layer_name, inputs, filters, size, stride, padding='SAME',
-      freeze=False, xavier=False, relu=True, stddev=0.001):
-    """Convolutional layer operation constructor.
-
-    Args:
-      layer_name: layer name.
-      inputs: input tensor
-      filters: number of output filters.
-      size: kernel size.
-      stride: stride
-      padding: 'SAME' or 'VALID'. See tensorflow doc for detailed description.
-      freeze: if true, then do not train the parameters in this layer.
-      xavier: whether to use xavier weight initializer or not.
-      relu: whether to use relu or not.
-      stddev: standard deviation used for random weight initializer.
-    Returns:
-      A convolutional layer operation.
-    """
-
-    mc = self.mc
-    use_pretrained_param = False
-    if mc.LOAD_PRETRAINED_MODEL:
-      cw = self.caffemodel_weight
-      if layer_name in cw:
-        kernel_val = np.transpose(cw[layer_name][0], [2,3,1,0])
-        bias_val = cw[layer_name][1]
-        # check the shape
-        if (kernel_val.shape ==
-              (size, size, inputs.get_shape().as_list()[-1], filters)) \
-           and (bias_val.shape == (filters, )):
-          use_pretrained_param = True
-        else:
-          print ('Shape of the pretrained parameter of {} does not match, '
-              'use randomly initialized parameter'.format(layer_name))
-      else:
-        print ('Cannot find {} in the pretrained model. Use randomly initialized '
-               'parameters'.format(layer_name))
-
-    if mc.DEBUG_MODE:
-      print('Input tensor shape to {}: {}'.format(layer_name, inputs.get_shape()))
-
-    with tf.variable_scope(layer_name) as scope:
-      channels = inputs.get_shape()[3]
-
-      # re-order the caffe kernel with shape [out, in, h, w] -> tf kernel with
-      # shape [h, w, in, out]
-      if use_pretrained_param:
-        if mc.DEBUG_MODE:
-          print ('Using pretrained model for {}'.format(layer_name))
-        kernel_init = tf.constant(kernel_val , dtype=tf.float32)
-        bias_init = tf.constant(bias_val, dtype=tf.float32)
-      elif xavier:
-        kernel_init = tf.contrib.layers.xavier_initializer_conv2d()
-        bias_init = tf.constant_initializer(0.0)
-      else:
-        kernel_init = tf.truncated_normal_initializer(
-            stddev=stddev, dtype=tf.float32)
-        bias_init = tf.constant_initializer(0.0)
-
-      kernel = _variable_with_weight_decay(
-          'kernels', shape=[size, size, int(channels), filters],
-          wd=mc.WEIGHT_DECAY, initializer=kernel_init, trainable=(not freeze))
-
-      biases = _variable_on_device('biases', [filters], bias_init,
-                                trainable=(not freeze))
-      self.model_params += [kernel, biases]
-
-      conv = tf.nn.conv2d(
-          inputs, kernel, [1, stride, stride, 1], padding=padding,
-          name='convolution')
-      conv_bias = tf.nn.bias_add(conv, biases, name='bias_add')
-
-      if relu:
-        out = tf.nn.relu(conv_bias, 'relu')
-      else:
-        out = conv_bias
-
-      self.model_size_counter.append(
-          (layer_name, (1+size*size*int(channels))*filters)
-      )
-      out_shape = out.get_shape().as_list()
-      num_flops = \
-        (1+2*int(channels)*size*size)*filters*out_shape[1]*out_shape[2]
-      if relu:
-        num_flops += 2*filters*out_shape[1]*out_shape[2]
-      self.flop_counter.append((layer_name, num_flops))
-
-      self.activation_counter.append(
-          (layer_name, out_shape[1]*out_shape[2]*out_shape[3])
-      )
-
-      return out
-
-  def _pooling_layer(
-      self, layer_name, inputs, size, stride, padding='SAME'):
-    """Pooling layer operation constructor.
-
-    Args:
-      layer_name: layer name.
-      inputs: input tensor
-      size: kernel size.
-      stride: stride
-      padding: 'SAME' or 'VALID'. See tensorflow doc for detailed description.
-    Returns:
-      A pooling layer operation.
-    """
-
-    with tf.variable_scope(layer_name) as scope:
-      out =  tf.nn.max_pool(inputs,
-                            ksize=[1, size, size, 1],
-                            strides=[1, stride, stride, 1],
-                            padding=padding)
-      activation_size = np.prod(out.get_shape().as_list()[1:])
-      self.activation_counter.append((layer_name, activation_size))
-      return out
-
-
-  def _fc_layer(
-      self, layer_name, inputs, hiddens, flatten=False, relu=True,
-      xavier=False, stddev=0.001):
-    """Fully connected layer operation constructor.
-
-    Args:
-      layer_name: layer name.
-      inputs: input tensor
-      hiddens: number of (hidden) neurons in this layer.
-      flatten: if true, reshape the input 4D tensor of shape
-          (batch, height, weight, channel) into a 2D tensor with shape
-          (batch, -1). This is used when the input to the fully connected layer
-          is output of a convolutional layer.
-      relu: whether to use relu or not.
-      xavier: whether to use xavier weight initializer or not.
-      stddev: standard deviation used for random weight initializer.
-    Returns:
-      A fully connected layer operation.
-    """
-    mc = self.mc
-
-    use_pretrained_param = False
-    if mc.LOAD_PRETRAINED_MODEL:
-      cw = self.caffemodel_weight
-      if layer_name in cw:
-        use_pretrained_param = True
-        kernel_val = cw[layer_name][0]
-        bias_val = cw[layer_name][1]
-
-    if mc.DEBUG_MODE:
-      print('Input tensor shape to {}: {}'.format(layer_name, inputs.get_shape()))
-
-    with tf.variable_scope(layer_name) as scope:
-      input_shape = inputs.get_shape().as_list()
-      if flatten:
-        dim = input_shape[1]*input_shape[2]*input_shape[3]
-        inputs = tf.reshape(inputs, [-1, dim])
-        if use_pretrained_param:
-          try:
-            # check the size before layout transform
-            assert kernel_val.shape == (hiddens, dim), \
-                'kernel shape error at {}'.format(layer_name)
-            kernel_val = np.reshape(
-                np.transpose(
-                    np.reshape(
-                        kernel_val, # O x (C*H*W)
-                        (hiddens, input_shape[3], input_shape[1], input_shape[2])
-                    ), # O x C x H x W
-                    (2, 3, 1, 0)
-                ), # H x W x C x O
-                (dim, -1)
-            ) # (H*W*C) x O
-            # check the size after layout transform
-            assert kernel_val.shape == (dim, hiddens), \
-                'kernel shape error at {}'.format(layer_name)
-          except:
-            # Do not use pretrained parameter if shape doesn't match
-            use_pretrained_param = False
-            print ('Shape of the pretrained parameter of {} does not match, '
-                   'use randomly initialized parameter'.format(layer_name))
-      else:
-        dim = input_shape[1]
-        if use_pretrained_param:
-          try:
-            kernel_val = np.transpose(kernel_val, (1,0))
-            assert kernel_val.shape == (dim, hiddens), \
-                'kernel shape error at {}'.format(layer_name)
-          except:
-            use_pretrained_param = False
-            print ('Shape of the pretrained parameter of {} does not match, '
-                   'use randomly initialized parameter'.format(layer_name))
-
-      if use_pretrained_param:
-        if mc.DEBUG_MODE:
-          print ('Using pretrained model for {}'.format(layer_name))
-        kernel_init = tf.constant(kernel_val, dtype=tf.float32)
-        bias_init = tf.constant(bias_val, dtype=tf.float32)
-      elif xavier:
-        kernel_init = tf.contrib.layers.xavier_initializer()
-        bias_init = tf.constant_initializer(0.0)
-      else:
-        kernel_init = tf.truncated_normal_initializer(
-            stddev=stddev, dtype=tf.float32)
-        bias_init = tf.constant_initializer(0.0)
-
-      weights = _variable_with_weight_decay(
-          'weights', shape=[dim, hiddens], wd=mc.WEIGHT_DECAY,
-          initializer=kernel_init)
-      biases = _variable_on_device('biases', [hiddens], bias_init)
-      self.model_params += [weights, biases]
-
-      outputs = tf.nn.bias_add(tf.matmul(inputs, weights), biases)
-      if relu:
-        outputs = tf.nn.relu(outputs, 'relu')
-
-      # count layer stats
-      self.model_size_counter.append((layer_name, (dim+1)*hiddens))
-
-      num_flops = 2 * dim * hiddens + hiddens
-      if relu:
-        num_flops += 2*hiddens
-      self.flop_counter.append((layer_name, num_flops))
-
-      self.activation_counter.append((layer_name, hiddens))
-
-      return outputs
-
-  def filter_prediction(self, boxes, probs, cls_idx):
-    """Filter bounding box predictions with probability threshold and
-    non-maximum supression.
-
-    Args:
-      boxes: array of [cx, cy, w, h].
-      probs: array of probabilities
-      cls_idx: array of class indices
-    Returns:
-      final_boxes: array of filtered bounding boxes.
-      final_probs: array of filtered probabilities
-      final_cls_idx: array of filtered class indices
-    """
-    mc = self.mc
-
-    if mc.TOP_N_DETECTION < len(probs) and mc.TOP_N_DETECTION > 0:
-      order = probs.argsort()[:-mc.TOP_N_DETECTION-1:-1]
-      probs = probs[order]
-      boxes = boxes[order]
-      cls_idx = cls_idx[order]
-    else:
-      filtered_idx = np.nonzero(probs>mc.PROB_THRESH)[0]
-      probs = probs[filtered_idx]
-      boxes = boxes[filtered_idx]
-      cls_idx = cls_idx[filtered_idx]
-
-    final_boxes = []
-    final_probs = []
-    final_cls_idx = []
-
-    for c in range(mc.CLASSES):
-      idx_per_class = [i for i in range(len(probs)) if cls_idx[i] == c]
-      keep = nms(boxes[idx_per_class], probs[idx_per_class], mc.NMS_THRESH)
-      for i in range(len(keep)):
-        if keep[i]:
-          final_boxes.append(boxes[idx_per_class[i]])
-          final_probs.append(probs[idx_per_class[i]])
-          final_cls_idx.append(c)
-    return final_boxes, final_probs, final_cls_idx
-
-  def _activation_summary(self, x, layer_name):
-    """Helper to create summaries for activations.
-
-    Args:
-      x: layer output tensor
-      layer_name: name of the layer
-    Returns:
-      nothing
-    """
-    with tf.variable_scope('activation_summary') as scope:
-      tf.summary.histogram(
-          'activation_summary/'+layer_name, x)
-      tf.summary.scalar(
-          'activation_summary/'+layer_name+'/sparsity', tf.nn.zero_fraction(x))
-      tf.summary.scalar(
-          'activation_summary/'+layer_name+'/average', tf.reduce_mean(x))
-      tf.summary.scalar(
-          'activation_summary/'+layer_name+'/max', tf.reduce_max(x))
-      tf.summary.scalar(
-          'activation_summary/'+layer_name+'/min', tf.reduce_min(x))
-
-class SqueezeDet(ModelSkeleton):
-  def __init__(self, mc, gpu_id=0):
-    with tf.device('/gpu:{}'.format(gpu_id)):
-      ModelSkeleton.__init__(self, mc)
-
-      self._add_forward_graph()
-      self._add_interpretation_graph()
-      self._add_loss_graph()
-      self._add_train_graph()
-      self._add_viz_graph()
-
-  def _add_forward_graph(self):
-    """NN architecture."""
-
-    mc = self.mc
-    # if mc.LOAD_PRETRAINED_MODEL:
-    #   assert tf.gfile.Exists(mc.PRETRAINED_MODEL_PATH), \
-    #       'Cannot find pretrained model at the given path:' \
-    #       '  {}'.format(mc.PRETRAINED_MODEL_PATH)
-    #   self.caffemodel_weight = joblib.load(mc.PRETRAINED_MODEL_PATH)
-
-    conv1 = self._conv_layer(
-        'conv1', self.image_input, filters=64, size=3, stride=2,
-        padding='SAME', freeze=True)
-    pool1 = self._pooling_layer(
-        'pool1', conv1, size=3, stride=2, padding='SAME')
-
-    fire2 = self._fire_layer(
-        'fire2', pool1, s1x1=16, e1x1=64, e3x3=64, freeze=False)
-    fire3 = self._fire_layer(
-        'fire3', fire2, s1x1=16, e1x1=64, e3x3=64, freeze=False)
-    pool3 = self._pooling_layer(
-        'pool3', fire3, size=3, stride=2, padding='SAME')
-
-    fire4 = self._fire_layer(
-        'fire4', pool3, s1x1=32, e1x1=128, e3x3=128, freeze=False)
-    fire5 = self._fire_layer(
-        'fire5', fire4, s1x1=32, e1x1=128, e3x3=128, freeze=False)
-    pool5 = self._pooling_layer(
-        'pool5', fire5, size=3, stride=2, padding='SAME')
-
-    fire6 = self._fire_layer(
-        'fire6', pool5, s1x1=48, e1x1=192, e3x3=192, freeze=False)
-    fire7 = self._fire_layer(
-        'fire7', fire6, s1x1=48, e1x1=192, e3x3=192, freeze=False)
-    fire8 = self._fire_layer(
-        'fire8', fire7, s1x1=64, e1x1=256, e3x3=256, freeze=False)
-    fire9 = self._fire_layer(
-        'fire9', fire8, s1x1=64, e1x1=256, e3x3=256, freeze=False)
-
-    # Two extra fire modules that are not trained before
-    fire10 = self._fire_layer(
-        'fire10', fire9, s1x1=96, e1x1=384, e3x3=384, freeze=False)
-    fire11 = self._fire_layer(
-        'fire11', fire10, s1x1=96, e1x1=384, e3x3=384, freeze=False)
-    dropout11 = tf.nn.dropout(fire11, self.keep_prob, name='drop11')
-
-    num_output = mc.ANCHOR_PER_GRID * (mc.CLASSES + 1 + 4)
-    self.preds = self._conv_layer(
-        'conv12', dropout11, filters=num_output, size=3, stride=1,
-        padding='SAME', xavier=False, relu=False, stddev=0.0001)
-
-  def _fire_layer(self, layer_name, inputs, s1x1, e1x1, e3x3, stddev=0.01,
-      freeze=False):
-    """Fire layer constructor.
-
-    Args:
-      layer_name: layer name
-      inputs: input tensor
-      s1x1: number of 1x1 filters in squeeze layer.
-      e1x1: number of 1x1 filters in expand layer.
-      e3x3: number of 3x3 filters in expand layer.
-      freeze: if true, do not train parameters in this layer.
-    Returns:
-      fire layer operation.
-    """
-
-    sq1x1 = self._conv_layer(
-        layer_name+'/squeeze1x1', inputs, filters=s1x1, size=1, stride=1,
-        padding='SAME', stddev=stddev, freeze=freeze)
-    ex1x1 = self._conv_layer(
-        layer_name+'/expand1x1', sq1x1, filters=e1x1, size=1, stride=1,
-        padding='SAME', stddev=stddev, freeze=freeze)
-    ex3x3 = self._conv_layer(
-        layer_name+'/expand3x3', sq1x1, filters=e3x3, size=3, stride=1,
-        padding='SAME', stddev=stddev, freeze=freeze)
-
-    return tf.concat([ex1x1, ex3x3], 3, name=layer_name+'/concat')

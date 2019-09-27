@@ -9,11 +9,11 @@ import os
 import shutil
 
 import easydict                                   # type: ignore
-from squeezedet_keras.model import dataGenerator  # type: ignore
+import utils  # type: ignore
 
-from lns_common import config
-from lns_common.process import ProcessedData, Processor
-from lns_common.preprocess.preprocessing import Dataset
+from lns.common import config
+from lns.common.process import ProcessedData, Processor
+from lns.common.dataset import Dataset
 
 
 class SqueezeDetData(ProcessedData):
@@ -45,7 +45,7 @@ class SqueezeDetData(ProcessedData):
         Requires the configuration dictionary that the model to be trained is
         based off of.
         """
-        yield from dataGenerator.generator_from_data_path(
+        yield from utils.generator_from_data_path(
             self.images, self.labels, config=_config
         )
 
@@ -85,23 +85,23 @@ class SqueezeDetProcessor(Processor[SqueezeDetData]):
         for image, annotations in dataset.annotations.items():
             label_strings: List[str] = []
             for annotation in annotations:
-                if (annotation["x_min"] < 0 or annotation["y_min"] < 0
-                    or annotation["x_min"] > annotation["x_max"]
-                    or annotation["y_min"] > annotation["y_max"]):
+                if (annotation.bounds.left < 0 or annotation.bounds.top < 0
+                    or annotation.bounds.left > annotation.bounds.right
+                    or annotation.bounds.top > annotation.bounds.bottom):
                     continue
 
                 # NOTE: see https://github.com/NVIDIA/DIGITS/issues/992
                 # for more information about the format
-                class_name = "".join(dataset.classes[annotation["class"]].lower().split())
+                class_name = "".join(dataset.classes[annotation.class_index].lower().split())
                 label_strings.append(" ".join((
                     str(class_name),                       # class string
                     "0",                                   # truncation number
                     "0",                                   # occlusion number
                     "0",                                   # observation angle
-                    str(annotation["x_min"]),              # left
-                    str(annotation["y_min"]),              # top
-                    str(annotation["x_max"]),              # right
-                    str(annotation["y_max"]),              # bottom
+                    str(annotation.bounds.left),              # left
+                    str(annotation.bounds.top),              # top
+                    str(annotation.bounds.right),              # right
+                    str(annotation.bounds.bottom),              # bottom
                     "0",                                   # height (3d)
                     "0",                                   # width  (3d)
                     "0",                                   # length (3d)

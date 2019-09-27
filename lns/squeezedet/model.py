@@ -10,7 +10,8 @@ import easydict          # type: ignore
 import numpy as np       # type: ignore
 import tensorflow as tf  # type: ignore
 
-from lns.common.model import Model, PredictedObject2D, Bounds2D
+from lns.common.model import Model
+from lns.common.structs import Object2D, Bounds2D
 from lns.squeezedet.lib import SqueezeDet, create_config, set_anchors
 
 
@@ -19,19 +20,19 @@ class SqueezeDetModel(Model):
 
     __config: easydict.EasyDict
     __model: SqueezeDet
-    __saver: tf.train.Saver
-    __sess: tf.Session
+    # __saver: tf.train.Saver
+    # __sess: tf.Session
 
     def __init__(self, checkpoint_path: str) -> None:
         """Initialize a SqueezeDet model with the given model and config."""
         self.__config = self._configure()
-        self.__model = SqueezeDet(self.__config, "0")  # type: ignore
+        self.__model = SqueezeDet(self.__config)  # type: ignore
 
-        self.__saver = tf.train.Saver(self.__model.model_params)
-        self.__sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
-        self.__saver.restore(self.__sess, checkpoint_path)
+        # self.__saver = tf.train.Saver(self.__model.model_params)
+        # self.__sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
+        # self.__saver.restore(self.__sess, checkpoint_path)
 
-    def predict(self, image: np.ndarray) -> List[PredictedObject2D]:
+    def predict(self, image: np.ndarray) -> List[Object2D]:
         """Predict the required bounding boxes on the given <image>."""
         scale_factors = (image.shape[1] / self.__config.IMAGE_WIDTH, image.shape[0] / self.__config.IMAGE_HEIGHT)
         image = image.astype(np.float32, copy=False)
@@ -60,7 +61,7 @@ class SqueezeDetModel(Model):
                 final_boxes[i][0] - final_boxes[i][2] / 2, final_boxes[i][1] - final_boxes[i][3] / 2,
                 final_boxes[i][2], final_boxes[i][3]
             )
-            predictions.append(PredictedObject2D(
+            predictions.append(Object2D(
                 bounds, [self.__config.CLASS_NAMES[final_class[i]]], [final_probs[i]]
             ))
 
@@ -81,11 +82,17 @@ class SqueezeDetModel(Model):
         cfg.TOP_N_DETECTION = 8
         cfg.LOAD_PRETRAINED_MODEL = False
 
-        cfg.ANCHOR_BOX = set_anchors(  # type: ignore
-            cfg, [[5., 11.], [8., 17.], [11., 25.],
-                  [16., 38.], [27., 56.], [88., 121.],
-                  [144., 198.], [233., 318.], [404., 534.]]
+        cfg.ANCHOR_BOX, cfg.N_ANCHORS_HEIGHT, cfg.N_ANCHORS_WIDTH  = set_anchors(  # type: ignore
+            cfg
         )
         cfg.ANCHORS = len(cfg.ANCHOR_BOX)
 
         return cfg
+
+    @property
+    def model(self):
+        return self.__model
+
+    @property 
+    def config(self):
+        return self.__config
