@@ -3,7 +3,7 @@
 import os
 import urllib.request
 import requests
-import scaleapi
+import scaleapi  # type: ignore
 
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
@@ -26,7 +26,7 @@ DATASET_NAMES = {
 }
 
 
-def _scale_common(path: str, project: str, batch: str = None) -> Dataset:
+def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noqa
     images: Dataset.Images = []
     classes: Dataset.Classes = []
     annotations: Dataset.Annotations = {}
@@ -45,8 +45,8 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:
 
     client = scaleapi.ScaleClient(SCALE_API_KEY)
     batches_to_retrieve = [batch] if batch else batch_names
-    for batch in batches_to_retrieve:
-        batch_path = os.path.join(scale_data_path, batch)
+    for batch_name in batches_to_retrieve:
+        batch_path = os.path.join(scale_data_path, batch_name)
 
         count = 0
         offset = 0
@@ -61,7 +61,7 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:
         while has_next_page:
             tasklist = client.tasks(status="completed",
                                     project=project,
-                                    batch=batch)
+                                    batch=batch_name)
             offset += 100
 
             for obj in tasklist:
