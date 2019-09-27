@@ -64,7 +64,7 @@ class Preprocessor:
             try:
                 with open(os.path.join(preprocessed_data_path, dataset_pkl), "rb") as file:
                     dataset = pickle.load(file)
-            except pickle.PickleError as e:
+            except pickle.PickleError:
                 print(f"Something went wrong while reading `{name}` from preprocessor cache, skipping.")
             else:
                 cls._preprocessed_data[name] = dataset

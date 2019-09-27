@@ -50,7 +50,7 @@ class Processor(Generic[ProcessedDataType]):
             try:
                 with open(os.path.join(processed_path, processed_data_pkl), "rb") as file:
                     processed_data = pickle.load(file)
-            except pickle.PickleError as e:
+            except pickle.PickleError:
                 print(f"Something went wrong while reading `{name}` from processor cache, skipping.")
             else:
                 cls._processed_data[name] = processed_data
