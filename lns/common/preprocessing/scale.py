@@ -1,9 +1,9 @@
 """Scale data preprocessor."""
 
 import os
+import urllib.request
 import requests
 import scaleapi
-import urllib.request
 
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
@@ -45,8 +45,8 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:
 
     client = scaleapi.ScaleClient(SCALE_API_KEY)
     batches_to_retrieve = [batch] if batch else batch_names
-    for b in batches_to_retrieve:
-        batch_path = os.path.join(scale_data_path, b)
+    for batch in batches_to_retrieve:
+        batch_path = os.path.join(scale_data_path, batch)
 
         count = 0
         offset = 0
@@ -61,7 +61,7 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:
         while has_next_page:
             tasklist = client.tasks(status="completed",
                                     project=project,
-                                    batch=b)
+                                    batch=batch)
             offset += 100
 
             for obj in tasklist:
