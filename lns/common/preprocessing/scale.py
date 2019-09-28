@@ -100,7 +100,7 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noq
                         Object2D(Bounds2D(x_min, y_min, width, height), class_index))
 
                 images.append(local_path)
-                print("Processed {}".format(local_path))
+                print("Processed {}\r".format(local_path), end="")
                 count += 1
 
                 if len(tasklist) < 100 or count > MAX_TO_PROCESS:
