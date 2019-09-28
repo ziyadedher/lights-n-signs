@@ -131,6 +131,6 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
                     directory = os.path.dirname(path)
                     if not os.path.exists(directory):
                         os.makedirs(directory)
-                    os.mknod(path)
+                    open(path, 'a').close()
                 elif subpath.path_type == Trainer.PathType.FOLDER:
                     os.makedirs(path)

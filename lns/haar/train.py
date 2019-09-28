@@ -69,7 +69,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
             "-num", str(num_samples),
             "-vec", str(vector_file)
         ]
-        subprocess.run(command)
+        subprocess.run(command, check=False)
 
     def train(self, num_stages: int, num_positive: int, num_negative: int) -> None:  # noqa: R701
         """Begin training the model.
@@ -105,7 +105,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         ]
 
         try:
-            subprocess.run(command)
+            subprocess.run(command, check=False)
         except KeyboardInterrupt:
             # Find the highest stage that has been trained
             stage = max(
