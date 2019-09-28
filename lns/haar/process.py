@@ -113,8 +113,8 @@ class HaarProcessor(Processor[HaarData]):
         return HaarData(positive_annotations, negative_annotations)
 
     @classmethod
-    def _reformat_labels(cls, labels: List[Object2D], dataset: Dataset) -> List[List[List[int]]]:
-        annotations: List[List[List[int]]] = [[] for _ in dataset.classes]
+    def _reformat_labels(cls, labels: List[Object2D], dataset: Dataset) -> List[List[List[float]]]:
+        annotations: List[List[List[float]]] = [[] for _ in dataset.classes]
         for label in labels:
             class_index = label.class_index
             x_min = label.bounds.left

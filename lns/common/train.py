@@ -108,7 +108,7 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         """
         raise NotImplementedError
 
-    def _generate_filestructure(self, load: bool, method: str, subpaths: Dict[str, Subpath]) -> None:  # noqa: R701
+    def _generate_filestructure(self, load: bool, method: str, subpaths: Dict[str, Subpath]) -> None:
         trainer_root = os.path.join(
             config.RESOURCES_ROOT, config.TRAINERS_FOLDER_NAME, method, self.__name
         )
