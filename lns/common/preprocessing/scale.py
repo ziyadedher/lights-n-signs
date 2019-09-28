@@ -84,8 +84,8 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noq
                     # Calculate the position and dimensions of the bounding box
                     x_min = int(bbox['left'])  # x-coordinate of top left corner
                     y_min = int(bbox['top'])  # y-coordinate of top left corner
-                    x_max = int(bbox['left']) + int(bbox['width'])  # x-coordinate of bottom right corner
-                    y_max = int(bbox['top']) + int(bbox['height'])  # y-coordinate of bottom right corner
+                    width = int(bbox['width'])  # width of the bounding box
+                    height = int(bbox['height'])  # height of the bounding box
 
                     # Get the class index if it has already been registered
                     # otherwise register it and select the index
@@ -97,7 +97,7 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noq
 
                     # Package the detection
                     annotations[local_path].append(
-                        Object2D(Bounds2D(x_min, y_min, x_max - x_min, y_max - y_min), class_index))
+                        Object2D(Bounds2D(x_min, y_min, width, height), class_index))
 
                 images.append(local_path)
                 print("Processed {}".format(local_path))
