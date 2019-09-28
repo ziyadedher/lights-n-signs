@@ -55,7 +55,8 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noq
         if not os.path.exists(scale_data_path):
             os.makedirs(scale_data_path)
 
-        if not os.path.exists(batch_path) or not os.listdir(batch_path):
+        if not os.path.exists(batch_path):
+            os.makedirs(batch_path)
             needs_download = True
 
         while has_next_page:
