@@ -1,7 +1,7 @@
 """Bosch data preprocessor."""
 
 import os
-import yaml  # XXX: this could be sped up by using PyYaml C-bindings (LibYAML)  # noqa
+import yaml  # XXX: this could be sped up by using PyYaml C-bindings (LibYAML)
 
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
@@ -12,7 +12,7 @@ DATASET_NAME = "Bosch"
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
-def _bosch(path: str) -> Dataset:  # noqa
+def _bosch(path: str) -> Dataset:  # pylint:disable=too-many-locals
     images: Dataset.Images = []
     classes: Dataset.Classes = []
     annotations: Dataset.Annotations = {}

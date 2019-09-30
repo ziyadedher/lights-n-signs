@@ -86,7 +86,7 @@ class Preprocessor:
         """Register default preprocessors in preprocessing."""
         # Import all preprocessing modules so that they are registered in the preprocessor
         from lns.common import preprocessing
-        for _, name, _ in pkgutil.walk_packages(preprocessing.__path__):
+        for _, name, _ in pkgutil.walk_packages(preprocessing.__path__):  # type: ignore
             importlib.import_module(preprocessing.__name__ + '.' + name)
 
     @classmethod

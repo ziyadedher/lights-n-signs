@@ -71,7 +71,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         ]
         subprocess.run(command, check=False)
 
-    def train(self, num_stages: int, num_positive: int, num_negative: int) -> None:  # noqa: R701
+    def train(self, num_stages: int, num_positive: int, num_negative: int) -> None:
         """Begin training the model.
 
         Train for <num_stages> stages before automatically stopping and
@@ -134,7 +134,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData]):
         """
         cascade_file = self._paths["cascade_file"]
 
-        if os.path.isfile(cascade_file):
+        if os.path.isfile(cascade_file) and self._class_index is not None:
             self.model = HaarModel(cascade_file, self._class_index)
         else:
             self.model = None

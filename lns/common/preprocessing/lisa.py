@@ -12,7 +12,7 @@ DATASET_NAME = "LISA"
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
-def _lisa(path: str) -> Dataset:  # noqa
+def _lisa(path: str) -> Dataset:  # pylint:disable=too-many-locals,too-many-branches
     images: Dataset.Images = []
     classes: Dataset.Classes = []
     annotations: Dataset.Annotations = {}
