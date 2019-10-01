@@ -80,7 +80,7 @@ anchors = 0
 classes = 0
 class_num = 0
 train_img_cnt = 0
-val_image_cnt = 0
+val_img_cnt = 0
 train_batch_num = 0
 lr_decay_freq = 0
 
