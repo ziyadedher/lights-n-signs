@@ -86,6 +86,8 @@ lr_decay_freq = 0
 
 ### parse some params
 def init():
+    global pw_boundaries
+
     anchors = parse_anchors(anchor_path)
     classes = read_class_names(class_name_path)
     class_num = len(classes)
