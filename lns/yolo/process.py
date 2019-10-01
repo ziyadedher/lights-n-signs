@@ -70,7 +70,10 @@ class YoloProcessor(Processor[YoloData]):
 
             def generate_annotations() -> Iterable[str]:
                 for i, image in tqdm(enumerate(images), desc=f"YOLO Processing `{dataset.name}`"):
-                    labels_str = " ".join(",".join(order_label(label)) for label in annotations[image])
+                    labels_str = " ".join(" ".join(order_label(label)) for label in annotations[image])
+                    if not labels_str:
+                        continue
+
                     width, height = 0, 0
                     with Image.open(image) as img:
                         width, height = img.size
