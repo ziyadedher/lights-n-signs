@@ -8,20 +8,19 @@ from typing import List
 import os
 
 
-RESOURCES_ROOT: str = os.path.abspath(
-    os.path.join(os.path.expanduser("~"), ".lns-training/resources")
-    # "/mnt/ssd1/lns/resources"
-)
+RESOURCES_ROOT: str = os.path.abspath(os.path.join(os.path.expanduser("~"), ".lns-training/resources"))
 
 DATA_FOLDER_NAME = "data"
 PREPROCESSED_DATA_FOLDER_NAME = "datasets"
 TRAINERS_FOLDER_NAME = "trainers"
 PROCESSED_DATA_FOLDER_NAME = "processed"
+WEIGHTS_FOLDER_NAME = "weights"
 SUBROOT_FOLDERS = [
     DATA_FOLDER_NAME,
     PREPROCESSED_DATA_FOLDER_NAME,
     TRAINERS_FOLDER_NAME,
     PROCESSED_DATA_FOLDER_NAME,
+    WEIGHTS_FOLDER_NAME,
 ]
 
 PKL_EXTENSION = ".pkl"
@@ -31,9 +30,6 @@ POSSIBLE_DATASETS: List[str] = [
     "LISA",
     "Bosch",
 ]
-
-SEED = 6
-MIN_SIZE = 40
 
 
 def generate_resources_filetree(root: str = RESOURCES_ROOT) -> None:

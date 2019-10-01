@@ -14,7 +14,7 @@ from lns.common.dataset import Dataset
 from lns.common.resources import Resources
 
 
-class ProcessedData:  # noqa: R903
+class ProcessedData:  # pylint:disable=too-few-public-methods
     """Abstract data container for data after processing."""
 
 

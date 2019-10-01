@@ -10,6 +10,7 @@ max-line-length: 120
 ignore-paths:
   - setup.py
   - scripts/
+  - lns/yolo/_lib/
   - lns/squeezedet/
 
 ignore-patterns:
