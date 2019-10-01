@@ -12,7 +12,6 @@ from lns.common.dataset import Dataset
 from lns.yolo.model import YoloModel
 from lns.yolo.process import YoloData, YoloProcessor
 from lns.yolo._lib.config import cfg as yolo_config
-from lns.yolo._lib.train import YoloTrain
 
 
 class YoloTrainer(Trainer[YoloModel, YoloData]):
@@ -62,7 +61,9 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         yolo_config.TRAIN.LOG_DIR = self._paths["log_folder"]
         yolo_config.TRAIN.CHECKPOINT_DIR = self._paths["checkpoint_folder"]
 
-        YoloTrain.train()
+        # Importing backend YoloTrain to make sure all config is set before anything happens
+        from lns.yolo._lib.train import YoloTrain
+        YoloTrain().train()
 
     def generate_model(self) -> Optional[YoloModel]:
         """Generate and return the currently available prediction model.
