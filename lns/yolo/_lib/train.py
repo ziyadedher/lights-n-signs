@@ -1,181 +1,225 @@
-#! /usr/bin/env python
-# coding=utf-8
-#================================================================
-#   Copyright (C) 2019 * Ltd. All rights reserved.
-#
-#   Editor      : VIM
-#   File name   : train.py
-#   Author      : YunYang1994
-#   Created date: 2019-02-28 17:50:26
-#   Description :
-#
-#================================================================
+# coding: utf-8
 
-import os
-import time
-import shutil
-import numpy as np
+from __future__ import division, print_function
+
 import tensorflow as tf
-from tqdm import tqdm
-import lns.yolo._lib.utils as utils
-from lns.yolo._lib.dataset import Dataset
-from lns.yolo._lib.yolov3 import YOLOV3
-from lns.yolo._lib.config import cfg
+import numpy as np
+import logging
+from tqdm import trange
 
+import args
 
-class YoloTrain(object):
-    def __init__(self):
-        self.anchor_per_scale    = cfg.YOLO.ANCHOR_PER_SCALE
-        self.classes             = utils.read_class_names(cfg.YOLO.CLASSES)
-        self.num_classes         = len(self.classes)
-        self.learn_rate_init     = cfg.TRAIN.LEARN_RATE_INIT
-        self.learn_rate_end      = cfg.TRAIN.LEARN_RATE_END
-        self.first_stage_epochs  = cfg.TRAIN.FISRT_STAGE_EPOCHS
-        self.second_stage_epochs = cfg.TRAIN.SECOND_STAGE_EPOCHS
-        self.warmup_periods      = cfg.TRAIN.WARMUP_EPOCHS
-        self.initial_weight      = cfg.TRAIN.INITIAL_WEIGHT
-        self.checkpoint_dir      = cfg.TRAIN.CHECKPOINT_DIR
-        self.time                = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
-        self.moving_ave_decay    = cfg.YOLO.MOVING_AVE_DECAY
-        self.max_bbox_per_scale  = 150
-        self.train_logdir        = cfg.TRAIN.LOG_DIR
-        self.trainset            = Dataset('train')
-        self.testset             = Dataset('test')
-        self.steps_per_period    = len(self.trainset)
-        self.sess                = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
+from lns.yolo._lib.utils.data_utils import get_batch_data
+from lns.yolo._lib.utils.misc_utils import shuffle_and_overwrite, make_summary, config_learning_rate, config_optimizer, AverageMeter
+from lns.yolo._lib.utils.eval_utils import evaluate_on_cpu, evaluate_on_gpu, get_preds_gpu, voc_eval, parse_gt_rec
+from lns.yolo._lib.utils.nms_utils import gpu_nms
 
-        with tf.name_scope('define_input'):
-            self.input_data   = tf.placeholder(dtype=tf.float32, name='input_data')
-            self.label_sbbox  = tf.placeholder(dtype=tf.float32, name='label_sbbox')
-            self.label_mbbox  = tf.placeholder(dtype=tf.float32, name='label_mbbox')
-            self.label_lbbox  = tf.placeholder(dtype=tf.float32, name='label_lbbox')
-            self.true_sbboxes = tf.placeholder(dtype=tf.float32, name='sbboxes')
-            self.true_mbboxes = tf.placeholder(dtype=tf.float32, name='mbboxes')
-            self.true_lbboxes = tf.placeholder(dtype=tf.float32, name='lbboxes')
-            self.trainable     = tf.placeholder(dtype=tf.bool, name='training')
+from lns.yolo._lib.model import yolov3
 
-        with tf.name_scope("define_loss"):
-            self.model = YOLOV3(self.input_data, self.trainable)
-            self.net_var = tf.global_variables()
-            self.giou_loss, self.conf_loss, self.prob_loss = self.model.compute_loss(
-                                                    self.label_sbbox,  self.label_mbbox,  self.label_lbbox,
-                                                    self.true_sbboxes, self.true_mbboxes, self.true_lbboxes)
-            self.loss = self.giou_loss + self.conf_loss + self.prob_loss
+# setting loggers
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S', filename=args.progress_log_path, filemode='w')
 
-        with tf.name_scope('learn_rate'):
-            self.global_step = tf.Variable(1.0, dtype=tf.float64, trainable=False, name='global_step')
-            warmup_steps = tf.constant(self.warmup_periods * self.steps_per_period,
-                                        dtype=tf.float64, name='warmup_steps')
-            train_steps = tf.constant( (self.first_stage_epochs + self.second_stage_epochs)* self.steps_per_period,
-                                        dtype=tf.float64, name='train_steps')
-            self.learn_rate = tf.cond(
-                pred=self.global_step < warmup_steps,
-                true_fn=lambda: self.global_step / warmup_steps * self.learn_rate_init,
-                false_fn=lambda: self.learn_rate_end + 0.5 * (self.learn_rate_init - self.learn_rate_end) *
-                                    (1 + tf.cos(
-                                        (self.global_step - warmup_steps) / (train_steps - warmup_steps) * np.pi))
-            )
-            global_step_update = tf.assign_add(self.global_step, 1.0)
+# setting placeholders
+is_training = tf.placeholder(tf.bool, name="phase_train")
+handle_flag = tf.placeholder(tf.string, [], name='iterator_handle_flag')
+# register the gpu nms operation here for the following evaluation scheme
+pred_boxes_flag = tf.placeholder(tf.float32, [1, None, None])
+pred_scores_flag = tf.placeholder(tf.float32, [1, None, None])
+gpu_nms_op = gpu_nms(pred_boxes_flag, pred_scores_flag, args.class_num, args.nms_topk, args.score_threshold, args.nms_threshold)
 
-        with tf.name_scope("define_weight_decay"):
-            moving_ave = tf.train.ExponentialMovingAverage(self.moving_ave_decay).apply(tf.trainable_variables())
+##################
+# tf.data pipeline
+##################
+train_dataset = tf.data.TextLineDataset(args.train_file)
+train_dataset = train_dataset.shuffle(args.train_img_cnt)
+train_dataset = train_dataset.batch(args.batch_size)
+train_dataset = train_dataset.map(
+    lambda x: tf.py_func(get_batch_data,
+                         inp=[x, args.class_num, args.img_size, args.anchors, 'train', args.multi_scale_train, args.use_mix_up, args.letterbox_resize],
+                         Tout=[tf.int64, tf.float32, tf.float32, tf.float32, tf.float32]),
+    num_parallel_calls=args.num_threads
+)
+train_dataset = train_dataset.prefetch(args.prefetech_buffer)
 
-        with tf.name_scope("define_first_stage_train"):
-            self.first_stage_trainable_var_list = []
-            for var in tf.trainable_variables():
-                var_name = var.op.name
-                var_name_mess = str(var_name).split('/')
-                if var_name_mess[0] in ['conv_sbbox', 'conv_mbbox', 'conv_lbbox']:
-                    self.first_stage_trainable_var_list.append(var)
+val_dataset = tf.data.TextLineDataset(args.val_file)
+val_dataset = val_dataset.batch(1)
+val_dataset = val_dataset.map(
+    lambda x: tf.py_func(get_batch_data,
+                         inp=[x, args.class_num, args.img_size, args.anchors, 'val', False, False, args.letterbox_resize],
+                         Tout=[tf.int64, tf.float32, tf.float32, tf.float32, tf.float32]),
+    num_parallel_calls=args.num_threads
+)
+val_dataset.prefetch(args.prefetech_buffer)
 
-            first_stage_optimizer = tf.train.AdamOptimizer(self.learn_rate).minimize(self.loss,
-                                                      var_list=self.first_stage_trainable_var_list)
-            with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-                with tf.control_dependencies([first_stage_optimizer, global_step_update]):
-                    with tf.control_dependencies([moving_ave]):
-                        self.train_op_with_frozen_variables = tf.no_op()
+iterator = tf.data.Iterator.from_structure(train_dataset.output_types, train_dataset.output_shapes)
+train_init_op = iterator.make_initializer(train_dataset)
+val_init_op = iterator.make_initializer(val_dataset)
 
-        with tf.name_scope("define_second_stage_train"):
-            second_stage_trainable_var_list = tf.trainable_variables()
-            second_stage_optimizer = tf.train.AdamOptimizer(self.learn_rate).minimize(self.loss,
-                                                      var_list=second_stage_trainable_var_list)
+# get an element from the chosen dataset iterator
+image_ids, image, y_true_13, y_true_26, y_true_52 = iterator.get_next()
+y_true = [y_true_13, y_true_26, y_true_52]
 
-            with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-                with tf.control_dependencies([second_stage_optimizer, global_step_update]):
-                    with tf.control_dependencies([moving_ave]):
-                        self.train_op_with_all_variables = tf.no_op()
+# tf.data pipeline will lose the data `static` shape, so we need to set it manually
+image_ids.set_shape([None])
+image.set_shape([None, None, None, 3])
+for y in y_true:
+    y.set_shape([None, None, None, None, None])
 
-        with tf.name_scope('loader_and_saver'):
-            variables_to_restore = [v for v in self.net_var if v.name.split('/')[0] not in ['conv_sbbox', 'conv_mbbox', 'conv_lbbox']]
-            self.loader = tf.train.Saver(variables_to_restore)
-            self.saver  = tf.train.Saver(tf.global_variables(), max_to_keep=10)
+##################
+# Model definition
+##################
+yolo_model = yolov3(args.class_num, args.anchors, args.use_label_smooth, args.use_focal_loss, args.batch_norm_decay, args.weight_decay, use_static_shape=False)
+with tf.variable_scope('yolov3'):
+    pred_feature_maps = yolo_model.forward(image, is_training=is_training)
+loss = yolo_model.compute_loss(pred_feature_maps, y_true)
+y_pred = yolo_model.predict(pred_feature_maps)
 
-        with tf.name_scope('summary'):
-            tf.summary.scalar("learn_rate",      self.learn_rate)
-            tf.summary.scalar("giou_loss",  self.giou_loss)
-            tf.summary.scalar("conf_loss",  self.conf_loss)
-            tf.summary.scalar("prob_loss",  self.prob_loss)
-            tf.summary.scalar("total_loss", self.loss)
+l2_loss = tf.losses.get_regularization_loss()
 
-            if os.path.exists(self.train_logdir): shutil.rmtree(self.train_logdir)
-            os.mkdir(self.train_logdir)
-            self.write_op = tf.summary.merge_all()
-            self.summary_writer  = tf.summary.FileWriter(self.train_logdir, graph=self.sess.graph)
+# setting restore parts and vars to update
+saver_to_restore = tf.train.Saver(var_list=tf.contrib.framework.get_variables_to_restore(include=args.restore_include, exclude=args.restore_exclude))
+update_vars = tf.contrib.framework.get_variables_to_restore(include=args.update_part)
 
+tf.summary.scalar('train_batch_statistics/total_loss', loss[0])
+tf.summary.scalar('train_batch_statistics/loss_xy', loss[1])
+tf.summary.scalar('train_batch_statistics/loss_wh', loss[2])
+tf.summary.scalar('train_batch_statistics/loss_conf', loss[3])
+tf.summary.scalar('train_batch_statistics/loss_class', loss[4])
+tf.summary.scalar('train_batch_statistics/loss_l2', l2_loss)
+tf.summary.scalar('train_batch_statistics/loss_ratio', l2_loss / loss[0])
 
-    def train(self):
-        self.sess.run(tf.global_variables_initializer())
-        try:
-            print('=> Restoring weights from: %s ... ' % self.initial_weight)
-            self.loader.restore(self.sess, self.initial_weight)
-        except Exception as e:
-            print('=> %s does not exist !!!' % self.initial_weight)
-            print('=> Now it starts to train YOLOV3 from scratch ...')
-            self.first_stage_epochs = 0
+global_step = tf.Variable(float(args.global_step), trainable=False, collections=[tf.GraphKeys.LOCAL_VARIABLES])
+if args.use_warm_up:
+    learning_rate = tf.cond(tf.less(global_step, args.train_batch_num * args.warm_up_epoch),
+                            lambda: args.learning_rate_init * global_step / (args.train_batch_num * args.warm_up_epoch),
+                            lambda: config_learning_rate(args, global_step - args.train_batch_num * args.warm_up_epoch))
+else:
+    learning_rate = config_learning_rate(args, global_step)
+tf.summary.scalar('learning_rate', learning_rate)
 
-        for epoch in range(1, 1+self.first_stage_epochs+self.second_stage_epochs):
-            if epoch <= self.first_stage_epochs:
-                train_op = self.train_op_with_frozen_variables
-            else:
-                train_op = self.train_op_with_all_variables
+if not args.save_optimizer:
+    saver_to_save = tf.train.Saver()
+    saver_best = tf.train.Saver()
 
-            pbar = tqdm(self.trainset)
-            train_epoch_loss, test_epoch_loss = [], []
+optimizer = config_optimizer(args.optimizer_name, learning_rate)
 
-            for train_data in pbar:
-                _, summary, train_step_loss, global_step_val = self.sess.run(
-                    [train_op, self.write_op, self.loss, self.global_step],feed_dict={
-                                                self.input_data:   train_data[0],
-                                                self.label_sbbox:  train_data[1],
-                                                self.label_mbbox:  train_data[2],
-                                                self.label_lbbox:  train_data[3],
-                                                self.true_sbboxes: train_data[4],
-                                                self.true_mbboxes: train_data[5],
-                                                self.true_lbboxes: train_data[6],
-                                                self.trainable:    True,
-                })
+# set dependencies for BN ops
+update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+with tf.control_dependencies(update_ops):
+    # train_op = optimizer.minimize(loss[0] + l2_loss, var_list=update_vars, global_step=global_step)
+    # apply gradient clip to avoid gradient exploding
+    gvs = optimizer.compute_gradients(loss[0] + l2_loss, var_list=update_vars)
+    clip_grad_var = [gv if gv[0] is None else [
+          tf.clip_by_norm(gv[0], 100.), gv[1]] for gv in gvs]
+    train_op = optimizer.apply_gradients(clip_grad_var, global_step=global_step)
 
-                train_epoch_loss.append(train_step_loss)
-                self.summary_writer.add_summary(summary, global_step_val)
-                pbar.set_description("train loss: %.2f" %train_step_loss)
+if args.save_optimizer:
+    print('Saving optimizer parameters to checkpoint! Remember to restore the global_step in the fine-tuning afterwards.')
+    saver_to_save = tf.train.Saver()
+    saver_best = tf.train.Saver()
 
-            for test_data in self.testset:
-                test_step_loss = self.sess.run( self.loss, feed_dict={
-                                                self.input_data:   test_data[0],
-                                                self.label_sbbox:  test_data[1],
-                                                self.label_mbbox:  test_data[2],
-                                                self.label_lbbox:  test_data[3],
-                                                self.true_sbboxes: test_data[4],
-                                                self.true_mbboxes: test_data[5],
-                                                self.true_lbboxes: test_data[6],
-                                                self.trainable:    False,
-                })
+with tf.Session() as sess:
+    sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
+    saver_to_restore.restore(sess, args.restore_path)
+    merged = tf.summary.merge_all()
+    writer = tf.summary.FileWriter(args.log_dir, sess.graph)
 
-                test_epoch_loss.append(test_step_loss)
+    print('\n----------- start to train -----------\n')
 
-            train_epoch_loss, test_epoch_loss = np.mean(train_epoch_loss), np.mean(test_epoch_loss)
-            ckpt_file = os.path.join(self.checkpoint_dir, "checkpoint_%03d_%.4f.ckpt" % (epoch, test_epoch_loss))
-            log_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
-            print("=> Epoch: %2d Time: %s Train loss: %.2f Test loss: %.2f Saving %s ..."
-                            %(epoch, log_time, train_epoch_loss, test_epoch_loss, ckpt_file))
-            self.saver.save(self.sess, ckpt_file)
+    best_mAP = -np.Inf
+
+    for epoch in range(args.total_epoches):
+
+        sess.run(train_init_op)
+        loss_total, loss_xy, loss_wh, loss_conf, loss_class = AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()
+
+        for i in trange(args.train_batch_num):
+            _, summary, __y_pred, __y_true, __loss, __global_step, __lr = sess.run(
+                [train_op, merged, y_pred, y_true, loss, global_step, learning_rate],
+                feed_dict={is_training: True})
+
+            writer.add_summary(summary, global_step=__global_step)
+
+            loss_total.update(__loss[0], len(__y_pred[0]))
+            loss_xy.update(__loss[1], len(__y_pred[0]))
+            loss_wh.update(__loss[2], len(__y_pred[0]))
+            loss_conf.update(__loss[3], len(__y_pred[0]))
+            loss_class.update(__loss[4], len(__y_pred[0]))
+
+            if __global_step % args.train_evaluation_step == 0 and __global_step > 0:
+                # recall, precision = evaluate_on_cpu(__y_pred, __y_true, args.class_num, args.nms_topk, args.score_threshold, args.nms_threshold)
+                recall, precision = evaluate_on_gpu(sess, gpu_nms_op, pred_boxes_flag, pred_scores_flag, __y_pred, __y_true, args.class_num, args.nms_threshold)
+
+                info = "Epoch: {}, global_step: {} | loss: total: {:.2f}, xy: {:.2f}, wh: {:.2f}, conf: {:.2f}, class: {:.2f} | ".format(
+                        epoch, int(__global_step), loss_total.average, loss_xy.average, loss_wh.average, loss_conf.average, loss_class.average)
+                info += 'Last batch: rec: {:.3f}, prec: {:.3f} | lr: {:.5g}'.format(recall, precision, __lr)
+                print(info)
+                logging.info(info)
+
+                writer.add_summary(make_summary('evaluation/train_batch_recall', recall), global_step=__global_step)
+                writer.add_summary(make_summary('evaluation/train_batch_precision', precision), global_step=__global_step)
+
+                if np.isnan(loss_total.average):
+                    print('****' * 10)
+                    raise ArithmeticError(
+                        'Gradient exploded! Please train again and you may need modify some parameters.')
+
+        # NOTE: this is just demo. You can set the conditions when to save the weights.
+        if epoch % args.save_epoch == 0 and epoch > 0:
+            if loss_total.average <= 2.:
+                saver_to_save.save(sess, args.save_dir + 'model-epoch_{}_step_{}_loss_{:.4f}_lr_{:.5g}'.format(epoch, int(__global_step), loss_total.average, __lr))
+
+        # switch to validation dataset for evaluation
+        if epoch % args.val_evaluation_epoch == 0 and epoch >= args.warm_up_epoch:
+            sess.run(val_init_op)
+
+            val_loss_total, val_loss_xy, val_loss_wh, val_loss_conf, val_loss_class = \
+                AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter(), AverageMeter()
+
+            val_preds = []
+
+            for j in trange(args.val_img_cnt):
+                __image_ids, __y_pred, __loss = sess.run([image_ids, y_pred, loss],
+                                                         feed_dict={is_training: False})
+                pred_content = get_preds_gpu(sess, gpu_nms_op, pred_boxes_flag, pred_scores_flag, __image_ids, __y_pred)
+                val_preds.extend(pred_content)
+                val_loss_total.update(__loss[0])
+                val_loss_xy.update(__loss[1])
+                val_loss_wh.update(__loss[2])
+                val_loss_conf.update(__loss[3])
+                val_loss_class.update(__loss[4])
+
+            # calc mAP
+            rec_total, prec_total, ap_total = AverageMeter(), AverageMeter(), AverageMeter()
+            gt_dict = parse_gt_rec(args.val_file, args.img_size, args.letterbox_resize)
+
+            info = '======> Epoch: {}, global_step: {}, lr: {:.6g} <======\n'.format(epoch, __global_step, __lr)
+
+            for ii in range(args.class_num):
+                npos, nd, rec, prec, ap = voc_eval(gt_dict, val_preds, ii, iou_thres=args.eval_threshold, use_07_metric=args.use_voc_07_metric)
+                info += 'EVAL: Class {}: Recall: {:.4f}, Precision: {:.4f}, AP: {:.4f}\n'.format(ii, rec, prec, ap)
+                rec_total.update(rec, npos)
+                prec_total.update(prec, nd)
+                ap_total.update(ap, 1)
+
+            mAP = ap_total.average
+            info += 'EVAL: Recall: {:.4f}, Precison: {:.4f}, mAP: {:.4f}\n'.format(rec_total.average, prec_total.average, mAP)
+            info += 'EVAL: loss: total: {:.2f}, xy: {:.2f}, wh: {:.2f}, conf: {:.2f}, class: {:.2f}\n'.format(
+                val_loss_total.average, val_loss_xy.average, val_loss_wh.average, val_loss_conf.average, val_loss_class.average)
+            print(info)
+            logging.info(info)
+
+            if mAP > best_mAP:
+                best_mAP = mAP
+                saver_best.save(sess, args.save_dir + 'best_model_Epoch_{}_step_{}_mAP_{:.4f}_loss_{:.4f}_lr_{:.7g}'.format(
+                                   epoch, int(__global_step), best_mAP, val_loss_total.average, __lr))
+
+            writer.add_summary(make_summary('evaluation/val_mAP', mAP), global_step=epoch)
+            writer.add_summary(make_summary('evaluation/val_recall', rec_total.average), global_step=epoch)
+            writer.add_summary(make_summary('evaluation/val_precision', prec_total.average), global_step=epoch)
+            writer.add_summary(make_summary('validation_statistics/total_loss', val_loss_total.average), global_step=epoch)
+            writer.add_summary(make_summary('validation_statistics/loss_xy', val_loss_xy.average), global_step=epoch)
+            writer.add_summary(make_summary('validation_statistics/loss_wh', val_loss_wh.average), global_step=epoch)
+            writer.add_summary(make_summary('validation_statistics/loss_conf', val_loss_conf.average), global_step=epoch)
+            writer.add_summary(make_summary('validation_statistics/loss_class', val_loss_class.average), global_step=epoch)

@@ -11,7 +11,6 @@ from lns.common.train import Trainer
 from lns.common.dataset import Dataset
 from lns.yolo.model import YoloModel
 from lns.yolo.process import YoloData, YoloProcessor
-from lns.yolo._lib.config import cfg as yolo_config
 
 
 class YoloTrainer(Trainer[YoloModel, YoloData]):
@@ -27,6 +26,8 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
             path="checkpoint", temporal=False, required=True, path_type=Trainer.PathType.FOLDER),
         "anchors_file": Trainer.Subpath(
             path="anchors", temporal=False, required=False, path_type=Trainer.PathType.FILE),
+        "progress_file": Trainer.Subpath(
+            path="progress", temporal=True, required=False, path_type=Trainer.PathType.FILE),
     }
 
     INITIAL_WEIGHTS_NAME = "yolo_coco"
@@ -44,6 +45,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
 
     def _get_initial_weight(self) -> str:
         checkpoints = os.listdir(self._paths["checkpoint_folder"])
+        checkpoints.remove("checkpoint")
         if checkpoints:
             return os.path.join(self._paths["checkpoint_folder"],
                                 max(checkpoints, key=lambda checkpoint: int(checkpoint.split("_")[1])))
@@ -54,17 +56,18 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         # TODO: dynamically generate k-means
         self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
 
-        yolo_config.YOLO.CLASSES = self._data.get_classes()
-        yolo_config.YOLO.ANCHORS = self._paths["anchors_file"]
-        yolo_config.TRAIN.ANNOT_PATH = self._data.get_annotations()
-        yolo_config.TRAIN.INITIAL_WEIGHT = initial_weight if initial_weight else self._get_initial_weight()
-        yolo_config.TRAIN.LOG_DIR = self._paths["log_folder"]
-        yolo_config.TRAIN.CHECKPOINT_DIR = self._paths["checkpoint_folder"]
-        yolo_config.TEST.ANNOT_PATH = self._data.get_annotations()
+        from lns.yolo._lib import args
+        args.train_file = self._data.get_annotations()
+        args.val_file = self._data.get_annotations()
+        args.restore_path = initial_weight if initial_weight else self._get_initial_weight()
+        args.save_dir = self._paths["checkpoint_folder"]
+        args.log_dir = self._paths["log_folder"]
+        args.progress_log_path = self._paths["progress_file"]
+        args.anchor_path = self._paths["anchors_file"]
+        args.class_name_path = self._data.get_classes()
 
-        # Importing backend YoloTrain to make sure all config is set before anything happens
-        from lns.yolo._lib.train import YoloTrain
-        YoloTrain().train()
+        # Importing train will begin training
+        from lns.yolo._lib import train  # pylint:disable=unused-import  # noqa
 
     def generate_model(self) -> Optional[YoloModel]:
         """Generate and return the currently available prediction model.
