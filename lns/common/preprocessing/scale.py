@@ -110,15 +110,15 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noq
 
 
 @Preprocessor.register_dataset_preprocessor(LIGHTS_DATASET_NAME)
-def _scale_lights(path: str, batch: str = None) -> Dataset:  #noqa
+def _scale_lights(path: str, batch: str = None) -> Dataset:  # noqa
     return _scale_common(path, "light_labeling", batch=batch)
 
 
 @Preprocessor.register_dataset_preprocessor(SIGNS_DATASET_NAME)
-def _scale_signs(path: str, batch: str = None) -> Dataset:  #noqa
+def _scale_signs(path: str, batch: str = None) -> Dataset:  # noqa
     return _scale_common(path, "sign_labeling", batch=batch)
 
 
 @Preprocessor.register_dataset_preprocessor(OBJECTS_DATASET_NAME)
-def _scale_objects(path: str, batch: str = None) -> Dataset:  #noqa
+def _scale_objects(path: str, batch: str = None) -> Dataset:  # noqa
     return _scale_common(path, "object_labeling", batch=batch)
