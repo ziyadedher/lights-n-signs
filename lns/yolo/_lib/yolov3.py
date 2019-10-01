@@ -13,10 +13,10 @@
 
 import numpy as np
 import tensorflow as tf
-import core.utils as utils
-import core.common as common
-import core.backbone as backbone
-from core.config import cfg
+import lns.yolo._lib.utils as utils
+import lns.yolo._lib.common as common
+import lns.yolo._lib.backbone as backbone
+from lns.yolo._lib.config import cfg
 
 
 class YOLOV3(object):
@@ -254,5 +254,3 @@ class YOLOV3(object):
             prob_loss = loss_sbbox[2] + loss_mbbox[2] + loss_lbbox[2]
 
         return giou_loss, conf_loss, prob_loss
-
-
