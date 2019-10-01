@@ -52,7 +52,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
     def train(self, initial_weight: Optional[str] = None) -> None:
         """Begin training the model."""
         # TODO: dynamically generate k-means
-        self._paths["anchor_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
+        self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
 
         yolo_config.YOLO.CLASSES = self._data.get_classes()
         yolo_config.YOLO.ANCHORS = self._paths["anchors_file"]
