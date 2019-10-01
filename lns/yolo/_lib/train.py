@@ -16,8 +16,8 @@ import time
 import shutil
 import numpy as np
 import tensorflow as tf
-import core.utils as utils
 from tqdm import tqdm
+import lns.yolo._lib.utils as utils
 from lns.yolo._lib.dataset import Dataset
 from lns.yolo._lib.yolov3 import YOLOV3
 from lns.yolo._lib.config import cfg
