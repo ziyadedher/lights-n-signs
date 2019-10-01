@@ -22,7 +22,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
 
     SUBPATHS = {
         "log_folder": Trainer.Subpath(
-            path="log", temporal=False, required=True, path_type=Trainer.PathType.FOLDER),
+            path="log", temporal=True, required=True, path_type=Trainer.PathType.FOLDER),
         "checkpoint_folder": Trainer.Subpath(
             path="checkpoint", temporal=False, required=True, path_type=Trainer.PathType.FOLDER),
         "anchors_file": Trainer.Subpath(
