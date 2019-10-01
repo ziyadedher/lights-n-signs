@@ -76,13 +76,23 @@ nms_topk = 150  # keep at most nms_topk outputs after nms
 eval_threshold = 0.5  # the iou threshold applied in mAP evaluation
 use_voc_07_metric = False  # whether to use voc 2007 evaluation metric, i.e. the 11-point metric
 
-### parse some params
-anchors = parse_anchors(anchor_path)
-classes = read_class_names(class_name_path)
-class_num = len(classes)
-train_img_cnt = len(open(train_file, 'r').readlines())
-val_img_cnt = len(open(val_file, 'r').readlines())
-train_batch_num = int(math.ceil(float(train_img_cnt) / batch_size))
+anchors = 0
+classes = 0
+class_num = 0
+train_img_cnt = 0
+val_image_cnt = 0
+train_batch_num = 0
+lr_decay_freq = 0
 
-lr_decay_freq = int(train_batch_num * lr_decay_epoch)
-pw_boundaries = [float(i) * train_batch_num + global_step for i in pw_boundaries]
+### parse some params
+def init():
+    anchors = parse_anchors(anchor_path)
+    classes = read_class_names(class_name_path)
+    class_num = len(classes)
+    train_img_cnt = len(open(train_file, 'r').readlines())
+    val_img_cnt = len(open(val_file, 'r').readlines())
+    train_batch_num = int(math.ceil(float(train_img_cnt) / batch_size))
+
+    lr_decay_freq = int(train_batch_num * lr_decay_epoch)
+    pw_boundaries = [float(i) * train_batch_num + global_step for i in pw_boundaries]
+    pw_values = [learning_rate_init, 3e-5, 1e-5]

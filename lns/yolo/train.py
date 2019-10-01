@@ -30,7 +30,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
             path="progress", temporal=True, required=False, path_type=Trainer.PathType.FILE),
     }
 
-    INITIAL_WEIGHTS_NAME = "yolo_coco"
+    INITIAL_WEIGHTS_NAME = "yolov3.ckpt"
     INITIAL_WEIGHTS = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, INITIAL_WEIGHTS_NAME)
 
     def __init__(self, name: str, dataset: Union[str, Dataset], load: bool = True) -> None:
@@ -65,6 +65,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         args.progress_log_path = self._paths["progress_file"]
         args.anchor_path = self._paths["anchors_file"]
         args.class_name_path = self._data.get_classes()
+        args.init()
 
         # Importing train will begin training
         from lns.yolo._lib import train  # pylint:disable=unused-import  # noqa

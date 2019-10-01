@@ -6,6 +6,7 @@ from typing import ClassVar, Iterable, Tuple
 
 import os
 
+from PIL import Image  # type: ignore
 from tqdm import tqdm  # type: ignore
 
 from lns.common.dataset import Dataset
@@ -63,14 +64,17 @@ class YoloProcessor(Processor[YoloData]):
         annotations_path = os.path.join(processed_data_folder, "annotations")
         with open(annotations_path, "w") as annotations_file:
             def order_label(label) -> Tuple[str, str, str, str, str]:
-                return (str(label.bounds.left), str(label.bounds.top),
-                        str(label.bounds.right), str(label.bounds.bottom), str(label.class_index))
+                return (str(label.class_index),
+                        str(label.bounds.left), str(label.bounds.top),
+                        str(label.bounds.right), str(label.bounds.bottom))
 
             def generate_annotations() -> Iterable[str]:
-                for image in tqdm(images, desc=f"YOLO Processing `{dataset.name}`"):
-                    labels = annotations[image]
-                    labels_str = " ".join(",".join(order_label(label)) for label in labels)
-                    yield f"{image} {labels_str}\n"
+                for i, image in tqdm(enumerate(images), desc=f"YOLO Processing `{dataset.name}`"):
+                    labels_str = " ".join(",".join(order_label(label)) for label in annotations[image])
+                    width, height = 0, 0
+                    with Image.open(image) as img:
+                        width, height = img.size
+                    yield f"{i} {image} {width} {height} {labels_str}\n"
 
             annotations_file.writelines(generate_annotations())
 
