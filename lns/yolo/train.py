@@ -58,6 +58,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
 
         from lns.yolo._lib import args
+
         args.train_file = self._data.get_annotations()
         args.val_file = self._data.get_annotations()
         args.restore_path = initial_weight if initial_weight else self._get_initial_weight()
@@ -66,6 +67,10 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         args.progress_log_path = self._paths["progress_file"]
         args.anchor_path = self._paths["anchors_file"]
         args.class_name_path = self._data.get_classes()
+
+        # TODO: set these from parameters
+        args.nms_topk = 8
+
         args.init()
 
         # Importing train will begin training
