@@ -70,14 +70,15 @@ class Dataset:
         by the respective key.
         """
         images = self.images
+        original_classes = self.classes
         classes = list(set(self.classes) - set(c for l in list(mapping.values()) for c in l) | set(mapping.keys()))
         annotations = self.annotations
 
         for image in images:
             for detection in annotations[image]:
                 # Check if the detection class is in the new classes
-                if self.classes[detection.class_index] in classes:
-                    detection.class_index = classes.index(detection.class_index)
+                if original_classes[detection.class_index] in classes:
+                    detection.class_index = classes.index(original_classes[detection.class_index])
                     continue
                 
                 # Change the detection class if required
