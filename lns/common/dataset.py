@@ -80,7 +80,7 @@ class Dataset:
                 if original_classes[detection.class_index] in classes:
                     detection.class_index = classes.index(original_classes[detection.class_index])
                     continue
-                
+
                 # Change the detection class if required
                 for new_class, mapping_classes in mapping.items():
                     if self.classes[detection.class_index] in mapping_classes:
