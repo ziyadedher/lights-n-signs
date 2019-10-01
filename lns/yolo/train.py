@@ -61,7 +61,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         args.train_file = self._data.get_annotations()
         args.val_file = self._data.get_annotations()
         args.restore_path = initial_weight if initial_weight else self._get_initial_weight()
-        args.save_dir = self._paths["checkpoint_folder"]
+        args.save_dir = self._paths["checkpoint_folder"] + "/"
         args.log_dir = self._paths["log_folder"]
         args.progress_log_path = self._paths["progress_file"]
         args.anchor_path = self._paths["anchors_file"]
