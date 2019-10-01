@@ -7,7 +7,7 @@ import numpy as np
 import logging
 from tqdm import trange
 
-import lns.yolo._lib.args
+from lns.yolo._lib import args
 
 from lns.yolo._lib.utils.data_utils import get_batch_data
 from lns.yolo._lib.utils.misc_utils import shuffle_and_overwrite, make_summary, config_learning_rate, config_optimizer, AverageMeter
