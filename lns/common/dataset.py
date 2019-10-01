@@ -75,12 +75,16 @@ class Dataset:
 
         for image in images:
             for detection in annotations[image]:
+                # Check if the detection class is in the new classes
+                if self.classes[detection.class_index] in classes:
+                    detection.class_index = classes.index(detection.class_index)
+                    continue
+                
                 # Change the detection class if required
                 for new_class, mapping_classes in mapping.items():
                     if self.classes[detection.class_index] in mapping_classes:
                         detection.class_index = classes.index(new_class)
                         break
-                detection.class_index = classes.index(self.classes[detection.class_index])
 
         return Dataset(self.name, images, classes, annotations)
 
