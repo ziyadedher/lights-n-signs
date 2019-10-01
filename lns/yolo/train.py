@@ -60,6 +60,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         yolo_config.TRAIN.INITIAL_WEIGHT = initial_weight if initial_weight else self._get_initial_weight()
         yolo_config.TRAIN.LOG_DIR = self._paths["log_folder"]
         yolo_config.TRAIN.CHECKPOINT_DIR = self._paths["checkpoint_folder"]
+        yolo_config.TEST.ANNOT_PATH = self._data.get_annotations()
 
         # Importing backend YoloTrain to make sure all config is set before anything happens
         from lns.yolo._lib.train import YoloTrain
