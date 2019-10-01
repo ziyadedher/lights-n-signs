@@ -106,7 +106,8 @@ class YoloTrain(object):
                         self.train_op_with_all_variables = tf.no_op()
 
         with tf.name_scope('loader_and_saver'):
-            self.loader = tf.train.Saver(self.net_var)
+            variables_to_restore = [v for v in self.net_var if v.name.split('/')[0] not in ['conv_sbbox', 'conv_mbbox', 'conv_lbbox']]
+            self.loader = tf.train.Saver(variables_to_restore)
             self.saver  = tf.train.Saver(tf.global_variables(), max_to_keep=10)
 
         with tf.name_scope('summary'):
@@ -127,7 +128,7 @@ class YoloTrain(object):
         try:
             print('=> Restoring weights from: %s ... ' % self.initial_weight)
             self.loader.restore(self.sess, self.initial_weight)
-        except:
+        except Exception as e:
             print('=> %s does not exist !!!' % self.initial_weight)
             print('=> Now it starts to train YOLOV3 from scratch ...')
             self.first_stage_epochs = 0
@@ -177,4 +178,4 @@ class YoloTrain(object):
             log_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
             print("=> Epoch: %2d Time: %s Train loss: %.2f Test loss: %.2f Saving %s ..."
                             %(epoch, log_time, train_epoch_loss, test_epoch_loss, ckpt_file))
-            self.saver.save(self.sess, ckpt_file, global_step=epoch)
+            self.saver.save(self.sess, ckpt_file)
