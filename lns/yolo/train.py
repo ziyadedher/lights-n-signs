@@ -56,8 +56,9 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         if "checkpoint" in checkpoints:
             checkpoints.remove("checkpoint")
         if checkpoints:
-            return os.path.join(self._paths["checkpoint_folder"],
-                                max(checkpoints, key=lambda checkpoint: int(checkpoint.split("_")[3])))
+            return os.path.join(
+                self._paths["checkpoint_folder"],
+                max(checkpoints, key=lambda checkpoint: int(checkpoint.split("_")[3])).rsplit(".", 1)[0])
         return YoloTrainer.INITIAL_WEIGHTS
 
     def train(self, settings: Optional[YoloSettings] = None) -> None:
