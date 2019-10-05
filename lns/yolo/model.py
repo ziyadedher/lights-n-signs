@@ -30,7 +30,7 @@ class YoloModel(Model):
             setattr(args, field, setting)
         args.optimizer_name = settings.optimizer_name.value
         args.lr_type = settings.lr_type.value
-        args.init()
+        args.init_inference()
 
         self._is_training = tf.placeholder(dtype=tf.bool, name="phase_train")
         self._pred_boxes_flag = tf.placeholder(tf.float32, [1, None, None])

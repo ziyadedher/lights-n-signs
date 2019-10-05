@@ -84,7 +84,6 @@ val_img_cnt = 0
 train_batch_num = 0
 lr_decay_freq = 0
 
-### parse some params
 def init():
     global anchors, classes, class_num, train_img_cnt, val_img_cnt, train_batch_num, lr_decay_freq, pw_boundaries, pw_values
 
@@ -98,3 +97,8 @@ def init():
     lr_decay_freq = int(train_batch_num * lr_decay_epoch)
     pw_boundaries = [float(i) * train_batch_num + global_step for i in pw_boundaries]
     pw_values = [learning_rate_init, 3e-5, 1e-5]
+
+def init_inference():
+    global anchors
+
+    anchors = parse_anchors(anchor_path)
