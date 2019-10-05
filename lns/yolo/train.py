@@ -104,7 +104,8 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         anchors = self._paths["anchors_file"]
         classes = self._data.get_classes()
 
-        if not all(os.path.exists(path) for path in (weights, anchors, classes)):
+        # Not checking weights because the name of the weights does not exist
+        if not all(os.path.exists(path) for path in (anchors, classes)):
             return None
         self.model = YoloModel(weights, anchors, classes, self.settings)
         return self.model
