@@ -99,6 +99,8 @@ def init():
     pw_values = [learning_rate_init, 3e-5, 1e-5]
 
 def init_inference():
-    global anchors
+    global anchors, classes, class_num
 
     anchors = parse_anchors(anchor_path)
+    classes = read_class_names(class_name_path)
+    class_num = len(classes)

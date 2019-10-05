@@ -60,10 +60,6 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
                                 max(checkpoints, key=lambda checkpoint: int(checkpoint.split("_")[3])))
         return YoloTrainer.INITIAL_WEIGHTS
 
-    def get_anchors_path(self) -> str:
-        """Get the path to the anchors file for this trainer."""
-        return self._paths["anchors_file"]
-
     def train(self, settings: Optional[YoloSettings] = None) -> None:
         """Begin training the model."""
         if not settings:
@@ -89,11 +85,25 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         args.init()
 
         # Importing train will begin training
-        from lns.yolo._lib import train  # pylint:disable=unused-import  # noqa
+        try:
+            from lns.yolo._lib import train  # pylint:disable=unused-import  # noqa
+        except KeyboardInterrupt:
+            print(f"Training interrupted")
+        else:
+            print(f"Training completed succesfully")
+        finally:
+            self.generate_model()
 
     def generate_model(self) -> Optional[YoloModel]:
         """Generate and return the currently available prediction model.
 
         Model may be `None` if there is no currently available model.
         """
+        weights = self.get_weights_path()
+        anchors = self._paths["anchors_file"]
+        classes = self._data.get_classes()
+
+        if not all(os.path.exists(path) for path in (weights, anchors, classes)):
+            return None
+        self.model = YoloModel(weights, anchors, classes, self.settings)
         return self.model
