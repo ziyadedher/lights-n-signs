@@ -130,10 +130,10 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         for field, setting in zip(settings._fields, settings):
             setattr(args, field, setting)
 
-        # args.init()
+        args.init()
 
-        # Importing train will begin training
-        # from lns.yolo._lib import train  # pylint:disable=unused-import  # noqa
+        Importing train will begin training
+        from lns.yolo._lib import train  # pylint:disable=unused-import  # noqa
 
     def generate_model(self) -> Optional[YoloModel]:
         """Generate and return the currently available prediction model.
