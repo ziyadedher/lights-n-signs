@@ -2,118 +2,16 @@
 
 The module manages the representation of a YOLOv3 training session along with all associated data.
 """
-from typing import Optional, Union, NamedTuple, Tuple, List
+from typing import Optional, Union
 
 import os
-from enum import Enum
 
 from lns.common import config
 from lns.common.train import Trainer
 from lns.common.dataset import Dataset
 from lns.yolo.model import YoloModel
 from lns.yolo.process import YoloData, YoloProcessor
-
-
-class Optimizer(Enum):
-    """Optimizer used for YOLO trainer."""
-
-    SGD: str = "sgd"
-    MOMENTUM: str = "momentum"
-    ADAM: str = "adam"
-    RMSPROP: str = "rmsprop"
-
-
-class LearningRateType(Enum):
-    """Learning rate decay type used for YOLO trainer."""
-
-    FIXED: str = "fixed"
-    EXPONENTIAL: str = "exponential"
-    COSINE_DECAY: str = "cosine_decay"
-    COSINE_DECAY_RESTART: str = "cosine_decay_restart"
-    PIECEWISE: str = "piecewise"
-
-
-class Settings(NamedTuple):
-    """Settings encapsulation for all YOLO trainer settings."""
-
-    # Absolute path to initial weights for the model
-    # If set to `None` loads the most recently trained weights for this trainer
-    # or the initial weights if no trained weights exist
-    initial_weights: Optional[str] = None
-
-    # Number of images to train on per step
-    batch_size: int = 8
-    # Base size of the image to train on (overriden by multi_scale_train)
-    img_size: Tuple[int, int] = (416, 416)
-    # Whether to preserve image aspect ratio when resizing or not by using letterboxing
-    letterbox_resize: bool = True
-
-    # Number of epochs until the trainer automatically terminates
-    num_epochs: int = 100
-    # Number of steps between evaluating the current model on the current training batch
-    train_evaluation_step: int = 100
-    # Number of epochs between evaluating on the entire validation dataset
-    val_evaluation_epoch: int = 5
-    # Number of epochs between saving a model checkpoint
-    save_epoch: int = 5
-
-    batch_norm_decay: float = 0.99
-    weight_decay: float = 5e-4
-    global_step: int = 0
-
-    # Number of worker threads for `tf.data`
-    num_threads: int = 10
-    # Number of batches to prefetch
-    prefetech_buffer: int = 5
-
-    # Optimizer to use when training the network
-    optimizer_name: Optimizer = Optimizer.MOMENTUM
-    # Whether or not to store the optimizer in the checkpoint
-    save_optimizer: bool = True
-    # Initial learning rate, will be built up to in warmup and decayed after
-    learning_rate_init: float = 1e-4
-    lr_type: LearningRateType = LearningRateType.PIECEWISE
-    # Number of epochs between decaying the learning rate
-    lr_decay_epoch: int = 5
-    # Exponential factor to decay learning rate by
-    lr_decay_factor: float = 0.96
-    # Lower bound on the learning rate
-    lr_lower_bound: float = 1e-6
-    # Epoch-based boundaries
-    pw_boundaries: Tuple[int, int] = (30, 50)
-    pw_values: Tuple[float, float, float] = (learning_rate_init, 3e-5, 1e-5)
-
-    # Include only the following when restoring from weights
-    restore_include: Optional[List[str]] = None
-    # Exclude the following when restoring from weights
-    restore_exclude: Optional[List[str]] = ['yolov3/yolov3_head/Conv_14', 'yolov3/yolov3_head/Conv_6',
-                                            'yolov3/yolov3_head/Conv_22']
-    # Part of the model to update
-    update_part: Optional[List[str]] = ['yolov3/yolov3_head']
-
-    # Whether or not to use multi scale training
-    multi_scale_train: bool = True
-    # Whether or not to smooth class labels
-    use_label_smooth: bool = True
-    # Whether or not to use focal loss
-    use_focal_loss: bool = True
-    # Whether or not to mix up data augmentation strategy
-    use_mix_up: bool = True
-    # Whether or not to start off with this number of warm-up epochs
-    use_warm_up: bool = True
-    # Number of epochs for warmup
-    warm_up_epoch: int = 5
-
-    # Number of final outputs from non-maximal suppression
-    nms_topk: int = 8
-    # Threshold for non-maximal suppression overlap
-    nms_threshold: float = 0.25
-    # Threshold for class probability in non-maximal suppresion
-    score_threshold: float = 0.1
-    # Thresholds for a detection to be considered correct in evaluation
-    eval_threshold: float = 0.25
-    # Whether or not to use 11-point VOC07 evaluation metric
-    use_voc_07_metric: bool = False
+from lns.yolo.settings import YoloSettings
 
 
 class YoloTrainer(Trainer[YoloModel, YoloData]):
@@ -136,7 +34,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
     INITIAL_WEIGHTS_NAME = "yolov3.ckpt"
     INITIAL_WEIGHTS = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, INITIAL_WEIGHTS_NAME)
 
-    settings: Settings
+    settings: YoloSettings
 
     def __init__(self, name: str, dataset: Union[str, Dataset], load: bool = True) -> None:
         """Initialize a YOLOv3 trainer with the given unique <name>.
@@ -148,7 +46,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
                          _processor=YoloProcessor, _method=YoloProcessor.method(), _load=load,
                          _subpaths=YoloTrainer.SUBPATHS)
 
-        self.settings = Settings()
+        self.settings = YoloSettings()
 
     def get_weights_path(self) -> str:
         """Get the path to most up-to-date weights associated with this model."""
@@ -160,10 +58,10 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
                                 max(checkpoints, key=lambda checkpoint: int(checkpoint.split("_")[3])))
         return YoloTrainer.INITIAL_WEIGHTS
 
-    def train(self, settings: Optional[Settings] = None) -> None:
+    def train(self, settings: Optional[YoloSettings] = None) -> None:
         """Begin training the model."""
         if not settings:
-            settings = Settings()
+            settings = YoloSettings()
         self.settings = settings
 
         # TODO: dynamically generate k-means
