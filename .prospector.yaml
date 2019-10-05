@@ -10,7 +10,9 @@ max-line-length: 120
 ignore-paths:
   - setup.py
   - scripts/
+  - scripts\
   - lns/squeezedet/
+  - lns\squeezedet\
 
 ignore-patterns:
   - ^\..*.py$
