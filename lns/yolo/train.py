@@ -132,7 +132,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
 
         args.init()
 
-        Importing train will begin training
+        # Importing train will begin training
         from lns.yolo._lib import train  # pylint:disable=unused-import  # noqa
 
     def generate_model(self) -> Optional[YoloModel]:
