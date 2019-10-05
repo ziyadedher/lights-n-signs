@@ -176,8 +176,8 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
 
         for field, setting in zip(settings._fields, settings):
             setattr(args, field, setting)
-        args.optimizer_name = args.optimizer_name.value
-        args.lr_type = args.lr_type.value
+        args.optimizer_name = settings.optimizer_name.value
+        args.lr_type = settings.lr_type.value
 
         args.init()
 

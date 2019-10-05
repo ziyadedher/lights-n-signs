@@ -16,6 +16,7 @@ ignore-paths:
 
 ignore-patterns:
   - ^\..*.py$
+  - \/_lib
 
 dodgy:
   run: true
