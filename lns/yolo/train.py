@@ -136,6 +136,8 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
     INITIAL_WEIGHTS_NAME = "yolov3.ckpt"
     INITIAL_WEIGHTS = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, INITIAL_WEIGHTS_NAME)
 
+    settings: Settings
+
     def __init__(self, name: str, dataset: Union[str, Dataset], load: bool = True) -> None:
         """Initialize a YOLOv3 trainer with the given unique <name>.
 
@@ -146,7 +148,10 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
                          _processor=YoloProcessor, _method=YoloProcessor.method(), _load=load,
                          _subpaths=YoloTrainer.SUBPATHS)
 
-    def _get_initial_weight(self) -> str:
+        self.settings = Settings()
+
+    def get_weights_path(self) -> str:
+        """Get the path to most up-to-date weights associated with this model."""
         checkpoints = os.listdir(self._paths["checkpoint_folder"])
         if "checkpoint" in checkpoints:
             checkpoints.remove("checkpoint")
@@ -159,6 +164,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         """Begin training the model."""
         if not settings:
             settings = Settings()
+        self.settings = settings
 
         # TODO: dynamically generate k-means
         self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
@@ -167,7 +173,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
 
         args.train_file = self._data.get_annotations()
         args.val_file = self._data.get_annotations()
-        args.restore_path = settings.initial_weights if settings.initial_weights else self._get_initial_weight()
+        args.restore_path = settings.initial_weights if settings.initial_weights else self.get_weights_path()
         args.save_dir = self._paths["checkpoint_folder"] + "/"
         args.log_dir = self._paths["log_folder"]
         args.progress_log_path = self._paths["progress_file"]
