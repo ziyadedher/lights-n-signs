@@ -15,7 +15,7 @@ from lns.yolo.settings import YoloSettings
 class YoloModel(Model):
     """Detection model utilizing YOLOv3."""
 
-    def __init__(self, weights_file: str, settings: Optional[YoloSettings] = None) -> None:
+    def __init__(self, weights_file: str, anchors_file: str, settings: Optional[YoloSettings] = None) -> None:
         """Initialize a YOLOv3 model."""
         if not settings:
             settings = YoloSettings()
@@ -25,6 +25,7 @@ class YoloModel(Model):
         from lns.yolo._lib import args
 
         args.restore_path = weights_file
+        args.anchor_path = anchors_file
         for field, setting in zip(settings._fields, settings):
             setattr(args, field, setting)
         args.optimizer_name = settings.optimizer_name.value

@@ -47,9 +47,11 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
                          _subpaths=YoloTrainer.SUBPATHS)
 
         self.settings = YoloSettings()
+        # TODO: dynamically generate k-means
+        self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
 
     def get_weights_path(self) -> str:
-        """Get the path to most up-to-date weights associated with this model."""
+        """Get the path to most up-to-date weights associated with this trainer."""
         checkpoints = os.listdir(self._paths["checkpoint_folder"])
         if "checkpoint" in checkpoints:
             checkpoints.remove("checkpoint")
@@ -58,14 +60,15 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
                                 max(checkpoints, key=lambda checkpoint: int(checkpoint.split("_")[3])))
         return YoloTrainer.INITIAL_WEIGHTS
 
+    def get_anchors_path(self) -> str:
+        """Get the path to the anchors file for this trainer."""
+        return self._paths["anchors_file"]
+
     def train(self, settings: Optional[YoloSettings] = None) -> None:
         """Begin training the model."""
         if not settings:
             settings = YoloSettings()
         self.settings = settings
-
-        # TODO: dynamically generate k-means
-        self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
 
         from lns.yolo._lib import args
 
