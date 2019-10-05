@@ -3,7 +3,7 @@
 Provides an interface for data processing for all detection methods to make
 implementation of new detection methods easier and more streamlined.
 """
-from typing import Dict, TypeVar, Generic
+from typing import Union, Dict, TypeVar, Generic
 
 import os
 import shutil
@@ -12,6 +12,7 @@ import pickle
 from lns.common import config
 from lns.common.dataset import Dataset
 from lns.common.resources import Resources
+from lns.common.preprocess import Preprocessor
 
 
 class ProcessedData:  # pylint:disable=too-few-public-methods
@@ -67,7 +68,7 @@ class Processor(Generic[ProcessedDataType]):
             pickle.dump(processed_data, file)
 
     @classmethod
-    def process(cls, dataset: Dataset, *, force: bool = False) -> ProcessedDataType:
+    def process(cls, dataset: Union[str, Dataset], *, force: bool = False) -> ProcessedDataType:
         """Process all required data from the given <dataset>.
 
         Generates a processed data object and returns it.
@@ -79,9 +80,13 @@ class Processor(Generic[ProcessedDataType]):
         <dataset> does not exist.
         """
         # Uses memoization to speed up processing acquisition
-        if not force and dataset.name in cls._processed_data:
-            print(f"Getting dataset {dataset.name} from processed dataset cache.")
-            return cls._processed_data[dataset.name]
+        name = dataset if isinstance(dataset, str) else dataset.name
+        if not force and name in cls._processed_data:
+            print(f"Getting dataset {name} from processed dataset cache.")
+            return cls._processed_data[name]
+
+        if isinstance(dataset, str):
+            dataset = Preprocessor.preprocess(dataset)
 
         processed_data_path = os.path.join(cls.get_processed_data_path(), dataset.name)
         if os.path.exists(processed_data_path):
