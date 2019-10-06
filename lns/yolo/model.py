@@ -11,6 +11,12 @@ from lns.common.model import Model
 from lns.common.structs import Object2D
 from lns.yolo.settings import YoloSettings
 
+from lns.yolo._lib import args
+from lns.yolo._lib.model import yolov3
+from lns.yolo._lib.utils.nms_utils import gpu_nms
+from lns.yolo._lib.utils.eval_utils import get_preds_gpu
+from lns.yolo._lib.utils.data_aug import letterbox_resize
+
 
 class YoloModel(Model):
     """Detection model utilizing YOLOv3."""
@@ -20,10 +26,6 @@ class YoloModel(Model):
         """Initialize a YOLOv3 model."""
         if not settings:
             settings = YoloSettings()
-
-        from lns.yolo._lib.utils.nms_utils import gpu_nms
-        from lns.yolo._lib.model import yolov3
-        from lns.yolo._lib import args
 
         args.restore_path = weights_file
         args.anchor_path = anchors_file
@@ -52,9 +54,8 @@ class YoloModel(Model):
 
     def predict(self, image: np.ndarray) -> List[Object2D]:
         """Predict the required bounding boxes on the given <image>."""
-        from lns.yolo._lib.utils.eval_utils import get_preds_gpu
-
-        y_pred = self._session.run([self._y_pred], feed_dict={self._is_training: False, self._image: image})
+        letterbox_resize(image, args.img_size[1], args.img_size[0])
+        y_pred = self._session.run([self._y_pred], feed_dict={self._is_training: False, self._image: np.array([image])})
         pred_content = get_preds_gpu(self._session, self._gpu_nms_op, self._pred_boxes_flag,
                                      self._pred_scores_flag, [0], y_pred)
         print(pred_content)
