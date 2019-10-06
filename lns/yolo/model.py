@@ -19,7 +19,7 @@ from lns.yolo._lib.utils.eval_utils import get_preds_gpu
 from lns.yolo._lib.utils.data_aug import letterbox_resize
 
 
-class YoloModel(Model):
+class YoloModel(Model):  # pylint:disable=too-many-instance-attributes
     """Detection model utilizing YOLOv3."""
 
     settings: YoloSettings
