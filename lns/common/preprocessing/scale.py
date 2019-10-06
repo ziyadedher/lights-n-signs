@@ -62,7 +62,8 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noq
         while has_next_page:
             tasklist = client.tasks(status="completed",
                                     project=project,
-                                    batch=batch_name)
+                                    batch=batch_name,
+                                    offset=offset)
             offset += 100
 
             for obj in tasklist:
