@@ -11,8 +11,6 @@ ignore-paths:
   - setup.py
   - scripts/
   - scripts\
-  - lns/yolo/_lib/
-  - lns\yolo\_lib\
   - lns/squeezedet/
   - lns\squeezedet\
 
