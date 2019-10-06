@@ -8,7 +8,7 @@ import numpy as np       # type: ignore
 import tensorflow as tf  # type: ignore
 
 from lns.common.model import Model
-from lns.common.structs import Object2D
+from lns.common.structs import Object2D, Bounds2D
 from lns.yolo.settings import YoloSettings
 
 from lns.yolo._lib import args
@@ -55,7 +55,12 @@ class YoloModel(Model):
     def predict(self, image: np.ndarray) -> List[Object2D]:
         """Predict the required bounding boxes on the given <image>."""
         image, _, _, _ = letterbox_resize(image, args.img_size[1], args.img_size[0])
-        y_pred = self._session.run([self._y_pred], feed_dict={self._is_training: False, self._image: np.array([image])})
+        y_pred = self._session.run(self._y_pred, feed_dict={self._is_training: False, self._image: np.array([image])})
         pred_content = get_preds_gpu(self._session, self._gpu_nms_op, self._pred_boxes_flag,
                                      self._pred_scores_flag, [0], y_pred)
-        print(pred_content)
+
+        predictions = []
+        for pred in pred_content:
+            x_min, y_min, x_max, y_max, score, label = pred
+            predictions.append(Object2D(Bounds2D(x_min, y_min, x_max - x_min, y_max - y_min), label, score))
+        return predictions
