@@ -56,9 +56,10 @@ class YoloModel(Model):
         self._session.run([tf.global_variables_initializer()])
         tf.train.Saver().restore(self._session, args.restore_path)
 
-    def predict(self, image: np.ndarray) -> List[Object2D]:
+    def predict(self, image: np.ndarray) -> List[Object2D]:  # pylint:disable=too-many-locals
         """Predict the required bounding boxes on the given <image>."""
-        image, _, _, _ = letterbox_resize(image, args.img_size[0], args.img_size[1], interp=1)
+        # TODO: implement non-letterbox resizing inference
+        image, ratio, d_w, d_h = letterbox_resize(image, args.img_size[0], args.img_size[1], interp=1)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
         image = image / 255.0
 
@@ -69,5 +70,10 @@ class YoloModel(Model):
         predictions = []
         for pred in pred_content:
             _, x_min, y_min, x_max, y_max, score, label = pred
+            x_min = int((x_min - d_w) / ratio)
+            x_max = int((x_max - d_w) / ratio)
+            y_min = int((y_min - d_h) / ratio)
+            y_max = int((y_max - d_h) / ratio)
+
             predictions.append(Object2D(Bounds2D(x_min, y_min, x_max - x_min, y_max - y_min), label, score))
         return predictions
