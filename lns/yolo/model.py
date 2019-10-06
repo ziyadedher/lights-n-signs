@@ -54,7 +54,7 @@ class YoloModel(Model):
 
     def predict(self, image: np.ndarray) -> List[Object2D]:
         """Predict the required bounding boxes on the given <image>."""
-        letterbox_resize(image, args.img_size[1], args.img_size[0])
+        image, _, _, _ = letterbox_resize(image, args.img_size[1], args.img_size[0])
         y_pred = self._session.run([self._y_pred], feed_dict={self._is_training: False, self._image: np.array([image])})
         pred_content = get_preds_gpu(self._session, self._gpu_nms_op, self._pred_boxes_flag,
                                      self._pred_scores_flag, [0], y_pred)
