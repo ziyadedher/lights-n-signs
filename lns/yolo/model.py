@@ -61,6 +61,6 @@ class YoloModel(Model):
 
         predictions = []
         for pred in pred_content:
-            x_min, y_min, x_max, y_max, score, label = pred
+            _, x_min, y_min, x_max, y_max, score, label = pred
             predictions.append(Object2D(Bounds2D(x_min, y_min, x_max - x_min, y_max - y_min), label, score))
         return predictions
