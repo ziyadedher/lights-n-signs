@@ -28,7 +28,8 @@ class YoloModel(Model):
                  settings: Optional[YoloSettings] = None) -> None:
         """Initialize a YOLOv3 model."""
         if not settings:
-            self.settings = YoloSettings()
+            settings = YoloSettings()
+        self.settings = settings
 
         args.restore_path = weights_file
         args.anchor_path = anchors_file
