@@ -6,7 +6,6 @@ import random
 
 import cv2          # type: ignore
 import numpy as np  # type: ignore
-import argparse
 
 from lns.common.model import Model
 from lns.common.dataset import Dataset
@@ -16,7 +15,6 @@ from lns.common.preprocess import Preprocessor
 
 QUIT_KEY = "q"
 
-COLORS = np.random.uniform(0,255,size=len(labels),3))
 
 def visualize(dataset: Union[Dataset, str], model: Optional[Model] = None, *,
               shuffle: bool = False, show_truth: bool = True) -> None:
@@ -40,18 +38,16 @@ def visualize(dataset: Union[Dataset, str], model: Optional[Model] = None, *,
 
         if model:
             predictions = model.predict(image)
-            idx = predictions.class_index
-            draw_labels(image, predictions, COLORS[idx], 1)
+            draw_labels(image, predictions, (255, 0, 0), 1)
 
         if show_truth:
             labels = annotations[image_path]
-            idx = classes.index(labels)
-            draw_labels(image, labels, (128,128,128), 2)
+            draw_labels(image, labels, (255, 255, 255), 2)
 
         cv2.imshow(window_name, image)
         if cv2.waitKey() == ord(QUIT_KEY):
             break
-            '''display the label on image until quit'''
+
 
 def draw_labels(image: np.ndarray, labels: List[Object2D], color: Tuple[int, int, int], thickness: int) -> None:
     """Draw the given <labels> on the given <image>."""
@@ -61,5 +57,3 @@ def draw_labels(image: np.ndarray, labels: List[Object2D], color: Tuple[int, int
             (label.bounds.left, label.bounds.top), (label.bounds.right, label.bounds.bottom),
             color=color, thickness=thickness
         )
-        '''drawing label of class on the image'''
-        cv2.putText(image,label,(label.bounds.left, label.bounds.top),cv2.FONT_HERSHEY_SIMPLEX,0.5,color,thickness = thickness)
