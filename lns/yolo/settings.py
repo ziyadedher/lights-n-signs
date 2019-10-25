@@ -30,7 +30,7 @@ class YoloSettings(NamedTuple):
     # Absolute path to initial weights for the model
     # If set to `None` loads the most recently trained weights for this trainer
     # or the initial weights if no trained weights exist
-    init: Optional[str] = None
+    initial_weights: Optional[str] = None
 
     # Number of images to train on per step
     batch_size: int = 8
