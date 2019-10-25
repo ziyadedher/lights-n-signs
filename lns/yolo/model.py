@@ -19,25 +19,21 @@ from lns.yolo._lib.utils.eval_utils import get_preds_gpu
 from lns.yolo._lib.utils.data_aug import letterbox_resize
 
 
-class YoloModel(Model):  # pylint:disable=too-many-instance-attributes
+# FIXME: cannot create more than one YoloModel per Python instance because of TF name conflicts
+class YoloModel(Model):
     """Detection model utilizing YOLOv3."""
-
-    settings: YoloSettings
 
     def __init__(self, weights_file: str, anchors_file: str, classes_file: str,
                  settings: Optional[YoloSettings] = None) -> None:
         """Initialize a YOLOv3 model."""
         if not settings:
             settings = YoloSettings()
-        self.settings = settings
 
         args.restore_path = weights_file
         args.anchor_path = anchors_file
         args.class_name_path = classes_file
-        for field, setting in zip(self.settings._fields, self.settings):
+        for field, setting in zip(settings._fields, settings):
             setattr(args, field, setting)
-        args.optimizer_name = self.settings.optimizer_name.value
-        args.lr_type = self.settings.lr_type.value
         args.init_inference()
 
         self._is_training = tf.placeholder(dtype=tf.bool, name="phase_train")

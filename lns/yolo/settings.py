@@ -105,3 +105,13 @@ class YoloSettings(NamedTuple):
     eval_threshold: float = 0.25
     # Whether or not to use 11-point VOC07 evaluation metric
     use_voc_07_metric: bool = False
+
+    # Automatically assigned variables used in training and inference
+    train_file: str = ""
+    val_file: str = ""
+    restore_path: str = ""
+    save_dir: str = ""
+    log_dir: str = ""
+    progress_log_path: str = ""
+    anchor_path: str = ""
+    class_name_path: str = ""
