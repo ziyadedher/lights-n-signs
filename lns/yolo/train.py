@@ -5,6 +5,7 @@ The module manages the representation of a YOLOv3 training session along with al
 from typing import Optional, Union
 
 import os
+import json
 
 from lns.common import config
 from lns.common.train import Trainer
@@ -29,6 +30,8 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
             path="anchors", temporal=False, required=False, path_type=Trainer.PathType.FILE),
         "progress_file": Trainer.Subpath(
             path="progress", temporal=True, required=False, path_type=Trainer.PathType.FILE),
+        "settings_file": Trainer.Subpath(
+            path="settings", temporal=False, required=False, path_type=Trainer.PathType.FILE),
     }
 
     INITIAL_WEIGHTS_NAME = "yolov3.ckpt"
@@ -65,23 +68,29 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         """Begin training the model."""
         if not settings:
             settings = YoloSettings()
+            if os.path.exists(self._paths["settings_file"]):
+                with open(self._paths["settings_file"], "r") as file:
+                    settings = json.load(file)
+        assert settings is not None
+
         self.settings = settings
+        with open(self._paths["settings_file"], "w") as file:
+            json.dump(self.settings, file)
 
         from lns.yolo._lib import args
-
         args.train_file = self._data.get_annotations()
         args.val_file = self._data.get_annotations()
-        args.restore_path = settings.initial_weights if settings.initial_weights else self.get_weights_path()
+        args.restore_path = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
         args.save_dir = self._paths["checkpoint_folder"] + "/"
         args.log_dir = self._paths["log_folder"]
         args.progress_log_path = self._paths["progress_file"]
         args.anchor_path = self._paths["anchors_file"]
         args.class_name_path = self._data.get_classes()
 
-        for field, setting in zip(settings._fields, settings):
+        for field, setting in zip(self.settings._fields, self.settings):
             setattr(args, field, setting)
-        args.optimizer_name = settings.optimizer_name.value
-        args.lr_type = settings.lr_type.value
+        args.optimizer_name = self.settings.optimizer_name.value
+        args.lr_type = self.settings.lr_type.value
 
         args.init()
 

@@ -5,7 +5,7 @@ from typing import NamedTuple, Optional, Tuple, List
 from enum import Enum
 
 
-class Optimizer(Enum):
+class Optimizer(str, Enum):
     """Optimizer used for YOLO trainer."""
 
     SGD: str = "sgd"
@@ -14,7 +14,7 @@ class Optimizer(Enum):
     RMSPROP: str = "rmsprop"
 
 
-class LearningRateType(Enum):
+class LearningRateType(str, Enum):
     """Learning rate decay type used for YOLO trainer."""
 
     FIXED: str = "fixed"
