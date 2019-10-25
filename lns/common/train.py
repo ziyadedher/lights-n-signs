@@ -23,20 +23,18 @@ ModelType = TypeVar("ModelType", bound=Model)
 ProcessedDataType = TypeVar("ProcessedDataType", bound=ProcessedData)
 
 
-class TrainerNotSetupException(Exception):
-    """Raised when training is attemped to be started without setup."""
+class NoTrainerDataset(Exception):
+    """Raised when trying to work with trainer data in a trainer with no dataset."""
 
 
 class Trainer(Generic[ModelType, ProcessedDataType]):
     """Abstract trainer class managing high level aspects of training."""
 
-    model: Optional[ModelType]
-
     _paths: Dict[str, str]
-    _data: ProcessedDataType
 
     __name: str
-    __dataset: Dataset
+    __data: Optional[ProcessedDataType]
+    __dataset: Optional[Dataset]
 
     SetupFunc = TypeVar("SetupFunc", bound=Callable[..., None])
     TrainFunc = TypeVar("TrainFunc", bound=Callable[..., None])
@@ -55,36 +53,36 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         required: bool
         path_type: 'Trainer.PathType'
 
-    def __init__(self, name: str, dataset: Union[str, Dataset], *,
-                 _processor: Type[Processor[ProcessedDataType]], _method: str, _load: bool,
-                 _subpaths: Dict[str, Subpath]) -> None:
+    def __init__(self, name: str, dataset: Optional[Union[str, Dataset]] = None, *,
+                 _processor: Type[Processor[ProcessedDataType]], _load: bool, _subpaths: Dict[str, Subpath]) -> None:
         """Initialize a trainer.
 
-        Generates a trainer with the given <name> on the given <dataset> which
-        could be either a `Dataset` object or the name of a dataset.
+        Generates a trainer with the given <name> on the given <dataset> if given.
 
         Needs some metadata to function correctly including the following:
         <_processor> is the specific processor class that is used for this method of training.
-        <_method> is the unique name of the method we are training.
         <_load> determines whether to keep non-temporal folders and files.
         <_subpaths> is a dictionary of unique path name to `Subpath`.
         """
-        self.model = None
         self._paths = {}
         self.__name = name
+        self.__data = None
+        self.__dataset = None
 
-        # Get preprocess data if required
-        if isinstance(dataset, str):
-            self.__dataset = Preprocessor.preprocess(dataset)
-        elif isinstance(dataset, Dataset):
-            self.__dataset = dataset
-        else:
-            raise ValueError(f"<dataset> may only be `str` or `Dataset`, not {type(dataset)}")
-        # Get processed data from the preprocessed dataset
-        self._data = _processor.process(self.__dataset)
+        # Extract data if needed.
+        if dataset:
+            # Get preprocess data if required
+            if isinstance(dataset, str):
+                self.__dataset = Preprocessor.preprocess(dataset)
+            elif isinstance(dataset, Dataset):
+                self.__dataset = dataset
+            else:
+                raise ValueError(f"<dataset> may only be `str` or `Dataset`, not {type(dataset)}")
+            # Get processed data from the preprocessed dataset
+            self.__data = _processor.process(self.__dataset)
 
         # Find the training root folder with the trainer name
-        self._generate_filestructure(_load, _method, _subpaths)
+        self._generate_filestructure(_load, _processor.method(), _subpaths)
 
     @property
     def name(self) -> str:
@@ -93,15 +91,26 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
 
     @property
     def dataset(self) -> Dataset:
-        """Get the dataset that this trainer is operating on."""
+        """Get the dataset that this trainer is operating on.
+
+        Raises a `NoTrainerDataset` exception if no dataset has been provided.
+        """
+        if not self.__dataset:
+            raise NoTrainerDataset("No dataset provided for this instance of the trainer.")
         return self.__dataset
 
     @property
-    def processed_data(self) -> ProcessedDataType:
-        """Get the processed dataset that this trainer is operating on."""
-        return self._data
+    def data(self) -> ProcessedDataType:
+        """Get the processed dataset that this trainer is operating on.
 
-    def generate_model(self) -> Optional[ModelType]:
+        Raises a `NoTrainerDataset` exception if no dataset has been provided.
+        """
+        if not self.__data:
+            raise NoTrainerDataset("No dataset provided for this instance of the trainer.")
+        return self.__data
+
+    @property
+    def model(self) -> Optional[ModelType]:
         """Generate and return the currently available model.
 
         Model may be `None` if there is no currently available model.

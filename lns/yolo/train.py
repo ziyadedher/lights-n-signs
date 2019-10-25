@@ -39,19 +39,33 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
 
     settings: YoloSettings
 
-    def __init__(self, name: str, dataset: Union[str, Dataset], load: bool = True) -> None:
+    def __init__(self, name: str, dataset: Optional[Union[str, Dataset]] = None, load: bool = True) -> None:
         """Initialize a YOLOv3 trainer with the given unique <name>.
 
-        Sources data from the <dataset> given which can either be a name of an available dataset or a `Dataset` object.
+        Sources data from the <dataset> given, if any.
         If <load> is set to False removes any existing training files before training.
         """
         super().__init__(name, dataset,
-                         _processor=YoloProcessor, _method=YoloProcessor.method(), _load=load,
-                         _subpaths=YoloTrainer.SUBPATHS)
+                         _processor=YoloProcessor, _load=load, _subpaths=YoloTrainer.SUBPATHS)
 
         self.settings = self._load_settings()
         # TODO: dynamically generate k-means
         self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
+
+    @property
+    def model(self) -> Optional[YoloModel]:
+        """Generate and return the currently available prediction model.
+
+        Model may be `None` if there is no currently available model.
+        """
+        weights = self.get_weights_path()
+        anchors = self._paths["anchors_file"]
+        classes = self.data.get_classes()
+
+        model = None
+        if all(os.path.exists(path) for path in (anchors, classes)):
+            model = YoloModel(weights, anchors, classes, self.settings)
+        return model
 
     def get_weights_path(self) -> str:
         """Get the path to most up-to-date weights associated with this trainer."""
@@ -71,14 +85,14 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
             json.dump(self.settings._asdict(), file)
 
         from lns.yolo._lib import args
-        args.train_file = self._data.get_annotations()
-        args.val_file = self._data.get_annotations()
+        args.train_file = self.data.get_annotations()
+        args.val_file = self.data.get_annotations()
         args.restore_path = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
         args.save_dir = self._paths["checkpoint_folder"] + "/"
         args.log_dir = self._paths["log_folder"]
         args.progress_log_path = self._paths["progress_file"]
         args.anchor_path = self._paths["anchors_file"]
-        args.class_name_path = self._data.get_classes()
+        args.class_name_path = self.data.get_classes()
 
         for field, setting in zip(self.settings._fields, self.settings):
             setattr(args, field, setting)
@@ -92,23 +106,6 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
             print(f"Training interrupted")
         else:
             print(f"Training completed succesfully")
-        finally:
-            self.generate_model()
-
-    def generate_model(self) -> Optional[YoloModel]:
-        """Generate and return the currently available prediction model.
-
-        Model may be `None` if there is no currently available model.
-        """
-        weights = self.get_weights_path()
-        anchors = self._paths["anchors_file"]
-        classes = self._data.get_classes()
-
-        # Not checking weights because the name of the weights does not exist
-        if not all(os.path.exists(path) for path in (anchors, classes)):
-            return None
-        self.model = YoloModel(weights, anchors, classes, self.settings)
-        return self.model
 
     def _load_settings(self) -> YoloSettings:
         settings = YoloSettings()
