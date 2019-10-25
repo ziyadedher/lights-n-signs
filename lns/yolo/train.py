@@ -81,7 +81,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
     def train(self, settings: Optional[YoloSettings] = None) -> None:
         """Begin training the model."""
         self.settings = settings if settings else self._load_settings()
-        self.settings._replace(
+        self.settings = self.settings._replace(
             train_file=self.data.get_annotations(),
             val_file=self.data.get_annotations(),
             restore_path=self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path(),
