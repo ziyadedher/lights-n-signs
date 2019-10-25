@@ -68,7 +68,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         """Begin training the model."""
         self.settings = settings if settings else self._load_settings()
         with open(self._paths["settings_file"], "w") as file:
-            json.dump(self.settings, file)
+            json.dump(self.settings._asdict(), file)
 
         from lns.yolo._lib import args
         args.train_file = self._data.get_annotations()
