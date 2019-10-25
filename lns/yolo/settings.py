@@ -30,7 +30,7 @@ class YoloSettings(NamedTuple):
     # Absolute path to initial weights for the model
     # If set to `None` loads the most recently trained weights for this trainer
     # or the initial weights if no trained weights exist
-    initial_weights: Optional[str] = None
+    init: Optional[str] = None
 
     # Number of images to train on per step
     batch_size: int = 8
@@ -105,3 +105,13 @@ class YoloSettings(NamedTuple):
     eval_threshold: float = 0.25
     # Whether or not to use 11-point VOC07 evaluation metric
     use_voc_07_metric: bool = False
+
+    # Automatically assigned variables used in training and inference
+    train_file: str = ""
+    val_file: str = ""
+    restore_path: str = ""
+    save_dir: str = ""
+    log_dir: str = ""
+    progress_log_path: str = ""
+    anchor_path: str = ""
+    class_name_path: str = ""

@@ -60,7 +60,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         """
         weights = self.get_weights_path()
         anchors = self._paths["anchors_file"]
-        classes = self.data.get_classes()
+        classes = self.settings.class_name_path
 
         model = None
         if all(os.path.exists(path) for path in (anchors, classes)):
@@ -81,22 +81,23 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
     def train(self, settings: Optional[YoloSettings] = None) -> None:
         """Begin training the model."""
         self.settings = settings if settings else self._load_settings()
+        self.settings._replace(
+            train_file=self.data.get_annotations(),
+            val_file=self.data.get_annotations(),
+            restore_path=self.settings.init if self.settings.init else self.get_weights_path(),
+            save_dir=self._paths["checkpoint_folder"] + "/",
+            log_dir=self._paths["log_folder"],
+            progress_log_path=self._paths["progress_file"],
+            anchor_path=self._paths["anchors_file"],
+            class_name_path=self.data.get_classes(),
+        )
+
         with open(self._paths["settings_file"], "w") as file:
             json.dump(self.settings._asdict(), file)
 
         from lns.yolo._lib import args
-        args.train_file = self.data.get_annotations()
-        args.val_file = self.data.get_annotations()
-        args.restore_path = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
-        args.save_dir = self._paths["checkpoint_folder"] + "/"
-        args.log_dir = self._paths["log_folder"]
-        args.progress_log_path = self._paths["progress_file"]
-        args.anchor_path = self._paths["anchors_file"]
-        args.class_name_path = self.data.get_classes()
-
         for field, setting in zip(self.settings._fields, self.settings):
             setattr(args, field, setting)
-
         args.init()
 
         # Importing train will begin training
