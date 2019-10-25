@@ -19,7 +19,8 @@ from lns.yolo._lib.utils.eval_utils import get_preds_gpu
 from lns.yolo._lib.utils.data_aug import letterbox_resize
 
 
-class YoloModel(Model):  # pylint:disable=too-many-instance-attributes
+# FIXME: cannot create more than one YoloModel per Python instance because of TF name conflicts
+class YoloModel(Model):
     """Detection model utilizing YOLOv3."""
 
     def __init__(self, weights_file: str, anchors_file: str, classes_file: str,
