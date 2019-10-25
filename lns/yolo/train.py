@@ -49,7 +49,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
                          _processor=YoloProcessor, _method=YoloProcessor.method(), _load=load,
                          _subpaths=YoloTrainer.SUBPATHS)
 
-        self.settings = YoloSettings()
+        self.settings = self._load_settings()
         # TODO: dynamically generate k-means
         self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
 
@@ -66,14 +66,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
 
     def train(self, settings: Optional[YoloSettings] = None) -> None:
         """Begin training the model."""
-        if not settings:
-            settings = YoloSettings()
-            if os.path.exists(self._paths["settings_file"]):
-                with open(self._paths["settings_file"], "r") as file:
-                    settings = json.load(file)
-        assert settings is not None
-
-        self.settings = settings
+        self.settings = settings if settings else self._load_settings()
         with open(self._paths["settings_file"], "w") as file:
             json.dump(self.settings, file)
 
@@ -118,3 +111,10 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
             return None
         self.model = YoloModel(weights, anchors, classes, self.settings)
         return self.model
+
+    def _load_settings(self) -> YoloSettings:
+        settings = YoloSettings()
+        if os.path.exists(self._paths["settings_file"]):
+            with open(self._paths["settings_file"], "r") as file:
+                settings = YoloSettings(**json.load(file))
+        return settings
