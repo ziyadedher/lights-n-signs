@@ -3,7 +3,7 @@
 from typing import Optional, Tuple, List
 
 from enum import Enum
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from lns.common.settings import Settings
 
@@ -81,10 +81,15 @@ class YoloSettings(Settings):
     # Include only the following when restoring from weights
     restore_include: Optional[List[str]] = None
     # Exclude the following when restoring from weights
-    restore_exclude: Optional[List[str]] = ['yolov3/yolov3_head/Conv_14', 'yolov3/yolov3_head/Conv_6',
-                                            'yolov3/yolov3_head/Conv_22']
+    restore_exclude: Optional[List[str]] = field(default_factory=lambda: [
+        'yolov3/yolov3_head/Conv_14',
+        'yolov3/yolov3_head/Conv_6',
+        'yolov3/yolov3_head/Conv_22',
+    ])
     # Part of the model to update
-    update_part: Optional[List[str]] = ['yolov3/yolov3_head']
+    update_part: Optional[List[str]] = field(default_factory=lambda: [
+        'yolov3/yolov3_head',
+    ])
 
     # Whether or not to use multi scale training
     multi_scale_train: bool = True
