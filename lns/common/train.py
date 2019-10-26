@@ -83,10 +83,10 @@ class Trainer(Generic[ModelType, ProcessedDataType, SettingsType]):
         self.__dataset = None
         self.__settings_class = _settings
 
-        self.__settings = self._load_settings()
-
         self._generate_filestructure(_load, _processor.method(), {**Trainer.BUILTIN_SUBPATHS, **_subpaths})
         self._acquire_data(dataset, _processor)
+
+        self.__settings = self._load_settings()
 
     @property
     def name(self) -> str:
