@@ -9,5 +9,8 @@ from dataclasses import dataclass
 class Settings():
     """Encapsulates all settings for a specific trainer."""
 
+    # Just used to make sure the dataclass is never empty
+    __dummy_field: bool = True
+
 
 SettingsType = TypeVar("SettingsType", bound=Settings)
