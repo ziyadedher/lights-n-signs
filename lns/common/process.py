@@ -25,7 +25,12 @@ ProcessedDataType = TypeVar("ProcessedDataType", bound=ProcessedData)
 class Processor(Generic[ProcessedDataType]):
     """Abstract processor for generation of processed data."""
 
-    _processed_data: Dict[str, ProcessedDataType] = {}
+    _processed_data: Dict[str, ProcessedDataType]
+
+    @classmethod
+    def __init_subclass__(cls) -> None:
+        """Initialize subclass of this class."""
+        cls._processed_data = {}
 
     @classmethod
     def method(cls) -> str:
