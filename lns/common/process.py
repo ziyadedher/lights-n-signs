@@ -82,7 +82,7 @@ class Processor(Generic[ProcessedDataType]):
         # Uses memoization to speed up processing acquisition
         name = dataset if isinstance(dataset, str) else dataset.name
         if not force and name in cls._processed_data:
-            print(f"Getting dataset {name} from processed dataset cache.")
+            print(f"Getting data {name} from processed data cache.")
             return cls._processed_data[name]
 
         if isinstance(dataset, str):
