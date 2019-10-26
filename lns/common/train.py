@@ -189,4 +189,4 @@ class Trainer(Generic[ModelType, ProcessedDataType, SettingsType]):
     def _set_settings(self, settings: SettingsType) -> None:
         self.__settings = settings
         with open(self._paths["_settings"], "w") as file:
-            json.dump(dataclasses.asdict(settings), file)
+            json.dump(dataclasses.asdict(settings), file, indent='\t')
