@@ -10,6 +10,7 @@ from typing import (
 
 import os
 import shutil
+import pickle
 from enum import Enum
 
 from lns.common import config
@@ -53,6 +54,13 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         required: bool
         path_type: 'Trainer.PathType'
 
+    BUILTIN_SUBPATHS = {
+        "_dataset": Subpath(
+            path="dataset", temporal=False, required=False, path_type=PathType.FILE),
+        "_data": Subpath(
+            path="data", temporal=False, required=False, path_type=PathType.FILE),
+    }
+
     def __init__(self, name: str, dataset: Optional[Union[str, Dataset]] = None, *,
                  _processor: Type[Processor[ProcessedDataType]], _load: bool, _subpaths: Dict[str, Subpath]) -> None:
         """Initialize a trainer.
@@ -69,20 +77,8 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         self.__data = None
         self.__dataset = None
 
-        # Extract data if needed.
-        if dataset:
-            # Get preprocess data if required
-            if isinstance(dataset, str):
-                self.__dataset = Preprocessor.preprocess(dataset)
-            elif isinstance(dataset, Dataset):
-                self.__dataset = dataset
-            else:
-                raise ValueError(f"<dataset> may only be `str` or `Dataset`, not {type(dataset)}")
-            # Get processed data from the preprocessed dataset
-            self.__data = _processor.process(self.__dataset)
-
-        # Find the training root folder with the trainer name
-        self._generate_filestructure(_load, _processor.method(), _subpaths)
+        self._generate_filestructure(_load, _processor.method(), {**Trainer.BUILTIN_SUBPATHS, **_subpaths})
+        self._acquire_data(dataset, _processor)
 
     @property
     def name(self) -> str:
@@ -143,3 +139,28 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
                     open(path, 'a').close()
                 elif subpath.path_type == Trainer.PathType.FOLDER:
                     os.makedirs(path)
+
+    def _acquire_data(self, dataset: Optional[Union[Dataset, str]],
+                      _processor: Type[Processor[ProcessedDataType]]) -> None:
+        if dataset:
+            # Get preprocess data if required
+            if isinstance(dataset, str):
+                self.__dataset = Preprocessor.preprocess(dataset)
+            elif isinstance(dataset, Dataset):
+                self.__dataset = dataset
+            else:
+                raise ValueError(f"<dataset> may only be `str` or `Dataset`, not {type(dataset)}")
+            # Get processed data from the preprocessed dataset
+            self.__data = _processor.process(self.__dataset)
+
+            with open(self._paths["_dataset"], "wb") as dataset_file:
+                pickle.dump(self.__dataset, dataset_file)
+            with open(self._paths["_data"], "wb") as data_file:
+                pickle.dump(self.__data, data_file)
+
+        elif os.path.isfile(self._paths["_dataset"]) and os.path.isfile(self._paths["_data"]):
+            with open(self._paths["_dataset"], "rb") as dataset_file:
+                self.__dataset = pickle.load(dataset_file)
+            with open(self._paths["_data"], "rb") as data_file:
+                self.__data = pickle.load(data_file)
+            print("Data loaded from trainer cache.")
