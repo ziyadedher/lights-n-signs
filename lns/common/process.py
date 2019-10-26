@@ -3,7 +3,7 @@
 Provides an interface for data processing for all detection methods to make
 implementation of new detection methods easier and more streamlined.
 """
-from typing import Dict, TypeVar, Generic
+from typing import Union, Dict, TypeVar, Generic
 
 import os
 import shutil
@@ -12,9 +12,10 @@ import pickle
 from lns.common import config
 from lns.common.dataset import Dataset
 from lns.common.resources import Resources
+from lns.common.preprocess import Preprocessor
 
 
-class ProcessedData:  # noqa: R903
+class ProcessedData:  # pylint:disable=too-few-public-methods
     """Abstract data container for data after processing."""
 
 
@@ -24,7 +25,12 @@ ProcessedDataType = TypeVar("ProcessedDataType", bound=ProcessedData)
 class Processor(Generic[ProcessedDataType]):
     """Abstract processor for generation of processed data."""
 
-    _processed_data: Dict[str, ProcessedDataType] = {}
+    _processed_data: Dict[str, ProcessedDataType]
+
+    @classmethod
+    def __init_subclass__(cls) -> None:
+        """Initialize subclass of this class."""
+        cls._processed_data = {}
 
     @classmethod
     def method(cls) -> str:
@@ -47,9 +53,13 @@ class Processor(Generic[ProcessedDataType]):
             if not processed_data_pkl.endswith(config.PKL_EXTENSION):
                 continue
             name = processed_data_pkl.strip(config.PKL_EXTENSION)
-            with open(os.path.join(processed_path, processed_data_pkl), "rb") as file:
-                processed_data = pickle.load(file)
-            cls._processed_data[name] = processed_data
+            try:
+                with open(os.path.join(processed_path, processed_data_pkl), "rb") as file:
+                    processed_data = pickle.load(file)
+            except pickle.PickleError:
+                print(f"Something went wrong while reading `{name}` from processor cache, skipping.")
+            else:
+                cls._processed_data[name] = processed_data
 
     @classmethod
     def cache_processed_data(cls, name: str, processed_data: ProcessedDataType) -> None:
@@ -63,7 +73,7 @@ class Processor(Generic[ProcessedDataType]):
             pickle.dump(processed_data, file)
 
     @classmethod
-    def process(cls, dataset: Dataset, *, force: bool = False) -> ProcessedDataType:
+    def process(cls, dataset: Union[str, Dataset], *, force: bool = False) -> ProcessedDataType:
         """Process all required data from the given <dataset>.
 
         Generates a processed data object and returns it.
@@ -75,9 +85,13 @@ class Processor(Generic[ProcessedDataType]):
         <dataset> does not exist.
         """
         # Uses memoization to speed up processing acquisition
-        if not force and dataset.name in cls._processed_data:
-            print(f"Getting dataset {dataset.name} from processed dataset cache.")
-            return cls._processed_data[dataset.name]
+        name = dataset if isinstance(dataset, str) else dataset.name
+        if not force and name in cls._processed_data:
+            print(f"Getting data {name} from processed data cache.")
+            return cls._processed_data[name]
+
+        if isinstance(dataset, str):
+            dataset = Preprocessor.preprocess(dataset)
 
         processed_data_path = os.path.join(cls.get_processed_data_path(), dataset.name)
         if os.path.exists(processed_data_path):

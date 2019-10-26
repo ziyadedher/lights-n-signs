@@ -1,0 +1,58 @@
+output-format: grouped
+
+strictness: veryhigh
+doc-warnings: true
+test-warnings: true
+member-warnings: true
+
+max-line-length: 120
+
+ignore-paths:
+  - setup.py
+  - scripts/
+  - scripts\
+  - lns/yolo/_lib/
+  - lns\yolo\_lib\
+  - lns/squeezedet/
+  - lns\squeezedet\
+
+ignore-patterns:
+  - ^\..*.py$
+
+dodgy:
+  run: true
+
+frosted:
+  run: false
+
+mccabe:
+  run: false
+
+mypy:
+  run: true
+
+pep257:
+  run: true
+  disable:
+    - D203
+    - D213
+
+pep8:
+  run: true
+  full: true
+  options:
+    max-line-length: 120
+
+pyflakes:
+  run: true
+
+pylint:
+  run: true
+  options:
+    max-line-length: 120
+
+pyroma:
+  run: false
+
+vulture:
+  run: false
