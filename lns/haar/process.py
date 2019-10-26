@@ -3,7 +3,7 @@
 Manages all data processing for the generation of data ready to be trained
 on with OpenCV Haar training scripts.
 """
-from typing import ClassVar, List
+from typing import List
 
 import os
 
@@ -54,15 +54,13 @@ class HaarData(ProcessedData):
 class HaarProcessor(Processor[HaarData]):
     """Haar processor responsible for data processing to Haar-valid formats."""
 
-    METHOD: ClassVar[str] = "haar"
-
     @classmethod
     def method(cls) -> str:
         """Get the training method this processor is for."""
-        return cls.METHOD
+        return "haar"
 
-    @classmethod  # noqa: R701
-    def _process(cls, dataset: Dataset) -> HaarData:  # noqa: R914
+    @classmethod
+    def _process(cls, dataset: Dataset) -> HaarData:  # pylint:disable=too-many-locals
         # Register all folders
         processed_data_folder = os.path.join(cls.get_processed_data_path(), dataset.name)
         annotations_folder = os.path.join(processed_data_folder, "annotations")
@@ -113,8 +111,8 @@ class HaarProcessor(Processor[HaarData]):
         return HaarData(positive_annotations, negative_annotations)
 
     @classmethod
-    def _reformat_labels(cls, labels: List[Object2D], dataset: Dataset) -> List[List[List[int]]]:
-        annotations: List[List[List[int]]] = [[] for _ in dataset.classes]
+    def _reformat_labels(cls, labels: List[Object2D], dataset: Dataset) -> List[List[List[float]]]:
+        annotations: List[List[List[float]]] = [[] for _ in dataset.classes]
         for label in labels:
             class_index = label.class_index
             x_min = label.bounds.left

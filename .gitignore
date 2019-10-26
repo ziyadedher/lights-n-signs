@@ -106,5 +106,8 @@ venv.bak/
 # ftp
 .ftp*
 
+# vscode stuff
+.vscode/
+
 scripts/annotations.txt
 scripts/classes.txt

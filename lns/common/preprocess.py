@@ -61,9 +61,13 @@ class Preprocessor:
             if not dataset_pkl.endswith(config.PKL_EXTENSION):
                 continue
             name = dataset_pkl.strip(config.PKL_EXTENSION)
-            with open(os.path.join(preprocessed_data_path, dataset_pkl), "rb") as file:
-                dataset = pickle.load(file)
-            cls._preprocessed_data[name] = dataset
+            try:
+                with open(os.path.join(preprocessed_data_path, dataset_pkl), "rb") as file:
+                    dataset = pickle.load(file)
+            except pickle.PickleError:
+                print(f"Something went wrong while reading `{name}` from preprocessor cache, skipping.")
+            else:
+                cls._preprocessed_data[name] = dataset
 
     @classmethod
     def cache_preprocessed_data(cls, name: str, dataset: Dataset) -> None:
@@ -82,7 +86,7 @@ class Preprocessor:
         """Register default preprocessors in preprocessing."""
         # Import all preprocessing modules so that they are registered in the preprocessor
         from lns.common import preprocessing
-        for _, name, _ in pkgutil.walk_packages(preprocessing.__path__):
+        for _, name, _ in pkgutil.walk_packages(preprocessing.__path__):  # type: ignore
             importlib.import_module(preprocessing.__name__ + '.' + name)
 
     @classmethod

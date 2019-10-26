@@ -3,21 +3,18 @@
 Manages all data processing for the generation of data ready to be trained
 on with SqueezeDet Keras fitting functions.
 """
-from typing import Generator, Any, List
+from typing import List
 
 import os
-import shutil
 
-import easydict                                   # type: ignore
-import utils  # type: ignore
-
-from lns.common import config
-from lns.common.process import ProcessedData, Processor
 from lns.common.dataset import Dataset
-
+from lns.common.process import ProcessedData, Processor
 
 class SqueezeDetData(ProcessedData):
-    """Data container for all SqueezeDet processed data."""
+    """Data container for all SqueezeDet processed data.
+
+    Store paths to all files needed by backend SqueezeDet training.
+    """
 
     __images: List[str]
     __labels: List[str]
@@ -27,56 +24,36 @@ class SqueezeDetData(ProcessedData):
         self.__images = images
         self.__labels = labels
 
-    @property
-    def images(self) -> List[str]:
+    def get_images(self) -> List[str]:
         """Get a list of paths to all images."""
         return self.__images
 
-    @property
-    def labels(self) -> List[str]:
+    def get_labels(self) -> List[str]:
         """Get a list of paths to all ground truths."""
         return self.__labels
 
-    def generate_data(self, _config: easydict.EasyDict) -> Generator[
-        Any, None, None
-    ]:
-        """Generate data in the format required for training SqueezeDet.
-
-        Requires the configuration dictionary that the model to be trained is
-        based off of.
-        """
-        yield from utils.generator_from_data_path(
-            self.images, self.labels, config=_config
-        )
-
 
 class SqueezeDetProcessor(Processor[SqueezeDetData]):
-    """Haar processor responsible for data processing to Haar-valid formats."""
-
-    BASE_DATA_FOLDER = os.path.join(config.RESOURCES_ROOT, "squeezedet/data")
+    """SqueezeDet processor responsible for data processing to SqueezeDet-valid formats."""
 
     @classmethod
-    def process(cls, dataset: Dataset, force: bool = False) -> SqueezeDetData:
-        """Process all required data from the dataset with the given name.
+    def method(cls) -> str:
+        """Get the training method this processor is for."""
+        return "squeezedet"
 
-        Setting <force> to `True` will force a processing even if the images
-        already exist on file.
+    @classmethod
+    def _process(cls, dataset: Dataset) -> SqueezeDetData:
+        """Process all required data from the dataset with the given name.
 
         Raises `NoPreprocessorException` if a preprocessor for the dataset does
         not exist.
         """
         # Register all folders
-        data_folder = os.path.join(cls.BASE_DATA_FOLDER, dataset.name)
-        labels_folder = os.path.join(data_folder, "labels")
+        processed_data_folder = os.path.join(cls.get_processed_data_path(), dataset.name)
+        labels_folder = os.path.join(processed_data_folder, "labels")
 
-        # Create base data folder if it does not exist
-        if not os.path.exists(cls.BASE_DATA_FOLDER):
-            os.makedirs(cls.BASE_DATA_FOLDER)
-
-        # Remove labels folder if required to be regenerated
-        if os.path.exists(labels_folder) and force:
-            shutil.rmtree(labels_folder)
-        elif not os.path.exists(labels_folder):
+        # Create labels folder if doesn't exist already
+        if not os.path.exists(labels_folder):
             os.makedirs(labels_folder)
 
         # Generate the labels files corresponding to the images
@@ -125,16 +102,18 @@ class SqueezeDetProcessor(Processor[SqueezeDetData]):
                 label_file.write("\n".join(label_strings))
             labels.append(label_path)
 
-        # Sort the images and labels
+        # Sort the images and labels lexicographically
         images = sorted(images, key=lambda image: image.split("/")[-1])
         labels = sorted(labels, key=lambda image: image.split("/")[-1])
 
         # Create images and labels files
-        labels_path = os.path.join(data_folder, "labels.txt")
+        labels_path = os.path.join(processed_data_folder, "labels.txt")
         with open(labels_path, "w") as labels_file:
             labels_file.write("\n".join(labels))
-        images_path = os.path.join(data_folder, "images.txt")
+        images_path = os.path.join(processed_data_folder, "images.txt")
         with open(images_path, "w") as images_file:
             images_file.write("\n".join(images))
 
         return SqueezeDetData(images, labels)
+
+SqueezeDetProcessor.init_cached_processed_data()
