@@ -9,26 +9,25 @@ from typing import (
 )
 
 import os
+import json
 import shutil
 import pickle
+import dataclasses
 from enum import Enum
 
 from lns.common import config
+from lns.common.settings import SettingsType
 from lns.common.preprocess import Preprocessor
 from lns.common.dataset import Dataset
-from lns.common.process import ProcessedData, Processor
-from lns.common.model import Model
-
-
-ModelType = TypeVar("ModelType", bound=Model)
-ProcessedDataType = TypeVar("ProcessedDataType", bound=ProcessedData)
+from lns.common.process import Processor, ProcessedDataType
+from lns.common.model import ModelType
 
 
 class NoTrainerDataset(Exception):
     """Raised when trying to work with trainer data in a trainer with no dataset."""
 
 
-class Trainer(Generic[ModelType, ProcessedDataType]):
+class Trainer(Generic[ModelType, ProcessedDataType, SettingsType]):
     """Abstract trainer class managing high level aspects of training."""
 
     _paths: Dict[str, str]
@@ -36,6 +35,9 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
     __name: str
     __data: Optional[ProcessedDataType]
     __dataset: Optional[Dataset]
+    __settings: SettingsType
+
+    __settings_class: Type[SettingsType]
 
     SetupFunc = TypeVar("SetupFunc", bound=Callable[..., None])
     TrainFunc = TypeVar("TrainFunc", bound=Callable[..., None])
@@ -59,16 +61,20 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
             path="dataset", temporal=False, required=False, path_type=PathType.FILE),
         "_data": Subpath(
             path="data", temporal=False, required=False, path_type=PathType.FILE),
+        "_settings": Subpath(
+            path="settings", temporal=False, required=False, path_type=PathType.FILE),
     }
 
     def __init__(self, name: str, dataset: Optional[Union[str, Dataset]] = None, *,
-                 _processor: Type[Processor[ProcessedDataType]], _load: bool, _subpaths: Dict[str, Subpath]) -> None:
+                 _processor: Type[Processor[ProcessedDataType]], _settings: Type[SettingsType],
+                 _load: bool, _subpaths: Dict[str, Subpath]) -> None:
         """Initialize a trainer.
 
         Generates a trainer with the given <name> on the given <dataset> if given.
 
         Needs some metadata to function correctly including the following:
         <_processor> is the specific processor class that is used for this method of training.
+        <_settings> is the specific settings class that is used for this method of training.
         <_load> determines whether to keep non-temporal folders and files.
         <_subpaths> is a dictionary of unique path name to `Subpath`.
         """
@@ -76,14 +82,22 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
         self.__name = name
         self.__data = None
         self.__dataset = None
+        self.__settings_class = _settings
 
         self._generate_filestructure(_load, _processor.method(), {**Trainer.BUILTIN_SUBPATHS, **_subpaths})
         self._acquire_data(dataset, _processor)
+
+        self.__settings = self._load_settings()
 
     @property
     def name(self) -> str:
         """Get the unique name of this training configuration."""
         return self.__name
+
+    @property
+    def settings(self) -> SettingsType:
+        """Get the settings associated with this trainer."""
+        return self.__settings
 
     @property
     def dataset(self) -> Dataset:
@@ -164,3 +178,15 @@ class Trainer(Generic[ModelType, ProcessedDataType]):
             with open(self._paths["_data"], "rb") as data_file:
                 self.__data = pickle.load(data_file)
             print("Data loaded from trainer cache.")
+
+    def _load_settings(self) -> SettingsType:
+        settings = self.__settings_class()
+        if os.path.exists(self._paths["_settings"]):
+            with open(self._paths["_settings"], "r") as file:
+                settings = self.__settings_class(**json.load(file))
+        return settings
+
+    def _set_settings(self, settings: SettingsType) -> None:
+        self.__settings = settings
+        with open(self._paths["_settings"], "w") as file:
+            json.dump(dataclasses.asdict(settings), file, indent='\t')

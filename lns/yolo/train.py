@@ -5,7 +5,7 @@ The module manages the representation of a YOLOv3 training session along with al
 from typing import Optional, Union
 
 import os
-import json
+import dataclasses
 
 from lns.common import config
 from lns.common.train import Trainer
@@ -15,7 +15,7 @@ from lns.yolo.process import YoloData, YoloProcessor
 from lns.yolo.settings import YoloSettings
 
 
-class YoloTrainer(Trainer[YoloModel, YoloData]):
+class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
     """Manages the YOLOv3 training environment and execution.
 
     Contains and encapsulates all training setup and files under one namespace.
@@ -30,8 +30,6 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
             path="anchors", temporal=False, required=False, path_type=Trainer.PathType.FILE),
         "progress_file": Trainer.Subpath(
             path="progress", temporal=True, required=False, path_type=Trainer.PathType.FILE),
-        "settings_file": Trainer.Subpath(
-            path="settings", temporal=False, required=False, path_type=Trainer.PathType.FILE),
     }
 
     INITIAL_WEIGHTS_NAME = "yolov3.ckpt"
@@ -46,9 +44,9 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
         If <load> is set to False removes any existing training files before training.
         """
         super().__init__(name, dataset,
-                         _processor=YoloProcessor, _load=load, _subpaths=YoloTrainer.SUBPATHS)
+                         _processor=YoloProcessor, _settings=YoloSettings,
+                         _load=load, _subpaths=YoloTrainer.SUBPATHS)
 
-        self.settings = self._load_settings()
         # TODO: dynamically generate k-means
         self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
 
@@ -80,23 +78,19 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
 
     def train(self, settings: Optional[YoloSettings] = None) -> None:
         """Begin training the model."""
-        self.settings = settings if settings else self._load_settings()
-        self.settings = self.settings._replace(
-            train_file=self.data.get_annotations(),
-            val_file=self.data.get_annotations(),
-            restore_path=self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path(),
-            save_dir=self._paths["checkpoint_folder"] + "/",
-            log_dir=self._paths["log_folder"],
-            progress_log_path=self._paths["progress_file"],
-            anchor_path=self._paths["anchors_file"],
-            class_name_path=self.data.get_classes(),
-        )
-
-        with open(self._paths["settings_file"], "w") as file:
-            json.dump(self.settings._asdict(), file)
+        settings = settings if settings else self._load_settings()
+        self._set_settings(settings)
 
         from lns.yolo._lib import args
-        for field, setting in zip(self.settings._fields, self.settings):
+        args.train_file = self.data.get_annotations()
+        args.val_file = self.data.get_annotations()
+        args.restore_path = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
+        args.save_dir = self._paths["checkpoint_folder"] + "/"
+        args.log_dir = self._paths["log_folder"]
+        args.progress_log_path = self._paths["progress_file"]
+        args.anchor_path = self._paths["anchors_file"]
+        args.class_name_path = self.data.get_classes()
+        for field, setting in dataclasses.asdict(settings).items():
             setattr(args, field, setting)
         args.init()
 
@@ -107,10 +101,3 @@ class YoloTrainer(Trainer[YoloModel, YoloData]):
             print(f"Training interrupted")
         else:
             print(f"Training completed succesfully")
-
-    def _load_settings(self) -> YoloSettings:
-        settings = YoloSettings()
-        if os.path.exists(self._paths["settings_file"]):
-            with open(self._paths["settings_file"], "r") as file:
-                settings = YoloSettings(**json.load(file))
-        return settings

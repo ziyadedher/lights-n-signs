@@ -3,7 +3,7 @@
 Manages all data processing for the generation of data ready to be trained
 on with OpenCV Haar training scripts.
 """
-from typing import ClassVar, List
+from typing import List
 
 import os
 
@@ -54,12 +54,10 @@ class HaarData(ProcessedData):
 class HaarProcessor(Processor[HaarData]):
     """Haar processor responsible for data processing to Haar-valid formats."""
 
-    METHOD: ClassVar[str] = "haar"
-
     @classmethod
     def method(cls) -> str:
         """Get the training method this processor is for."""
-        return cls.METHOD
+        return "haar"
 
     @classmethod
     def _process(cls, dataset: Dataset) -> HaarData:  # pylint:disable=too-many-locals

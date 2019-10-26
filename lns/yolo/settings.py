@@ -1,8 +1,11 @@
 """Manages settings related to YOLO training and evaluation."""
 
-from typing import NamedTuple, Optional, Tuple, List
+from typing import Optional, Tuple, List
 
 from enum import Enum
+from dataclasses import dataclass, field
+
+from lns.common.settings import Settings
 
 
 class Optimizer(str, Enum):
@@ -24,7 +27,8 @@ class LearningRateType(str, Enum):
     PIECEWISE: str = "piecewise"
 
 
-class YoloSettings(NamedTuple):
+@dataclass(frozen=True)
+class YoloSettings(Settings):
     """Settings encapsulation for all YOLO trainer settings."""
 
     # Absolute path to initial weights for the model
@@ -77,10 +81,15 @@ class YoloSettings(NamedTuple):
     # Include only the following when restoring from weights
     restore_include: Optional[List[str]] = None
     # Exclude the following when restoring from weights
-    restore_exclude: Optional[List[str]] = ['yolov3/yolov3_head/Conv_14', 'yolov3/yolov3_head/Conv_6',
-                                            'yolov3/yolov3_head/Conv_22']
+    restore_exclude: Optional[List[str]] = field(default_factory=lambda: [
+        'yolov3/yolov3_head/Conv_14',
+        'yolov3/yolov3_head/Conv_6',
+        'yolov3/yolov3_head/Conv_22',
+    ])
     # Part of the model to update
-    update_part: Optional[List[str]] = ['yolov3/yolov3_head']
+    update_part: Optional[List[str]] = field(default_factory=lambda: [
+        'yolov3/yolov3_head',
+    ])
 
     # Whether or not to use multi scale training
     multi_scale_train: bool = True
@@ -105,13 +114,3 @@ class YoloSettings(NamedTuple):
     eval_threshold: float = 0.25
     # Whether or not to use 11-point VOC07 evaluation metric
     use_voc_07_metric: bool = False
-
-    # Automatically assigned variables used in training and inference
-    train_file: str = ""
-    val_file: str = ""
-    restore_path: str = ""
-    save_dir: str = ""
-    log_dir: str = ""
-    progress_log_path: str = ""
-    anchor_path: str = ""
-    class_name_path: str = ""

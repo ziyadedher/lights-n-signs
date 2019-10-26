@@ -2,7 +2,7 @@
 
 Manages all data processing for the generation of data ready to be trained on with our YOLOv3 training backend.
 """
-from typing import ClassVar, Iterable, Tuple
+from typing import Iterable, Tuple
 
 import os
 
@@ -39,12 +39,10 @@ class YoloData(ProcessedData):
 class YoloProcessor(Processor[YoloData]):
     """YOLOv3 processor responsible for data processing to YOLOv3-valid formats."""
 
-    METHOD: ClassVar[str] = "yolo"
-
     @classmethod
     def method(cls) -> str:
         """Get the training method this processor is for."""
-        return cls.METHOD
+        return "yolo"
 
     @classmethod
     def _process(cls, dataset: Dataset) -> YoloData:
