@@ -12,6 +12,7 @@ import os
 import json
 import shutil
 import pickle
+import dataclasses
 from enum import Enum
 
 from lns.common import config
@@ -188,4 +189,4 @@ class Trainer(Generic[ModelType, ProcessedDataType, SettingsType]):
     def _set_settings(self, settings: SettingsType) -> None:
         self.__settings = settings
         with open(self._paths["_settings"], "w") as file:
-            json.dump(settings, file)
+            json.dump(dataclasses.asdict(settings), file)
