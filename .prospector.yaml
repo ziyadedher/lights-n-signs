@@ -13,8 +13,8 @@ ignore-paths:
   - scripts\
   - lns/yolo/_lib/
   - lns\yolo\_lib\
-  - lns/squeezedet/
-  - lns\squeezedet\
+  - lns/squeezedet/_lib/
+  - lns\squeezedet\_lib\
 
 ignore-patterns:
   - ^\..*.py$
