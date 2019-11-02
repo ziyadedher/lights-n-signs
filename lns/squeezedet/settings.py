@@ -28,6 +28,9 @@ class SqueezedetSettings(Settings):
     # Whether or not to be verbose
     verbose: bool = False
 
+    # CUDA visible devices (sets environment variable)
+    cuda_visible_devices: str = "0"
+
     # Number of epochs to train
     num_epochs: int = 100
 

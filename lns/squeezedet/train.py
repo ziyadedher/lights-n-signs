@@ -101,6 +101,7 @@ class SqueezedetTrainer(Trainer[SqueezedetModel, SqueezedetData, SqueezedetSetti
         train.init_file = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
         train.EPOCHS = self.settings.num_epochs
         train.OPTIMIZER = self.settings.optimizer
+        train.CUDA_VISIBLE_DEVICES = self.settings.cuda_visible_devices
         train.REDUCELRONPLATEAU = self.settings.reduce_lr_on_plateau
         train.VERBOSE = self.settings.verbose
         train.CONFIG = self._paths["config_file"]
