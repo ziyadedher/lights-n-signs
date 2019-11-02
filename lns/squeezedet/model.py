@@ -5,7 +5,6 @@ SqueezeDet training.
 """
 from typing import List
 
-import cv2  # type: ignore
 import numpy as np  # type: ignore
 
 from lns.common.model import Model
