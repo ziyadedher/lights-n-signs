@@ -80,7 +80,7 @@ class SqueezedetTrainer(Trainer[SqueezedetModel, SqueezedetData, SqueezedetSetti
 
         from lns.squeezedet._lib.config.create_config import squeezeDet_config
         cfg = squeezeDet_config("")
-        cfg.CLASS_NAMES = self.dataset.classes
+        cfg.CLASS_NAMES = ["".join(name.lower().split()) for name in self.dataset.classes]
         cfg.CLASSES = len(cfg.CLASS_NAMES)
         cfg.CLASS_TO_IDX = dict(zip(cfg.CLASS_NAMES, range(cfg.CLASSES)))
         cfg.KEEP_PROB = 1 - self.settings.dropout_ratio
