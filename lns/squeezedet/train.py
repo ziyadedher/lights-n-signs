@@ -88,8 +88,8 @@ class SqueezedetTrainer(Trainer[SqueezedetModel, SqueezedetData, SqueezedetSetti
             setattr(cfg, field.upper(), setting)
         cfg.ANCHOR_SEED = np.array(self.settings.anchor_seed_list)
         cfg.ANCHOR_PER_GRID = len(cfg.ANCHOR_SEED)
-        cfg.ANCHORS_WIDTH = cfg.IMAGE_WIDTH / self.settings.anchor_size
-        cfg.ANCHORS_HEIGHT = cfg.IMAGE_HEIGHT / self.settings.anchor_size
+        cfg.ANCHORS_WIDTH = int(cfg.IMAGE_WIDTH / self.settings.anchor_size)
+        cfg.ANCHORS_HEIGHT = int(cfg.IMAGE_HEIGHT / self.settings.anchor_size)
 
         from lns.squeezedet._lib.config.create_config import save_dict
         save_dict(cfg, self._paths["config_file"])
