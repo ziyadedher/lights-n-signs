@@ -29,7 +29,7 @@ class SqueezedetTrainer(Trainer[SqueezedetModel, SqueezedetData, SqueezedetSetti
             path="config", temporal=True, required=False, path_type=Trainer.PathType.FILE),
     }
 
-    INITIAL_WEIGHTS_NAME = "imagenet.hd5"
+    INITIAL_WEIGHTS_NAME = "imagenet.h5"
     INITIAL_WEIGHTS = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, INITIAL_WEIGHTS_NAME)
 
     settings: SqueezedetSettings

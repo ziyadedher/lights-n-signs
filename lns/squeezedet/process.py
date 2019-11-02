@@ -91,6 +91,7 @@ class SqueezedetProcessor(Processor[SqueezedetData]):
             images.append(image)
 
             # Create the file and put the strings in it
+            # XXX: might cause issues if different files with same basename exist
             label = "".join(os.path.basename(image).split(".")[:-1]) + ".txt"
             label_path = os.path.join(labels_folder, label)
             with open(label_path, "w") as label_file:
