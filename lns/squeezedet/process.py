@@ -110,7 +110,7 @@ class SqueezedetProcessor(Processor[SqueezedetData]):
         with open(images_path, "w") as images_file:
             images_file.write("\n".join(images))
 
-        return SqueezedetData(labels_path, images_path)
+        return SqueezedetData(images_path, labels_path)
 
 
 SqueezedetProcessor.init_cached_processed_data()
