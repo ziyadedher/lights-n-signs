@@ -2,9 +2,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
-
-import numpy as np  # type: ignore
+from typing import List, Optional
 
 from lns.common.settings import Settings
 
@@ -70,9 +68,9 @@ class SqueezedetSettings(Settings):
     iou_threshold: float = 0.25
     final_threshold: float = 0.0
 
-    anchor_seed: np.ndarray = field(default_factory=lambda: np.array([
+    anchor_seed_list: List[List[float]] = field(default_factory=lambda: [
         [36., 37.], [366., 174.], [115., 59.],
         [162., 87.], [38., 90.], [258., 173.],
         [224., 108.], [78., 170.], [72., 43.]
-    ]))
+    ])
     anchor_size: int = 16

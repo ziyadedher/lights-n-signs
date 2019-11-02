@@ -6,6 +6,8 @@ import dataclasses
 import os
 from typing import Optional, Union
 
+import numpy as np  # type: ignore
+
 from lns.common import config
 from lns.common.dataset import Dataset
 from lns.common.train import Trainer
@@ -84,6 +86,7 @@ class SqueezedetTrainer(Trainer[SqueezedetModel, SqueezedetData, SqueezedetSetti
         cfg.KEEP_PROB = 1 - self.settings.dropout_ratio
         for field, setting in dataclasses.asdict(self.settings).items():
             setattr(cfg, field.upper(), setting)
+        cfg.ANCHOR_SEED = np.array(self.settings.anchor_seed_list)
         cfg.ANCHOR_PER_GRID = len(cfg.ANCHOR_SEED)
         cfg.ANCHORS_WIDTH = cfg.IMAGE_WIDTH / self.settings.anchor_size
         cfg.ANCHORS_HEIGHT = cfg.IMAGE_HEIGHT / self.settings.anchor_size
