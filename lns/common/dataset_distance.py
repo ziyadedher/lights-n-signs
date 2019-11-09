@@ -6,7 +6,6 @@ Contains functions to compute object distances, and remove outliers
 
 import os
 import struct
-import time
 
 from typing import Dict, List, Tuple
 
