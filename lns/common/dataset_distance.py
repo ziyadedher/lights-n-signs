@@ -6,6 +6,7 @@ Contains functions to compute object distances, and remove outliers
 
 import os
 import struct
+import time
 
 from typing import Dict, List, Tuple
 
@@ -17,9 +18,12 @@ def distance(dataset: Dataset) -> Dict[str, List[Tuple[int, float]]]:
     distances: Dict[str, List[Tuple[int, float]]] = {}
 
     for image in dataset.images:
+        print(image)
         distances[image] = []
+        img_area = _img_area(image)
+
         for detection in dataset.annotations[image]:
-            distances[image].append((detection.class_index, detection.bounds.area / _img_area(image)))
+            distances[image].append((detection.class_index, detection.bounds.area / img_area))
 
     return distances
 
@@ -40,7 +44,7 @@ def get_image_size(file_path):
     """Return (width, height) for a given img file content w/ no external dependencies."""
     size = os.path.getsize(file_path)
 
-    with open(file_path) as input_file:
+    with open(file_path, "rb") as input_file:
         height = -1
         width = -1
         data = input_file.read(25)
@@ -50,18 +54,18 @@ def get_image_size(file_path):
             raw_w, raw_h = struct.unpack("<HH", data[6:10])
             width = int(raw_w)
             height = int(raw_h)
-        elif ((size >= 24) and data.startswith('\211PNG\r\n\032\n')
+        elif ((size >= 24) and data.startswith(b'\211PNG\r\n\032\n')
               and (data[12:16] == 'IHDR')):
             # PNGs
             raw_w, raw_h = struct.unpack(">LL", data[16:24])
             width = int(raw_w)
             height = int(raw_h)
-        elif (size >= 16) and data.startswith('\211PNG\r\n\032\n'):
+        elif (size >= 16) and data.startswith(b'\211PNG\r\n\032\n'):
             # older PNGs?
             raw_w, raw_h = struct.unpack(">LL", data[8:16])
             width = int(raw_w)
             height = int(raw_h)
-        elif (size >= 2) and data.startswith('\377\330'):
+        elif (size >= 2) and data.startswith(b'\377\330'):
             # JPEG
             width, height = _process_jpeg(input_file)
         else:
@@ -101,3 +105,10 @@ def _process_jpeg(input_file):
         raise UnknownImageFormat(ex.__class__.__name__ + msg)
 
     return width, height
+
+if __name__ == "__main__":
+    from lns.common.preprocess import Preprocessor
+    Preprocessor.init_cached_preprocessed_data()
+    for dataset_name in Preprocessor._preprocessed_data:
+        print(dataset_name)
+        result = distance(Preprocessor._preprocessed_data[dataset_name])
