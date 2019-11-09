@@ -9,6 +9,7 @@ import struct
 
 from typing import Dict, List, Tuple
 
+from lns.common import config
 from lns.common.dataset import Dataset
 
 
@@ -20,7 +21,6 @@ def distance(dataset: Dataset) -> Dict[str, List[Tuple[int, float]]]:
     annotations = dataset.annotations
 
     for image in images:
-        print(image)
         distances[image] = []
         img_area = _img_area(image)
 
@@ -108,11 +108,12 @@ def _process_jpeg(input_file):
 
     return width, height
 
+
 if __name__ == "__main__":
     from lns.common.preprocess import Preprocessor
     Preprocessor.init_cached_preprocessed_data()
-    for dataset_name in Preprocessor._preprocessed_data:
-        print(dataset_name)
+    for dataset_name in config.POSSIBLE_DATASETS:
         if dataset_name == "mocked":
             continue
-        result = distance(Preprocessor._preprocessed_data[dataset_name])
+        print(dataset_name)
+        result = distance(Preprocessor.preprocess(dataset_name))
