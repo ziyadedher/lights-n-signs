@@ -16,12 +16,15 @@ def distance(dataset: Dataset) -> Dict[str, List[Tuple[int, float]]]:
     """Return a mapping of images to a list of object distances."""
     distances: Dict[str, List[Tuple[int, float]]] = {}
 
-    for image in dataset.images:
+    images = dataset.images
+    annotations = dataset.annotations
+
+    for image in images:
         print(image)
         distances[image] = []
         img_area = _img_area(image)
 
-        for detection in dataset.annotations[image]:
+        for detection in annotations[image]:
             distances[image].append((detection.class_index, detection.bounds.area / img_area))
 
     return distances
@@ -110,4 +113,6 @@ if __name__ == "__main__":
     Preprocessor.init_cached_preprocessed_data()
     for dataset_name in Preprocessor._preprocessed_data:
         print(dataset_name)
+        if dataset_name == "mocked":
+            continue
         result = distance(Preprocessor._preprocessed_data[dataset_name])
