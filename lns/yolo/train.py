@@ -2,17 +2,17 @@
 
 The module manages the representation of a YOLOv3 training session along with all associated data.
 """
+import dataclasses
+import os
 from typing import Optional, Union
 
-import os
-import dataclasses
-
 from lns.common import config
-from lns.common.train import Trainer
 from lns.common.dataset import Dataset
+from lns.common.train import Trainer
 from lns.yolo.model import YoloModel
 from lns.yolo.process import YoloData, YoloProcessor
 from lns.yolo.settings import YoloSettings
+from lns.yolo._lib.get_kmeans import get_kmeans
 
 
 class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
@@ -47,9 +47,6 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
                          _processor=YoloProcessor, _settings=YoloSettings,
                          _load=load, _subpaths=YoloTrainer.SUBPATHS)
 
-        # TODO: dynamically generate k-means
-        self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
-
     @property
     def model(self) -> Optional[YoloModel]:
         """Generate and return the currently available prediction model.
@@ -81,6 +78,11 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         settings = settings if settings else self._load_settings()
         self._set_settings(settings)
 
+        anchors = get_kmeans(self.data.get_annotations(), self.settings.num_clusters)
+        anchor_string = ", ".join(f"{anchor[0]},{anchor[1]}" for anchor in anchors)
+        with open(self._paths["anchor_file"], "w") as anchor_file:
+            anchor_file.write(anchor_string)
+
         from lns.yolo._lib import args
         args.train_file = self.data.get_annotations()
         args.val_file = self.data.get_annotations()
@@ -90,7 +92,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         args.progress_log_path = self._paths["progress_file"]
         args.anchor_path = self._paths["anchors_file"]
         args.class_name_path = self.data.get_classes()
-        for field, setting in dataclasses.asdict(settings).items():
+        for field, setting in dataclasses.asdict(self.settings).items():
             setattr(args, field, setting)
         args.init()
 
