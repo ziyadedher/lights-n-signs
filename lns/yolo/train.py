@@ -101,8 +101,9 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
             print(f"Training completed succesfully")
 
     def _generate_anchors(self) -> None:
+        print("Generating anchors...")
         annotations = parse_anno(self.data.get_annotations(), self.settings.img_size)
-        anchors = get_kmeans(annotations, self.settings.num_clusters)
+        anchors, _ = get_kmeans(annotations, self.settings.num_clusters)
         anchor_string = ", ".join(f"{anchor[0]},{anchor[1]}" for anchor in anchors)
         with open(self._paths["anchor_file"], "w") as anchor_file:
             anchor_file.write(anchor_string)
