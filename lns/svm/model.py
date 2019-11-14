@@ -8,7 +8,7 @@ from typing import List, Tuple
 
 from sklearn.svm import SVC
 import numpy as np
-`
+
 from lns.common.model import Model
 from lns.common.structs import Object2D, crop
 

@@ -15,7 +15,7 @@ from lns.svm.process import SVMProcessor, SVMData
 
 class SVMTrainer(Trainer[SVMModel,SVMData, SettingsType]):
 
-    def __init__(self, name: str, dataset: Optional[Union[str, Dataset]] = None) -> None
+    def __init__(self, name: str, dataset: Optional[Union[str, Dataset]] = None) -> None:
         """ Initialize SVM Trainer """
 
         super().__init__(name, dataset, _processor = SVMProcessor)
