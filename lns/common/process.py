@@ -88,12 +88,7 @@ class Processor(Generic[ProcessedDataType]):
         name = dataset if isinstance(dataset, str) else dataset.name
         if not force and name in cls._processed_data:
             print(f"Getting data {name} from processed data cache.")
-            cached = cls._processed_data[name]
-
-            if isinstance(dataset, Dataset) and dataset != cached:
-                print(f"Cache is out-of-date, updating.")
-            else:
-                return cached
+            return cls._processed_data[name]
 
         if isinstance(dataset, str):
             dataset = Preprocessor.preprocess(dataset)
