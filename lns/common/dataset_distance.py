@@ -119,7 +119,7 @@ if __name__ == "__main__":
     Preprocessor.init_cached_preprocessed_data()
     for dataset_name in config.POSSIBLE_DATASETS:
         if dataset_name in ["mocked", "ScaleSigns", "ScaleObjects"]:
-            # TODO: ScaleSigns and ScaleObjects load every time?
+            # TODO: ScaleSigns and ScaleObjects haven't been cached yet
             continue
         print(dataset_name)
 
@@ -136,17 +136,32 @@ if __name__ == "__main__":
         all_dists = []
         for class_index in dists:
             print(class_names[class_index])
+            dists[class_index] = np.array(dists[class_index])
+
+            # set all nonpositive ratios to infimum of nonnegative ratios to allow log
+            dists[class_index][dists[class_index] <= 0] = np.min(dists[class_index][dists[class_index] > 0])
+
             plt_name = "%s_%s.png" % (dataset_name, class_names[class_index])
             plt.hist(dists[class_index])
             plt.savefig(plt_name)
             plt.clf()
 
-            all_dists += dists[class_index]
+            plt_name = "log_%s_%s.png" % (dataset_name, class_names[class_index])
+            plt.hist(np.log(dists[class_index]))
+            plt.savefig(plt_name)
+            plt.clf()
+
+            all_dists.extend(list(dists[class_index]))
 
         plt_name = "%s.png" % (dataset_name)
         plt.hist(all_dists)
         plt.savefig(plt_name)
+        plt.clf()
 
+        plt_name = "log_%s_%s.png" % (dataset_name, class_names[class_index])
+        plt.hist(np.log(all_dists))
+        plt.savefig(plt_name)
+        plt.clf()
 
 
 
