@@ -9,10 +9,10 @@ from typing import Optional, Union
 from lns.common import config
 from lns.common.dataset import Dataset
 from lns.common.train import Trainer
+from lns.yolo._lib.get_kmeans import get_kmeans, parse_anno
 from lns.yolo.model import YoloModel
 from lns.yolo.process import YoloData, YoloProcessor
 from lns.yolo.settings import YoloSettings
-from lns.yolo._lib.get_kmeans import get_kmeans, parse_anno
 
 
 class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
@@ -78,16 +78,19 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         settings = settings if settings else self._load_settings()
         self._set_settings(settings)
         self._generate_anchors()
+        weights_path = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
 
+        # TODO: use different labels for testing and validation
         from lns.yolo._lib import args
         args.train_file = self.data.get_annotations()
         args.val_file = self.data.get_annotations()
-        args.restore_path = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
+        args.restore_path = weights_path
         args.save_dir = self._paths["checkpoint_folder"] + "/"
         args.log_dir = self._paths["log_folder"]
         args.progress_log_path = self._paths["progress_file"]
         args.anchor_path = self._paths["anchors_file"]
         args.class_name_path = self.data.get_classes()
+        args.global_step = self._get_global_step(weights_path)
         for field, setting in dataclasses.asdict(self.settings).items():
             setattr(args, field, setting)
         args.init()
@@ -107,3 +110,17 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         anchors_string = ", ".join(f"{anchor[0]},{anchor[1]}" for anchor in anchors)
         with open(self._paths["anchors_file"], "w") as anchors_file:
             anchors_file.write(anchors_string)
+        print("Anchors generated.")
+
+    def _get_global_step(self, checkpoint_path: str) -> int:
+        print("Restoring global step from checkpoint file name...")
+        name = os.basename(checkpoint_path)
+
+        # Example model checkpoint name: model-epoch_60_step_43309_loss_0.3424_lr_1e-05
+        try:
+            step = int(name.split("_")[3])
+            print(f"Determined global step to be {step}.")
+            return step
+        except IndexError, ValueError, TypeError:
+            print("Could not determine global step from checkpoint file name. Defaulting to zero.")
+            return 0
