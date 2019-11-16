@@ -7,6 +7,11 @@ Contains functions to compute object distances, and remove outliers
 import os
 import struct
 
+import numpy as np
+import matplotlib.pyplot as plt
+
+from collections import defaultdict
+
 from typing import Dict, List, Tuple
 
 from lns.common import config
@@ -113,7 +118,35 @@ if __name__ == "__main__":
     from lns.common.preprocess import Preprocessor
     Preprocessor.init_cached_preprocessed_data()
     for dataset_name in config.POSSIBLE_DATASETS:
-        if dataset_name == "mocked":
+        if dataset_name in ["mocked", "ScaleSigns", "ScaleObjects"]:
+            # TODO: ScaleSigns and ScaleObjects load every time?
             continue
         print(dataset_name)
-        result = distance(Preprocessor.preprocess(dataset_name))
+
+        dataset = Preprocessor.preprocess(dataset_name)
+        result = distance(dataset)
+
+        # aggregate statistics over dataset by class
+        dists: Dict[int, float] = defaultdict(list)
+        for img in result:
+            for bb in result[img]:
+                dists[bb[0]].append(bb[1])
+
+        class_names = dataset.classes
+        all_dists = []
+        for class_index in dists:
+            print(class_names[class_index])
+            plt_name = "%s_%s.png" % (dataset_name, class_names[class_index])
+            plt.hist(dists[class_index])
+            plt.savefig(plt_name)
+            plt.clf()
+
+            all_dists += dists[class_index]
+
+        plt_name = "%s.png" % (dataset_name)
+        plt.hist(all_dists)
+        plt.savefig(plt_name)
+
+
+
+
