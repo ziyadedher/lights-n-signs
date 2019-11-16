@@ -108,8 +108,11 @@ class Dataset:
         """
         return len(self.__images)
 
-    def __eq__(self, other: Dataset) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Magic method to check if two datasets are equal."""
-        return (self.__images == other._Dataset__images
-                and self.__classes == other._Dataset__classes
-                and self.__annotations == other._Dataset__annotations)
+        if not isinstance(other, Dataset):
+            raise NotImplementedError
+
+        return (self.__images == other.images
+                and self.__classes == other.classes
+                and self.__annotations == other.annotations)
