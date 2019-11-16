@@ -1,9 +1,8 @@
 """Manages settings related to YOLO training and evaluation."""
 
-from typing import Optional, Tuple, List
-
-from enum import Enum
 from dataclasses import dataclass, field
+from enum import Enum
+from typing import List, Optional, Tuple
 
 from lns.common.settings import Settings
 
@@ -114,3 +113,6 @@ class YoloSettings(Settings):
     eval_threshold: float = 0.25
     # Whether or not to use 11-point VOC07 evaluation metric
     use_voc_07_metric: bool = False
+
+    # Number of k-means clusters to compute and use
+    num_clusters: int = 9

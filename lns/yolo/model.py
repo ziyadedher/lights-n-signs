@@ -36,7 +36,7 @@ class YoloModel(Model[YoloSettings]):
         args.restore_path = weights_file
         args.anchor_path = anchors_file
         args.class_name_path = classes_file
-        for field, setting in dataclasses.asdict(settings):
+        for field, setting in dataclasses.asdict(settings).items():
             setattr(args, field, setting)
         args.init_inference()
 
