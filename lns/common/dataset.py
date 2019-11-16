@@ -107,3 +107,9 @@ class Dataset:
         We define the length of a dataset to the the total number of images.
         """
         return len(self.__images)
+
+    def __eq__(self, other: Dataset) -> bool:
+        """Magic method to check if two datasets are equal."""
+        return (self.__images == other._Dataset__images
+                and self.__classes == other._Dataset__classes
+                and self.__annotations == other._Dataset__annotations)
