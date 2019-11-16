@@ -112,15 +112,16 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
             anchors_file.write(anchors_string)
         print("Anchors generated.")
 
+    # pylint: disable=no-self-use
     def _get_global_step(self, checkpoint_path: str) -> int:
         print("Restoring global step from checkpoint file name...")
-        name = os.basename(checkpoint_path)
+        name = os.path.basename(checkpoint_path)
 
         # Example model checkpoint name: model-epoch_60_step_43309_loss_0.3424_lr_1e-05
         try:
             step = int(name.split("_")[3])
             print(f"Determined global step to be {step}.")
             return step
-        except IndexError, ValueError, TypeError:
+        except (IndexError, ValueError, TypeError):
             print("Could not determine global step from checkpoint file name. Defaulting to zero.")
             return 0
