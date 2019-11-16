@@ -67,11 +67,12 @@ class Dataset:
         """
         return copy.deepcopy(self.__annotations)
 
-    def merge_classes(self, mapping: Dict[str, List[str]]) -> 'Dataset':
+    def merge_classes(self, name_postfix: str, mapping: Dict[str, List[str]]) -> 'Dataset':
         """Get a new `Dataset` that has classes merged together.
 
         Merges the classes under the values in <mapping> under the class given
-        by the respective key.
+        by the respective key. Postfixes <name_postfix> to the dataset name to
+        get a new name.
         """
         images = self.images
         original_classes = self.classes
@@ -91,7 +92,7 @@ class Dataset:
                         detection.class_index = classes.index(new_class)
                         break
 
-        return Dataset(self.name, images, classes, annotations)
+        return Dataset(self.name + name_postfix, images, classes, annotations)
 
     def __add__(self, other: 'Dataset') -> 'Dataset':
         """Magic method for adding two preprocessing data objects."""
