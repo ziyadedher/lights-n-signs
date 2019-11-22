@@ -3,7 +3,7 @@
 Use this file instead of hard-coding any directories or for any other general
 configuration of the package.
 """
-from typing import List
+from typing import List, Dict
 
 import os
 
@@ -33,6 +33,12 @@ POSSIBLE_DATASETS: List[str] = [
     "ScaleSigns",
     "ScaleObjects"
 ]
+
+THRESHOLDS: Dict[str, float] = {
+    "LISA": 1.52e-8,
+    "Bosch": 7.58e-10,
+    "ScaleLights": 1.67e-5
+}
 
 
 def generate_resources_filetree(root: str = RESOURCES_ROOT) -> None:
