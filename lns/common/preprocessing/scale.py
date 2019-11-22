@@ -2,6 +2,7 @@
 
 import os
 import urllib.request
+import cgi
 import requests
 import scaleapi  # type: ignore
 
@@ -32,7 +33,6 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noq
     annotations: Dataset.Annotations = {}
 
     scale_data_path = os.path.join(path, 'images')
-    needs_download = False
 
     available_batches = requests.get(
         "https://api.scale.com/v1/batches?project={}".format(project),
@@ -51,6 +51,7 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noq
         count = 0
         offset = 0
         has_next_page = True
+        needs_download = False
 
         if not os.path.exists(scale_data_path):
             os.makedirs(scale_data_path)
@@ -72,7 +73,14 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noq
                 bbox_list = task.param_dict['response']['annotations']
                 img_url = task.param_dict['params']['attachment']
 
-                local_path = os.path.join(batch_path, img_url.rsplit('/', 1)[-1])
+                if "drive.google.com" in img_url:
+                    remotefile = urllib.request.urlopen(img_url)
+                    content = remotefile.info()['Content-Disposition']
+                    value, params = cgi.parse_header(content)
+                    local_path = os.path.join(batch_path, params["filename"])
+                else:
+                    local_path = os.path.join(batch_path, img_url.rsplit('/', 1)[-1])
+
                 if needs_download or not os.path.isfile(local_path):
                     # Download the image
                     urllib.request.urlretrieve(img_url, local_path)
