@@ -32,6 +32,7 @@ POSSIBLE_DATASETS: List[str] = [
     "ScaleObjects"
 ]
 
+
 def generate_resources_filetree(root: str = RESOURCES_ROOT) -> None:
     """Generate the folder structure for all the common resources."""
     if not os.path.isdir(root):
