@@ -9,6 +9,7 @@ import copy
 from typing import Dict, List, Tuple
 
 from lns.common.structs import Object2D
+from lns.common.utils.img_area import img_area
 
 _Images = List[str]
 _Classes = List[str]
@@ -103,10 +104,10 @@ class Dataset:
         annotations = self.annotations
 
         for image in images:
-            img_area = Dataset._img_area(image)
+            image_area = img_area(image)
 
             for detection in annotations[image]:
-                dists[detection.bounds.area / img_area].append((image, detection))
+                dists[detection.bounds.area / image_area].append((image, detection))
 
         for dist in sorted(dists.keys()):
             if dist > threshold:
