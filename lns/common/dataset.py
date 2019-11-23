@@ -124,7 +124,7 @@ class Dataset:
                 if detection in annotations[image]:
                     annotations[image].remove(detection)
 
-        return Dataset(self.name, images, classes, annotations)
+        return Dataset(self.name, images, classes, annotations, dynamic=True)
 
     def __add__(self, other: 'Dataset') -> 'Dataset':
         """Magic method for adding two preprocessing data objects."""
