@@ -4,10 +4,12 @@ Contains classes for the tracking of dataset objects through our pipeline
 as well as simple utility functions for operation on the datasets.
 """
 
+import collections
 import copy
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from lns.common.structs import Object2D
+from lns.common.utils.img_area import img_area
 
 _Images = List[str]
 _Classes = List[str]
@@ -98,6 +100,29 @@ class Dataset:
                     if self.classes[detection.class_index] in mapping_classes:
                         detection.class_index = classes.index(new_class)
                         break
+
+        return Dataset(self.name, images, classes, annotations, dynamic=True)
+
+    def prune(self, threshold: float) -> 'Dataset':
+        """Return a new dataset with relative annotation sizes under a given <threshold> pruned."""
+        dists: Dict[float, List[Tuple[str, Object2D]]] = collections.defaultdict(list)
+
+        images = self.images
+        classes = self.classes
+        annotations = self.annotations
+
+        for image in images:
+            image_area = img_area(image)
+
+            for detection in annotations[image]:
+                dists[detection.bounds.area / image_area].append((image, detection))
+
+        for dist in sorted(dists.keys()):
+            if dist > threshold:
+                break
+            for image, detection in dists[dist]:
+                if detection in annotations[image]:
+                    annotations[image].remove(detection)
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
