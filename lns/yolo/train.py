@@ -2,14 +2,14 @@
 
 The module manages the representation of a YOLOv3 training session along with all associated data.
 """
+import dataclasses
+import os
 from typing import Optional, Union
 
-import os
-import dataclasses
-
 from lns.common import config
-from lns.common.train import Trainer
 from lns.common.dataset import Dataset
+from lns.common.train import Trainer
+from lns.yolo._lib.get_kmeans import get_kmeans, parse_anno
 from lns.yolo.model import YoloModel
 from lns.yolo.process import YoloData, YoloProcessor
 from lns.yolo.settings import YoloSettings
@@ -47,9 +47,6 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
                          _processor=YoloProcessor, _settings=YoloSettings,
                          _load=load, _subpaths=YoloTrainer.SUBPATHS)
 
-        # TODO: dynamically generate k-means
-        self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
-
     @property
     def model(self) -> Optional[YoloModel]:
         """Generate and return the currently available prediction model.
@@ -80,17 +77,21 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         """Begin training the model."""
         settings = settings if settings else self._load_settings()
         self._set_settings(settings)
+        self._generate_anchors()
+        weights_path = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
 
+        # TODO: use different labels for testing and validation
         from lns.yolo._lib import args
         args.train_file = self.data.get_annotations()
         args.val_file = self.data.get_annotations()
-        args.restore_path = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
+        args.restore_path = weights_path
         args.save_dir = self._paths["checkpoint_folder"] + "/"
         args.log_dir = self._paths["log_folder"]
         args.progress_log_path = self._paths["progress_file"]
         args.anchor_path = self._paths["anchors_file"]
         args.class_name_path = self.data.get_classes()
-        for field, setting in dataclasses.asdict(settings).items():
+        args.global_step = self._get_global_step(weights_path)
+        for field, setting in dataclasses.asdict(self.settings).items():
             setattr(args, field, setting)
         args.init()
 
@@ -101,3 +102,26 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
             print(f"Training interrupted")
         else:
             print(f"Training completed succesfully")
+
+    def _generate_anchors(self) -> None:
+        print("Generating anchors...")
+        annotations = parse_anno(self.data.get_annotations(), self.settings.img_size)
+        anchors, _ = get_kmeans(annotations, self.settings.num_clusters)
+        anchors_string = ", ".join(f"{anchor[0]},{anchor[1]}" for anchor in anchors)
+        with open(self._paths["anchors_file"], "w") as anchors_file:
+            anchors_file.write(anchors_string)
+        print("Anchors generated.")
+
+    # pylint: disable=no-self-use
+    def _get_global_step(self, checkpoint_path: str) -> int:
+        print("Restoring global step from checkpoint file name...")
+        name = os.path.basename(checkpoint_path)
+
+        # Example model checkpoint name: model-epoch_60_step_43309_loss_0.3424_lr_1e-05
+        try:
+            step = int(name.split("_")[3])
+            print(f"Determined global step to be {step}.")
+            return step
+        except (IndexError, ValueError, TypeError):
+            print("Could not determine global step from checkpoint file name. Defaulting to zero.")
+            return 0

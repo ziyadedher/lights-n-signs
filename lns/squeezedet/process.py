@@ -3,80 +3,52 @@
 Manages all data processing for the generation of data ready to be trained
 on with SqueezeDet Keras fitting functions.
 """
-from typing import Generator, Any, List
-
 import os
-import shutil
+from typing import List
 
-import easydict                                   # type: ignore
-from squeezedet_keras.model import dataGenerator  # type: ignore
-
-from lns_common import config
-from lns_common.process import ProcessedData, Processor
-from lns_common.preprocess.preprocessing import Dataset
+from lns.common.dataset import Dataset
+from lns.common.process import ProcessedData, Processor
 
 
-class SqueezeDetData(ProcessedData):
-    """Data container for all SqueezeDet processed data."""
+class SqueezedetData(ProcessedData):
+    """Data container for all SqueezeDet processed data.
 
-    __images: List[str]
-    __labels: List[str]
+    Store paths to all files needed by backend SqueezeDet training.
+    """
 
-    def __init__(self, images: List[str], labels: List[str]) -> None:
+    __images: str
+    __labels: str
+
+    def __init__(self, images: str, labels: str) -> None:
         """Initialize the data structure."""
         self.__images = images
         self.__labels = labels
 
-    @property
-    def images(self) -> List[str]:
-        """Get a list of paths to all images."""
+    def get_images(self) -> str:
+        """Get a path to the text file containing paths to all images."""
         return self.__images
 
-    @property
-    def labels(self) -> List[str]:
-        """Get a list of paths to all ground truths."""
+    def get_labels(self) -> str:
+        """Get a path to the text file containing paths to all labels."""
         return self.__labels
 
-    def generate_data(self, _config: easydict.EasyDict) -> Generator[
-        Any, None, None
-    ]:
-        """Generate data in the format required for training SqueezeDet.
 
-        Requires the configuration dictionary that the model to be trained is
-        based off of.
-        """
-        yield from dataGenerator.generator_from_data_path(
-            self.images, self.labels, config=_config
-        )
-
-
-class SqueezeDetProcessor(Processor[SqueezeDetData]):
-    """Haar processor responsible for data processing to Haar-valid formats."""
-
-    BASE_DATA_FOLDER = os.path.join(config.RESOURCES_ROOT, "squeezedet/data")
+class SqueezedetProcessor(Processor[SqueezedetData]):
+    """Squeezedet processor responsible for data processing to Squeezedet-valid formats."""
 
     @classmethod
-    def process(cls, dataset: Dataset, force: bool = False) -> SqueezeDetData:
-        """Process all required data from the dataset with the given name.
+    def method(cls) -> str:
+        """Get the training method this processor is for."""
+        return "squeezedet"
 
-        Setting <force> to `True` will force a processing even if the images
-        already exist on file.
-
-        Raises `NoPreprocessorException` if a preprocessor for the dataset does
-        not exist.
-        """
+    @classmethod
+    def _process(cls, dataset: Dataset) -> SqueezedetData:  # pylint: disable=too-many-locals
         # Register all folders
-        data_folder = os.path.join(cls.BASE_DATA_FOLDER, dataset.name)
-        labels_folder = os.path.join(data_folder, "labels")
+        processed_data_folder = os.path.join(cls.get_processed_data_path(), dataset.name)
+        labels_folder = os.path.join(processed_data_folder, "labels")
 
-        # Create base data folder if it does not exist
-        if not os.path.exists(cls.BASE_DATA_FOLDER):
-            os.makedirs(cls.BASE_DATA_FOLDER)
-
-        # Remove labels folder if required to be regenerated
-        if os.path.exists(labels_folder) and force:
-            shutil.rmtree(labels_folder)
-        elif not os.path.exists(labels_folder):
+        # Create labels folder if doesn't exist already
+        if not os.path.exists(labels_folder):
             os.makedirs(labels_folder)
 
         # Generate the labels files corresponding to the images
@@ -85,23 +57,23 @@ class SqueezeDetProcessor(Processor[SqueezeDetData]):
         for image, annotations in dataset.annotations.items():
             label_strings: List[str] = []
             for annotation in annotations:
-                if (annotation["x_min"] < 0 or annotation["y_min"] < 0
-                    or annotation["x_min"] > annotation["x_max"]
-                    or annotation["y_min"] > annotation["y_max"]):
+                if (annotation.bounds.left < 0 or annotation.bounds.top < 0
+                   or annotation.bounds.left > annotation.bounds.right
+                   or annotation.bounds.top > annotation.bounds.bottom):
                     continue
 
                 # NOTE: see https://github.com/NVIDIA/DIGITS/issues/992
                 # for more information about the format
-                class_name = "".join(dataset.classes[annotation["class"]].lower().split())
+                class_name = "".join(dataset.classes[annotation.class_index].lower().split())
                 label_strings.append(" ".join((
                     str(class_name),                       # class string
                     "0",                                   # truncation number
                     "0",                                   # occlusion number
                     "0",                                   # observation angle
-                    str(annotation["x_min"]),              # left
-                    str(annotation["y_min"]),              # top
-                    str(annotation["x_max"]),              # right
-                    str(annotation["y_max"]),              # bottom
+                    str(annotation.bounds.left),           # left
+                    str(annotation.bounds.top),            # top
+                    str(annotation.bounds.right),          # right
+                    str(annotation.bounds.bottom),         # bottom
                     "0",                                   # height (3d)
                     "0",                                   # width  (3d)
                     "0",                                   # length (3d)
@@ -113,28 +85,32 @@ class SqueezeDetProcessor(Processor[SqueezeDetData]):
                 )))
 
             # Do not write empty files
-            if len(label_strings) == 0:
+            if not label_strings:
                 continue
 
             images.append(image)
 
             # Create the file and put the strings in it
+            # XXX: might cause issues if different files with same basename exist
             label = "".join(os.path.basename(image).split(".")[:-1]) + ".txt"
             label_path = os.path.join(labels_folder, label)
             with open(label_path, "w") as label_file:
                 label_file.write("\n".join(label_strings))
             labels.append(label_path)
 
-        # Sort the images and labels
+        # Sort the images and labels lexicographically
         images = sorted(images, key=lambda image: image.split("/")[-1])
         labels = sorted(labels, key=lambda image: image.split("/")[-1])
 
         # Create images and labels files
-        labels_path = os.path.join(data_folder, "labels.txt")
+        labels_path = os.path.join(processed_data_folder, "labels.txt")
         with open(labels_path, "w") as labels_file:
             labels_file.write("\n".join(labels))
-        images_path = os.path.join(data_folder, "images.txt")
+        images_path = os.path.join(processed_data_folder, "images.txt")
         with open(images_path, "w") as images_file:
             images_file.write("\n".join(images))
 
-        return SqueezeDetData(images, labels)
+        return SqueezedetData(images_path, labels_path)
+
+
+SqueezedetProcessor.init_cached_processed_data()

@@ -5,87 +5,30 @@ SqueezeDet training.
 """
 from typing import List
 
-import cv2               # type: ignore
-import easydict          # type: ignore
-import numpy as np       # type: ignore
-import tensorflow as tf  # type: ignore
+import numpy as np  # type: ignore
 
-from lns.common.model import Model, PredictedObject2D, Bounds2D
-from lns.squeezedet.lib import SqueezeDet, create_config, set_anchors
+from lns.common.model import Model
+from lns.common.structs import Bounds2D, Object2D
+from lns.squeezedet._lib.config.create_config import load_dict
+from lns.squeezedet._lib.model.evaluation import filter_batch
+from lns.squeezedet._lib.model.squeezeDet import SqueezeDet
+from lns.squeezedet.settings import SqueezedetSettings
 
 
-class SqueezeDetModel(Model):
+class SqueezedetModel(Model):
     """Bounding-box prediction model utilizing SqueezeDet."""
 
-    __config: easydict.EasyDict
-    __model: SqueezeDet
-    __saver: tf.train.Saver
-    __sess: tf.Session
+    __squeeze: SqueezeDet
 
-    def __init__(self, checkpoint_path: str) -> None:
+    def __init__(self, config_file: str, settings: SqueezedetSettings) -> None:
         """Initialize a SqueezeDet model with the given model and config."""
-        self.__config = self._configure()
-        self.__model = SqueezeDet(self.__config, "0")  # type: ignore
+        super().__init__(settings)
+        self.__squeeze = SqueezeDet(load_dict(config_file))
 
-        self.__saver = tf.train.Saver(self.__model.model_params)
-        self.__sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
-        self.__saver.restore(self.__sess, checkpoint_path)
-
-    def predict(self, image: np.ndarray) -> List[PredictedObject2D]:
+    def predict(self, image: np.ndarray) -> List[Object2D]:
         """Predict the required bounding boxes on the given <image>."""
-        scale_factors = (image.shape[1] / self.__config.IMAGE_WIDTH, image.shape[0] / self.__config.IMAGE_HEIGHT)
-        image = image.astype(np.float32, copy=False)
-        image = cv2.resize(image, (self.__config.IMAGE_WIDTH, self.__config.IMAGE_HEIGHT))
-        input_image = image - self.__config.BGR_MEANS
+        # TODO: resize / other manipulations
+        boxes, classes, scores = filter_batch(self.__squeeze.model.predict([image]), self.__squeeze.config)
 
-        det_boxes, det_probs, det_class = self.__sess.run(
-            [self.__model.det_boxes, self.__model.det_probs, self.__model.det_class],
-            feed_dict={self.__model.image_input: [input_image]}
-        )
-
-        boxes, probs, classes = self.__model.filter_prediction(det_boxes[0], det_probs[0], det_class[0])  # type: ignore
-
-        keep = [i for i, prob in enumerate(probs) if prob > self.__config.PLOT_PROB_THRESH]
-        final_boxes = [boxes[i] for i in keep]
-        final_probs = [probs[i] for i in keep]
-        final_class = [classes[i] for i in keep]
-
-        for box in final_boxes:
-            for i, coord in enumerate(box):
-                box[i] = coord * scale_factors[i % 2]
-
-        predictions = []
-        for i in range(len(final_boxes)):
-            bounds = Bounds2D(
-                final_boxes[i][0] - final_boxes[i][2] / 2, final_boxes[i][1] - final_boxes[i][3] / 2,
-                final_boxes[i][2], final_boxes[i][3]
-            )
-            predictions.append(PredictedObject2D(
-                bounds, [self.__config.CLASS_NAMES[final_class[i]]], [final_probs[i]]
-            ))
-
-        return predictions
-
-    def _configure(self) -> easydict.EasyDict:
-        cfg = create_config()  # type: ignore
-
-        cfg.CLASS_NAMES = (
-            'donotenter', 'handicappedparking', 'leftarrow', 'leftturnonly', 'rightarrow', 'rightturnonly',
-            'speedlimit10', 'speedlimit15', 'speedlimit20', 'speedlimit5', 'red', 'green', 'off'
-        )
-        cfg.CLASSES = len(cfg.CLASS_NAMES)
-
-        cfg.IMAGE_WIDTH = 624
-        cfg.IMAGE_HEIGHT = 512
-        cfg.BATCH_SIZE = 1
-        cfg.TOP_N_DETECTION = 8
-        cfg.LOAD_PRETRAINED_MODEL = False
-
-        cfg.ANCHOR_BOX = set_anchors(  # type: ignore
-            cfg, [[5., 11.], [8., 17.], [11., 25.],
-                  [16., 38.], [27., 56.], [88., 121.],
-                  [144., 198.], [233., 318.], [404., 534.]]
-        )
-        cfg.ANCHORS = len(cfg.ANCHOR_BOX)
-
-        return cfg
+        print(boxes, classes, scores)
+        return [Object2D(Bounds2D(0, 0, 0, 0), class_index=0, score=0)]
