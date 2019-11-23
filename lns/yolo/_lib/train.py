@@ -18,7 +18,7 @@ from lns.yolo._lib.model import yolov3
 
 # setting loggers
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s',
-                    datefmt='%a, %d %b %Y %H:%M:%S', filename=args.progress_log_path, filemode='w')
+                    datefmt='%a, %d %b %Y %H:%M:%S', filename=args.progress_log_path, filemode='a')
 
 # setting placeholders
 is_training = tf.placeholder(tf.bool, name="phase_train")
