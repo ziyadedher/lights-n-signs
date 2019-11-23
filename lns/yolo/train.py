@@ -23,13 +23,13 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
 
     SUBPATHS = {
         "log_folder": Trainer.Subpath(
-            path="log", temporal=True, required=True, path_type=Trainer.PathType.FOLDER),
+            path="log", temporal=False, required=True, path_type=Trainer.PathType.FOLDER),
         "checkpoint_folder": Trainer.Subpath(
             path="checkpoint", temporal=False, required=True, path_type=Trainer.PathType.FOLDER),
         "anchors_file": Trainer.Subpath(
             path="anchors", temporal=False, required=False, path_type=Trainer.PathType.FILE),
         "progress_file": Trainer.Subpath(
-            path="progress", temporal=True, required=False, path_type=Trainer.PathType.FILE),
+            path="progress", temporal=False, required=False, path_type=Trainer.PathType.FILE),
     }
 
     INITIAL_WEIGHTS_NAME = "yolov3.ckpt"
