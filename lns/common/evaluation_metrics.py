@@ -4,6 +4,7 @@ from lns.common.dataset import Dataset
 import itertools
 from lns.common.structs import Bounds2D
 ConfusionMatrix = Dict[str, Dict[str, int]]
+#Hungarian Algorithm for association between label and prediction
 
 def iou(box1: Bounds2D, box2: Bounds2D) -> float:
     """Calculate the intersection-over-union of two bounding boxes."""
@@ -60,9 +61,8 @@ def benchmark(model: Model, dataset: Dataset, threshold: float):
         boolean_detected = [1]*len(target_obj)  # identify gt objects that have been detected by model
         boolean_matched = [1]*len(predictions)  # identify predictions that correspond to some gt
         confusionMatrix = {class_name: {class_name: 0 for class_name in classes} for class_name in classes}
-
+        
         for j, pred_obj in enumerate(predictions):
-            confusionMatrix = {class_name: {class_name: 0 for class_name in classes} for class_name in classes}
             for i, ground_truth_obj in enumerate(target_obj):
                 if boolean_detected[i]:
                     # handles duplicate bounding boxes...only check ground truth object if it hasn't been matched
@@ -88,14 +88,14 @@ def benchmark(model: Model, dataset: Dataset, threshold: float):
                     #         # no correspondence to ground truth
                     #         continue
 
-            # apply boolean masks to extract objects that were not detected or not matched with a ground truth object
-            undetected_gt = itertools.compress(target_obj, boolean_detected)
-            for obj in undetected_gt:  # FN
-                confusionMatrix[classes[obj.class_index]]["__none__"] += 1
+        # apply boolean masks to extract objects that were not detected or not matched with a ground truth object
+        undetected_gt = itertools.compress(target_obj, boolean_detected)
+        for obj in undetected_gt:  # FN
+            confusionMatrix[classes[obj.class_index]]["__none__"] += 1
 
-            unmatched_pred = itertools.compress(predictions, boolean_matched)
-            for obj in unmatched_pred:  # FP
-                confusionMatrix["__none__"][classes[obj.class_index]] += 1
+        unmatched_pred = itertools.compress(predictions, boolean_matched)
+        for obj in unmatched_pred:  # FP
+            confusionMatrix["__none__"][classes[obj.class_index]] += 1
 
         TP, FP, FN = compute_stats(confusionMatrix, classes)
         TP_aggregate += TP
