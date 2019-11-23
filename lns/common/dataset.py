@@ -4,9 +4,8 @@ Contains classes for the tracking of dataset objects through our pipeline
 as well as simple utility functions for operation on the datasets.
 """
 
-from typing import Dict, List
-
 import copy
+from typing import Dict, List
 
 from lns.common.structs import Object2D
 
@@ -25,12 +24,14 @@ class Dataset:
     Annotations = Dict[str, Labels]
 
     _name: str
+    _dynamic: bool
 
     __images: Images
     __classes: Classes
     __annotations: Annotations
 
-    def __init__(self, name: str, images: _Images, classes: _Classes, annotations: _Annotations) -> None:
+    def __init__(self, name: str, images: _Images, classes: _Classes, annotations: _Annotations, *,
+                 dynamic=False) -> None:
         """Initialize the data structure.
 
         <name> is a unique name for this dataset.
@@ -39,6 +40,7 @@ class Dataset:
         <annotations> is a mapping of image path to a list of 2D objects present in the image.
         """
         self._name = name
+        self._dynamic = dynamic
         self.__images = copy.deepcopy(images)
         self.__classes = copy.deepcopy(classes)
         self.__annotations = copy.deepcopy(annotations)
@@ -47,6 +49,11 @@ class Dataset:
     def name(self) -> str:
         """Get the name of this dataset."""
         return self._name
+
+    @property
+    def dynamic(self) -> bool:
+        """Return whether or not this dataset was dynamically generated."""
+        return self._dynamic
 
     @property
     def images(self) -> _Images:
@@ -67,7 +74,7 @@ class Dataset:
         """
         return copy.deepcopy(self.__annotations)
 
-    def merge_classes(self, name_postfix: str, mapping: Dict[str, List[str]]) -> 'Dataset':
+    def merge_classes(self, mapping: Dict[str, List[str]]) -> 'Dataset':
         """Get a new `Dataset` that has classes merged together.
 
         Merges the classes under the values in <mapping> under the class given
@@ -92,14 +99,15 @@ class Dataset:
                         detection.class_index = classes.index(new_class)
                         break
 
-        return Dataset(self.name + name_postfix, images, classes, annotations)
+        return Dataset(self.name, images, classes, annotations, dynamic=True)
 
     def __add__(self, other: 'Dataset') -> 'Dataset':
         """Magic method for adding two preprocessing data objects."""
         return Dataset(f"{self.name}-{other.name}",
                        self.images + other.images,
                        list(set(self.classes + other.classes)),
-                       {**self.annotations, **other.annotations})
+                       {**self.annotations, **other.annotations},
+                       dynamic=self.dynamic or other.dynamic)
 
     def __len__(self) -> int:
         """Magic method to get the length of this `Dataset`.

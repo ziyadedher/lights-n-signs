@@ -3,16 +3,15 @@
 Provides an interface for data processing for all detection methods to make
 implementation of new detection methods easier and more streamlined.
 """
-from typing import Union, Dict, TypeVar, Generic
-
 import os
-import shutil
 import pickle
+import shutil
+from typing import Dict, Generic, TypeVar, Union
 
 from lns.common import config
 from lns.common.dataset import Dataset
-from lns.common.resources import Resources
 from lns.common.preprocess import Preprocessor
+from lns.common.resources import Resources
 
 
 class ProcessedData:  # pylint:disable=too-few-public-methods
@@ -84,6 +83,10 @@ class Processor(Generic[ProcessedDataType]):
         Raises `NoPreprocessorException` if a preprocessor for the given
         <dataset> does not exist.
         """
+        # Force a processing if the dataset is dynamically generated
+        if isinstance(dataset, Dataset) and dataset.dynamic:
+            force = True
+
         # Uses memoization to speed up processing acquisition
         name = dataset if isinstance(dataset, str) else dataset.name
         if not force and name in cls._processed_data:
