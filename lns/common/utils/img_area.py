@@ -1,5 +1,4 @@
-"""Utility functions for computing image area without loading entire image.
-"""
+"""Utility functions for computing image area without loading entire image."""
 
 import os
 import struct
@@ -82,5 +81,3 @@ def _process_jpeg(input_file):
         raise UnknownImageFormat(ex.__class__.__name__ + msg)
 
     return width, height
-
-

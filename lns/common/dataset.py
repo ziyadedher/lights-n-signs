@@ -97,7 +97,7 @@ class Dataset:
 
     def prune(self, threshold: float) -> 'Dataset':
         """Return a new dataset with relative annotation sizes under a given <threshold> pruned."""
-        dists: Dict[float, Tuple[str, Object2D]] = collections.defaultdict(list)
+        dists: Dict[float, List[Tuple[str, Object2D]]] = collections.defaultdict(list)
 
         images = self.images
         classes = self.classes
