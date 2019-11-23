@@ -1,5 +1,7 @@
 """Simple demo to test dataset pruning."""
 
+# pylint: skip-file
+
 from collections import defaultdict
 
 from typing import Dict, List, Tuple

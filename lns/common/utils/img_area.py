@@ -16,7 +16,7 @@ class UnknownImageFormat(Exception):
     """Exception for parsing metadata of image in unknown format."""
 
 
-def _get_image_size(file_path):
+def _get_image_size(file_path):  # pylint: disable-msg=too-many-branches
     """Return (width, height) for a given img file content w/ no external dependencies."""
     size = os.path.getsize(file_path)
 
@@ -43,41 +43,34 @@ def _get_image_size(file_path):
             height = int(raw_h)
         elif (size >= 2) and data.startswith(b'\377\330'):
             # JPEG
-            width, height = _process_jpeg(input_file)
+            msg = " raised while trying to decode as JPEG."
+            input_file.seek(0)
+            input_file.read(2)
+            binary = input_file.read(1)
+            try:
+                while binary and ord(binary) != 0xDA:
+                    while ord(binary) != 0xFF:
+                        binary = input_file.read(1)
+                    while ord(binary) == 0xFF:
+                        binary = input_file.read(1)
+                    if (ord(binary) >= 0xC0 and ord(binary) <= 0xC3):
+                        input_file.read(3)
+                        raw_h, raw_w = struct.unpack(">HH", input_file.read(4))
+                        break
+                    else:
+                        input_file.read(int(struct.unpack(">H", input_file.read(2))[0]) - 2)
+                    binary = input_file.read(1)
+                width = int(raw_w)
+                height = int(raw_h)
+            except struct.error:
+                raise UnknownImageFormat("StructError" + msg)
+            except ValueError:
+                raise UnknownImageFormat("ValueError" + msg)
+            except Exception as ex:
+                raise UnknownImageFormat(ex.__class__.__name__ + msg)
         else:
             raise UnknownImageFormat(
                 "Sorry, don't know how to get information from this file."
             )
-
-    return width, height
-
-
-def _process_jpeg(input_file):
-    """Process metadata of JPEG."""
-    msg = " raised while trying to decode as JPEG."
-    input_file.seek(0)
-    input_file.read(2)
-    binary = input_file.read(1)
-    try:
-        while binary and ord(binary) != 0xDA:
-            while ord(binary) != 0xFF:
-                binary = input_file.read(1)
-            while ord(binary) == 0xFF:
-                binary = input_file.read(1)
-            if (ord(binary) >= 0xC0 and ord(binary) <= 0xC3):
-                input_file.read(3)
-                raw_h, raw_w = struct.unpack(">HH", input_file.read(4))
-                break
-            else:
-                input_file.read(int(struct.unpack(">H", input_file.read(2))[0]) - 2)
-            binary = input_file.read(1)
-        width = int(raw_w)
-        height = int(raw_h)
-    except struct.error:
-        raise UnknownImageFormat("StructError" + msg)
-    except ValueError:
-        raise UnknownImageFormat("ValueError" + msg)
-    except Exception as ex:
-        raise UnknownImageFormat(ex.__class__.__name__ + msg)
 
     return width, height
