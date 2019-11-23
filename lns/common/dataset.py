@@ -128,6 +128,7 @@ class Dataset:
 
     def __add__(self, other: 'Dataset') -> 'Dataset':
         """Magic method for adding two preprocessing data objects."""
+        # FIXME: merging annotations this way will lose the annotations from self for duplicate images.
         return Dataset(f"{self.name}-{other.name}",
                        self.images + other.images,
                        list(set(self.classes + other.classes)),
