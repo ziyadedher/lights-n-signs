@@ -3,10 +3,8 @@
 Use this file instead of hard-coding any directories or for any other general
 configuration of the package.
 """
-from typing import List
-
 import os
-
+from typing import List
 
 RESOURCES_ROOT: str = os.path.abspath(os.path.join(os.path.expanduser("~"), ".lns-training/resources"))
 
