@@ -5,6 +5,7 @@ Contains data structures for bounding boxes and related things.
 
 import numpy as np
 
+
 class Bounds2D:
     """Two-dimensional bounds object.
 
@@ -89,16 +90,7 @@ def iou(box1: Bounds2D, box2: Bounds2D) -> float:
     intersection_area = (x_right - x_left) * (y_bottom - y_top)
     return intersection_area / float(box1.area + box2.area - intersection_area)
 
+
 def crop(image: np.ndarray, box: Bounds2D):
-    '''Return cropped image for classification'''
-    w = len(image)
-    h = len(image[0])
-
-    top = int(box.top * h)
-    bottom = int(box.bottom * h)
-
-    left = int(box.left * w)
-    right = int(box.right * w)
-
-    return image[ top:bottom , left:right ]
-
+    """Return cropped image for classification."""
+    return image[int(box.top):int(box.bottom), int(box.left):int(box.right)]
