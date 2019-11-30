@@ -45,14 +45,14 @@ def benchmark(model: Model, dataset: Dataset, threshold: float):
 
     classes = dataset.classes + ["__none__"]
     stats = {stat: 0.0 for stat in ['precision', 'recall', 'f1']}
-    aggregateConfusionMatrix = np.zeros((len(classes)))
+    aggregateConfusionMatrix = np.zeros((len(classes),len(classes)))
     IOU_aggregate = 0.0  # only for TP?
     count = 0
     TP_aggregate, FP_aggregate, FN_aggregate = 0, 0, 0
     for image, target_obj in tqdm.tqdm(dataset.annotations.items()):
         predictions = model.predict_path(image)
-        detected = [False]*len(target_obj)  # identify gt objects that have been detected by model
-        matched = [False]*len(predictions)  # identify predictions that correspond to some gt
+        detected = np.array([False]*len(target_obj))  # identify gt objects that have been detected by model
+        matched = np.array([False]*len(predictions))  # identify predictions that correspond to some gt
 
         for j, pred_obj in enumerate(predictions):
             if not matched[j]:
@@ -69,22 +69,18 @@ def benchmark(model: Model, dataset: Dataset, threshold: float):
                                 aggregateConfusionMatrix[ground_truth_obj.class_index, pred_obj.class_index] += 1
                                 detected[i], matched[j] = True, True  # mark as detected on both
 
-        # apply boolean masks to extract objects that were not detected or not matched with a ground truth object
-        undetected_gt = itertools.compress(target_obj, not detected)
-        for obj in undetected_gt:  # FN
-            aggregateConfusionMatrix[obj.class_index,-1] += 1
+    # apply boolean masks to extract objects that were not detected or not matched with a ground truth object
+    for i in range(detected):
+        if not detected[i]:
+            aggregateConfusionMatrix[target_obj[i].class_index,-1] += 1
+    for i in range(matched):
+        if not matched[i]:
+            aggregateConfusionMatrix[-1,predictions[i].class_index] += 1
 
-        unmatched_pred = itertools.compress(predictions, not matched)
-        for obj in unmatched_pred:  # FP
-            aggregateConfusionMatrix[-1,obj.class_index] += 1
-
-        TP, FP, FN = compute_stats(aggregateConfusionMatrix, len(classes))
-        TP_aggregate += TP
-        FP_aggregate += FP
-        FN_aggregate += FN
-
-        # add CM of this image to CM of the entire data set
-        #aggregateConfusionMatrix = combine_dicts(aggregateConfusionMatrix, confusionMatrix)
+    TP, FP, FN = compute_stats(aggregateConfusionMatrix, len(classes))
+    TP_aggregate += TP
+    FP_aggregate += FP
+    FN_aggregate += FN
 
     if TP_aggregate+FP_aggregate:
         stats["precision"] = TP_aggregate / (TP_aggregate + FP_aggregate)
