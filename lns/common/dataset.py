@@ -7,6 +7,7 @@ as well as simple utility functions for operation on the datasets.
 import collections
 import copy
 from typing import Dict, List, Tuple
+import numpy as np  # type: ignore
 
 from lns.common.structs import Object2D
 from lns.common.utils.img_area import img_area
@@ -125,6 +126,29 @@ class Dataset:
                     annotations[image].remove(detection)
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
+
+    def split(self, props) -> List[Tuple[List[str], Dict[str, List[Object2D]]]]:
+        """Shuffles and partitions dataset into portions with size <props>."""
+        props = np.array(props)
+        if sum(props) != 1 or any(props <= 0):
+            raise Exception("<props> must be strictly positive and sum to 1.")
+
+        images = self.images
+        annotations = self.annotations
+
+        inds = np.arange(len(images))
+        np.random.shuffle(inds)
+
+        splits: List[Tuple[List[str], Dict[str, List[Object2D]]]] = []
+
+        ranges = np.insert(np.ceil(np.cumsum(props) * len(images)).astype(int), 0, 0)
+        ranges[-1] = len(images) + 1
+
+        for low, high in zip(ranges[:-1], ranges[1:]):
+            image_split = list(np.array(images)[inds[low:high]])
+            splits.append((image_split, {image: annotations[image] for image in image_split}))
+
+        return splits
 
     def __add__(self, other: 'Dataset') -> 'Dataset':
         """Magic method for adding two preprocessing data objects."""
