@@ -90,7 +90,7 @@ class YoloProcessor(Processor[YoloData]):
             train_split = int(0.9 * len(annotations_lines))
 
             train_file.writelines(annotations_lines[:train_split])
-            test_file.writelines(annotations_lines[:test_split])
+            test_file.writelines(annotations_lines[train_split:])
 
         return YoloData(classes_path, train_annotations_path, test_annotations_path)
 
