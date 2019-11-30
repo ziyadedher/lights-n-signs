@@ -73,7 +73,7 @@ def benchmark(model: Model, dataset: Dataset, threshold: float):
     for i in range(len(detected)):
         if not detected[i]:
             aggregateConfusionMatrix[target_obj[i].class_index,-1] += 1
-    for i in range(elen(matched)):
+    for i in range(len(matched)):
         if not matched[i]:
             aggregateConfusionMatrix[-1,predictions[i].class_index] += 1
 
