@@ -54,8 +54,10 @@ def benchmark(model: Model, dataset: Dataset, threshold: float):
     IOU_aggregate = 0.0  # only for TP?
     count = 0
     TP_aggregate, FP_aggregate, FN_aggregate = 0, 0, 0
-
+    im = 0
     for image in image_paths:
+        im +=1
+        print(im)
         target_obj = annotations[image]
         predictions = model.predict_path(image)
         boolean_detected = [1]*len(target_obj)  # identify gt objects that have been detected by model
