@@ -2,15 +2,14 @@
 
 Manages all data processing for the generation of data ready to be trained on with our YOLOv3 training backend.
 """
+import os
 from typing import Iterable, Tuple
 
-import os
-
 from PIL import Image  # type: ignore
-from tqdm import tqdm  # type: ignore
 
 from lns.common.dataset import Dataset
 from lns.common.process import ProcessedData, Processor
+from tqdm import tqdm  # type: ignore
 
 
 class YoloData(ProcessedData):
@@ -20,9 +19,10 @@ class YoloData(ProcessedData):
     """
 
     __classes: str
-    __annotations: str
+    __train_annotations: str
+    __test_annotations: str
 
-    def __init__(self, classes: str, annotations: str) -> None:
+    def __init__(self, classes: str, train_annotations: str, test_annotations: str) -> None:
         """Initialize the data structure."""
         self.__classes = classes
         self.__annotations = annotations
@@ -31,9 +31,13 @@ class YoloData(ProcessedData):
         """Get the path to the class names file."""
         return self.__classes
 
-    def get_annotations(self) -> str:
-        """Get the path to the annotations file."""
-        return self.__annotations
+    def get_train_annotations(self) -> str:
+        """Get the path to the training annotations file."""
+        return self.__train_annotations
+
+    def get_test_annotations(self) -> str:
+        """Get the path to the testing annotations file."""
+        return self.__test_annotations
 
 
 class YoloProcessor(Processor[YoloData]):
@@ -59,8 +63,9 @@ class YoloProcessor(Processor[YoloData]):
 
         images = dataset.images
         annotations = dataset.annotations
-        annotations_path = os.path.join(processed_data_folder, "annotations")
-        with open(annotations_path, "w") as annotations_file:
+        train_annotations_path = os.path.join(processed_data_folder, "train_annotations")
+        test_annotations_path = os.path.join(processed_data_folder, "test_annotations")
+        with open(train_annotations_path, "w") as train_file, open(test_annotations_path, "w") as test_file:
             def order_label(label) -> Tuple[str, str, str, str, str]:
                 return (str(label.class_index),
                         str(label.bounds.left), str(label.bounds.top),
@@ -77,7 +82,13 @@ class YoloProcessor(Processor[YoloData]):
                         width, height = img.size
                     yield f"{i} {image} {width} {height} {labels_str}\n"
 
-            annotations_file.writelines(generate_annotations())
+            annotations_lines = list(generate_annotations())
+            random.shuffle(annotations_lines)
+
+            train_split = int(0.9 * len(annotations_lines))
+
+            train_file.writelines(annotations_lines[:train_split])
+            test_file.writelines(annotations_lines[:test_split])
 
         return YoloData(classes_path, annotations_path)
 
