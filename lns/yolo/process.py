@@ -73,7 +73,7 @@ class YoloProcessor(Processor[YoloData]):
                         str(label.bounds.left), str(label.bounds.top),
                         str(label.bounds.right), str(label.bounds.bottom))
 
-            def generate_annotations() -> Iterable[str]:
+            def generate_annotations(images) -> Iterable[str]:
                 for i, image in tqdm(enumerate(images), desc=f"YOLO Processing `{dataset.name}`"):
                     labels_str = " ".join(" ".join(order_label(label)) for label in annotations[image])
                     if not labels_str:
@@ -84,13 +84,10 @@ class YoloProcessor(Processor[YoloData]):
                         width, height = img.size
                     yield f"{i} {image} {width} {height} {labels_str}\n"
 
-            annotations_lines = list(generate_annotations())
-            random.shuffle(annotations_lines)
-
-            train_split = int(0.9 * len(annotations_lines))
-
-            train_file.writelines(annotations_lines[:train_split])
-            test_file.writelines(annotations_lines[train_split:])
+            random.shuffle(images)
+            train_split = int(0.9 * len(images))
+            train_file.writelines(generate_annotations(images[:train_split]))
+            test_file.writelines(generate_annotations(images[train_split:]))
 
         return YoloData(classes_path, train_annotations_path, test_annotations_path)
 
