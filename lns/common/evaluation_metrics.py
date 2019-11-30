@@ -4,6 +4,7 @@ from lns.common.dataset import Dataset
 import itertools
 import tqdm
 from lns.common.structs import Bounds2D
+import numpy as np
 ConfusionMatrix = Dict[str, Dict[str, int]]
 #Hungarian Algorithm for association between label and prediction
 
@@ -20,20 +21,15 @@ def iou(box1: Bounds2D, box2: Bounds2D) -> float:
     intersection_area = (x_right - x_left) * (y_bottom - y_top)
     return intersection_area / float(box1.area + box2.area - intersection_area)
 
-
-def combine_dicts(dict_original:Dict, dict_new:Dict) -> Dict:
-    for class_name_outer in dict_new.keys():
-        for class_name_inner in dict_new.keys():
-            dict_original[class_name_outer][class_name_inner] += dict_new[class_name_outer][class_name_inner]
-    return dict_original
-
-
 def compute_stats(cm, classes):
     TP, FP, FN = 0, 0, 0
-    for class_name in classes:
-        TP += cm[class_name][class_name]
-        FN += sum([cm[class_name][other] for other in classes if other != class_name])
-    FP += sum([cm["__none__"][class_name] for class_name in classes])
+    for class_name in range(classes):
+        TP += cm[class_name,class_name]
+        FN += sum([cm[class_name,other] for other in range(classes) if other != class_name])
+        FP += cm[-1,class_name]
+    #FP you detect something but the truth value is none (does not exist)
+    #FN is literally everything else
+    #TP is along the diagnol
     return TP, FP, FN
 
 
@@ -49,58 +45,40 @@ def benchmark(model: Model, dataset: Dataset, threshold: float):
 
     classes = dataset.classes + ["__none__"]
     stats = {stat: 0.0 for stat in ['precision', 'recall', 'f1']}
-    aggregateConfusionMatrix = {class_name: {class_name: 0 for class_name in classes} for class_name in classes}
-    #annotations = dataset.annotations
-    #image_paths = list(annotations.keys())  # returns images paths in the data set
+    aggregateConfusionMatrix = np.zeros((len(classes)))
     IOU_aggregate = 0.0  # only for TP?
     count = 0
     TP_aggregate, FP_aggregate, FN_aggregate = 0, 0, 0
-    #im = 0
     for image, target_obj in tqdm.tqdm(dataset.annotations.items()):
-        #im +=1
-        #print(im)
-        #target_obj = annotations[image]
         predictions = model.predict_path(image)
-        boolean_detected = [1]*len(target_obj)  # identify gt objects that have been detected by model
-        boolean_matched = [1]*len(predictions)  # identify predictions that correspond to some gt
-        #confusionMatrix = {class_name: {class_name: 0 for class_name in classes} for class_name in classes}
+        detected = [False]*len(target_obj)  # identify gt objects that have been detected by model
+        matched = [False]*len(predictions)  # identify predictions that correspond to some gt
 
         for j, pred_obj in enumerate(predictions):
-            for i, ground_truth_obj in enumerate(target_obj):
-                if boolean_detected[i]:
-                    # handles duplicate bounding boxes...only check ground truth object if it hasn't been matched
-                    if iou(pred_obj.bounds, ground_truth_obj.bounds) >= threshold:
-                        if pred_obj.class_index == ground_truth_obj.class_index:
-                            # really good prediction... TP
-                            aggregateConfusionMatrix[classes[ground_truth_obj.class_index]][classes[pred_obj.class_index]] += 1
-                            boolean_detected[i] = 0  # mark as detected on both
-                            boolean_matched[j] = 0
-                            IOU_aggregate +=iou(pred_obj.bounds, ground_truth_obj.bounds)
-                            count += 1
-                        else:
-                            # good IOU but incorrect label...FN
-                            aggregateConfusionMatrix[classes[ground_truth_obj.class_index]][classes[pred_obj.class_index]] += 1
-                            boolean_detected[i] = 0  # mark as detected on both
-                            boolean_matched[j] = 0
-                    # elif iou(pred_obj.bounds, ground_truth_obj.bounds) < threshold:
-                    #     if pred_obj.class_index == ground_truth_obj.class_index:
-                    #         # predictions that have a correct predicted label but not enough IoU
-                    #         # FP
-                    #         continue
-                    #     else:
-                    #         # no correspondence to ground truth
-                    #         continue
+            if not matched[j]:
+                for i, ground_truth_obj in enumerate(target_obj):
+                    if not detected[i]:
+                            # handles duplicate bounding boxes...only check ground truth object if it hasn't been matched
+                            IOU = iou(pred_obj.bounds, ground_truth_obj.bounds) 
+                            if IOU >= threshold:
+                                if pred_obj.class_index == ground_truth_obj.class_index:
+                                    # really good prediction... TP vs. good IOU but incorrect label...FN
+                                    IOU_aggregate += IOU
+                                    count += 1
+                                
+                                aggregateConfusionMatrix[ground_truth_obj.class_index, pred_obj.class_index] += 1
+                                detected[i], matched[j] = True, True  # mark as detected on both
 
         # apply boolean masks to extract objects that were not detected or not matched with a ground truth object
-        undetected_gt = itertools.compress(target_obj, boolean_detected)
+        undetected_gt = itertools.compress(target_obj, not detected)
         for obj in undetected_gt:  # FN
-            aggregateConfusionMatrix[classes[obj.class_index]]["__none__"] += 1
+            aggregateConfusionMatrix[obj.class_index,-1] += 1
 
-        unmatched_pred = itertools.compress(predictions, boolean_matched)
+        unmatched_pred = itertools.compress(predictions, not matched)
         for obj in unmatched_pred:  # FP
-            aggregateConfusionMatrix["__none__"][classes[obj.class_index]] += 1
+            aggregateConfusionMatrix[-1,obj.class_index] += 1
 
-        TP, FP, FN = compute_stats(aggregateConfusionMatrix, classes)
+        TP, FP, FN = compute_stats(aggregateConfusionMatrix, len(classes))
         TP_aggregate += TP
         FP_aggregate += FP
         FN_aggregate += FN
