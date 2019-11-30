@@ -2,6 +2,8 @@
 
 import os
 import urllib.request
+from urllib.error import HTTPError
+import cgi
 import requests
 import scaleapi  # type: ignore
 
@@ -19,38 +21,33 @@ LIGHTS_DATASET_NAME = "ScaleLights"
 SIGNS_DATASET_NAME = "ScaleSigns"
 OBJECTS_DATASET_NAME = "ScaleObjects"
 
-DATASET_NAMES = {
-    "light_labeling": LIGHTS_DATASET_NAME,
-    "sign_labeling": SIGNS_DATASET_NAME,
-    "object_labeling": OBJECTS_DATASET_NAME
-}
 
-
-def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noqa
+def _scale_common(name: str, path: str, project: str, batch: str = None) -> Dataset:  # noqa
     images: Dataset.Images = []
     classes: Dataset.Classes = []
     annotations: Dataset.Annotations = {}
 
     scale_data_path = os.path.join(path, 'images')
-    needs_download = False
 
     available_batches = requests.get(
         "https://api.scale.com/v1/batches?project={}".format(project),
         headers=HEADERS,
         auth=(SCALE_API_KEY, '')).json()
 
-    batch_names = [b['name'] for b in available_batches['docs']]
-    if batch and batch not in batch_names:
+    batch_names = [b['name'] for b in available_batches['docs'] if b['status'] == 'completed']
+    if batch or batch == '' and batch not in batch_names + ['']:
         raise ValueError("Batch name {} does not exist".format(batch))
 
     client = scaleapi.ScaleClient(SCALE_API_KEY)
-    batches_to_retrieve = [batch] if batch else batch_names
+    batches_to_retrieve = [batch] if batch or batch == '' else batch_names
     for batch_name in batches_to_retrieve:
-        batch_path = os.path.join(scale_data_path, batch_name)
+        proper_batch_name = batch_name if batch_name else 'default'
+        batch_path = os.path.join(scale_data_path, proper_batch_name)
 
         count = 0
         offset = 0
         has_next_page = True
+        needs_download = False
 
         if not os.path.exists(scale_data_path):
             os.makedirs(scale_data_path)
@@ -72,10 +69,27 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noq
                 bbox_list = task.param_dict['response']['annotations']
                 img_url = task.param_dict['params']['attachment']
 
-                local_path = os.path.join(batch_path, img_url.rsplit('/', 1)[-1])
-                if needs_download or not os.path.isfile(local_path):
-                    # Download the image
-                    urllib.request.urlretrieve(img_url, local_path)
+                try:
+                    if 'drive.google.com' in img_url:
+                        remotefile = urllib.request.urlopen(img_url)
+                        content = remotefile.info()['Content-Disposition']
+                        _, params = cgi.parse_header(content)
+                        local_path = os.path.join(batch_path, params["filename"])
+                    else:
+                        local_path = os.path.join(batch_path, img_url.rsplit('/', 1)[-1])
+
+                    if needs_download or not os.path.isfile(local_path):
+                        # Download the image
+                        urllib.request.urlretrieve(img_url, local_path)
+
+                except HTTPError as error:
+                    print("Image {} failed to download due to HTTPError {}: {}".format(
+                        img_url, error.code, error.reason))
+                    continue
+                except TypeError as error:
+                    print("Image {} failed to download due to improper header: {}".format(
+                        img_url, str(error)))
+                    continue
 
                 annotations[local_path] = []
                 for bbox in bbox_list:
@@ -107,19 +121,22 @@ def _scale_common(path: str, project: str, batch: str = None) -> Dataset:  # noq
                 if len(tasklist) < 100 or count > MAX_TO_PROCESS:
                     has_next_page = False
 
-    return Dataset(DATASET_NAMES[project], images, classes, annotations)
+    return Dataset(name, images, classes, annotations)
 
 
 @Preprocessor.register_dataset_preprocessor(LIGHTS_DATASET_NAME)
 def _scale_lights(path: str, batch: str = None) -> Dataset:  # noqa
-    return _scale_common(path, "light_labeling", batch=batch)
+    dataset = _scale_common("lights1", path, "light_labeling", batch=batch) + \
+        _scale_common("lights2", path, "light_labeling_old", batch='')
+    dataset._name = LIGHTS_DATASET_NAME  # noqa
+    return dataset
 
 
 @Preprocessor.register_dataset_preprocessor(SIGNS_DATASET_NAME)
 def _scale_signs(path: str, batch: str = None) -> Dataset:  # noqa
-    return _scale_common(path, "sign_labeling", batch=batch)
+    return _scale_common(SIGNS_DATASET_NAME, path, "sign_labeling", batch=batch)
 
 
 @Preprocessor.register_dataset_preprocessor(OBJECTS_DATASET_NAME)
 def _scale_objects(path: str, batch: str = None) -> Dataset:  # noqa
-    return _scale_common(path, "object_labeling", batch=batch)
+    return _scale_common(OBJECTS_DATASET_NAME, path, "object_labeling", batch=batch)
