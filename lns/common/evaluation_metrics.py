@@ -70,10 +70,10 @@ def benchmark(model: Model, dataset: Dataset, threshold: float):
                                 detected[i], matched[j] = True, True  # mark as detected on both
 
     # apply boolean masks to extract objects that were not detected or not matched with a ground truth object
-    for i in range(detected):
+    for i in range(len(detected)):
         if not detected[i]:
             aggregateConfusionMatrix[target_obj[i].class_index,-1] += 1
-    for i in range(matched):
+    for i in range(elen(matched)):
         if not matched[i]:
             aggregateConfusionMatrix[-1,predictions[i].class_index] += 1
 
