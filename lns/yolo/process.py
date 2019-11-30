@@ -25,7 +25,8 @@ class YoloData(ProcessedData):
     def __init__(self, classes: str, train_annotations: str, test_annotations: str) -> None:
         """Initialize the data structure."""
         self.__classes = classes
-        self.__annotations = annotations
+        self.__train_annotations = train_annotations
+        self.__test_annotations = test_annotations
 
     def get_classes(self) -> str:
         """Get the path to the class names file."""
@@ -90,7 +91,7 @@ class YoloProcessor(Processor[YoloData]):
             train_file.writelines(annotations_lines[:train_split])
             test_file.writelines(annotations_lines[:test_split])
 
-        return YoloData(classes_path, annotations_path)
+        return YoloData(classes_path, train_annotations_path, test_annotations_path)
 
 
 YoloProcessor.init_cached_processed_data()
