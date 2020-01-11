@@ -3,16 +3,15 @@
 Manages all data processing for the generation of data ready to be trained
 on with OpenCV Haar training scripts.
 """
-from typing import List
-
 import os
+from typing import List, Tuple
 
-import cv2             # type: ignore
+import cv2  # type: ignore
 from tqdm import tqdm  # type: ignore
 
-from lns.common.structs import Object2D
 from lns.common.dataset import Dataset
 from lns.common.process import ProcessedData, Processor
+from lns.common.structs import Object2D
 
 
 class HaarData(ProcessedData):
@@ -60,7 +59,10 @@ class HaarProcessor(Processor[HaarData]):
         return "haar"
 
     @classmethod
-    def _process(cls, dataset: Dataset) -> HaarData:  # pylint:disable=too-many-locals
+    def _process(cls, dataset: Dataset, val_split: float) -> HaarData:  # pylint: disable=too-many-locals
+        if val_split != 0:
+            print("Validation set is not implemented for Haar cascade training.")
+
         # Register all folders
         processed_data_folder = os.path.join(cls.get_processed_data_path(), dataset.name)
         annotations_folder = os.path.join(processed_data_folder, "annotations")

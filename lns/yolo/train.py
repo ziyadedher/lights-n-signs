@@ -82,8 +82,8 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
 
         # TODO: use different labels for testing and validation
         from lns.yolo._lib import args
-        args.train_file = self.data.get_annotations()
-        args.val_file = self.data.get_annotations()
+        args.train_file = self.data.get_train_annotations()
+        args.val_file = self.data.get_test_annotations()
         args.restore_path = weights_path
         args.save_dir = self._paths["checkpoint_folder"] + "/"
         args.log_dir = self._paths["log_folder"]
@@ -105,7 +105,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
 
     def _generate_anchors(self) -> None:
         print("Generating anchors...")
-        annotations = parse_anno(self.data.get_annotations(), self.settings.img_size)
+        annotations = parse_anno(self.data.get_train_annotations(), self.settings.img_size)
         anchors, _ = get_kmeans(annotations, self.settings.num_clusters)
         anchors_string = ", ".join(f"{anchor[0]},{anchor[1]}" for anchor in anchors)
         with open(self._paths["anchors_file"], "w") as anchors_file:

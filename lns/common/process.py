@@ -72,7 +72,7 @@ class Processor(Generic[ProcessedDataType]):
             pickle.dump(processed_data, file)
 
     @classmethod
-    def process(cls, dataset: Union[str, Dataset], *, force: bool = False) -> ProcessedDataType:
+    def process(cls, dataset: Union[str, Dataset], val_split: float = 0, *, force: bool = False) -> ProcessedDataType:
         """Process all required data from the given <dataset>.
 
         Generates a processed data object and returns it.
@@ -100,11 +100,12 @@ class Processor(Generic[ProcessedDataType]):
         if os.path.exists(processed_data_path):
             shutil.rmtree(processed_data_path)
         os.makedirs(processed_data_path)
-        processed_data: ProcessedDataType = cls._process(dataset)
+
+        processed_data: ProcessedDataType = cls._process(dataset, val_split)
 
         cls.cache_processed_data(dataset.name, processed_data)
         return processed_data
 
     @classmethod
-    def _process(cls, dataset: Dataset) -> ProcessedDataType:
+    def _process(cls, dataset: Dataset, val_split: float) -> ProcessedDataType:
         raise NotImplementedError

@@ -42,7 +42,10 @@ class SqueezedetProcessor(Processor[SqueezedetData]):
         return "squeezedet"
 
     @classmethod
-    def _process(cls, dataset: Dataset) -> SqueezedetData:  # pylint: disable=too-many-locals
+    def _process(cls, dataset: Dataset, val_split: float) -> SqueezedetData:  # pylint: disable=too-many-locals
+        if val_split != 0:
+            print("Validation set is not implemented for Squeezedet training.")
+
         # Register all folders
         processed_data_folder = os.path.join(cls.get_processed_data_path(), dataset.name)
         labels_folder = os.path.join(processed_data_folder, "labels")

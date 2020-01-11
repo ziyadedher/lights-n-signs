@@ -128,7 +128,7 @@ class Dataset:
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
-    def split(self, *props: List[float]) -> List[Tuple[List[str], Dict[str, List[Object2D]]]]:
+    def split(self, *props: Tuple[float]) -> List[Tuple[List[str], Dict[str, List[Object2D]]]]:
         """Shuffles and partitions dataset into portions <props>."""
         props = np.array(props)
         if sum(props) != 1 or any(props <= 0):  # type: ignore
