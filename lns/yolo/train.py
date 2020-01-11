@@ -4,6 +4,7 @@ The module manages the representation of a YOLOv3 training session along with al
 """
 import dataclasses
 import os
+import random
 from typing import Optional, Union
 
 from lns.common import config
@@ -30,6 +31,10 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
             path="anchors", temporal=False, required=False, path_type=Trainer.PathType.FILE),
         "progress_file": Trainer.Subpath(
             path="progress", temporal=False, required=False, path_type=Trainer.PathType.FILE),
+        "train_annotations_file": Trainer.Subpath(
+            path="train_annotations", temporal=True, required=False, path_type=Trainer.PathType.FILE),
+        "val_annotations_file": Trainer.Subpath(
+            path="val_annotations", temporal=True, required=False, path_type=Trainer.PathType.FILE),
     }
 
     INITIAL_WEIGHTS_NAME = "yolov3.ckpt"
@@ -80,10 +85,12 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         self._generate_anchors()
         weights_path = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
 
+        self._generate_split()
+
         # TODO: use different labels for testing and validation
         from lns.yolo._lib import args
-        args.train_file = self.data.get_annotations()
-        args.val_file = self.data.get_annotations()
+        args.train_file = self._paths["train_annotations_file"]
+        args.val_file = self._paths["val_annotations_file"]
         args.restore_path = weights_path
         args.save_dir = self._paths["checkpoint_folder"] + "/"
         args.log_dir = self._paths["log_folder"]
@@ -111,6 +118,29 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         with open(self._paths["anchors_file"], "w") as anchors_file:
             anchors_file.write(anchors_string)
         print("Anchors generated.")
+
+    def _generate_split(self) -> None:
+        annotations_file = self.data.get_annotations()
+        with open(annotations_file, "r") as file:
+            lines = file.readlines()
+        random.shuffle(lines)
+
+        val_split = int(self.settings.val_split * len(lines))
+        for i, line in enumerate(lines):
+            if i >= val_split:
+                i -= val_split
+
+            split_line = line.split()
+            split_line[0] = str(i)
+            lines[i] = " ".join(split_line)
+
+        val_lines = lines[:val_split]
+        train_lines = lines[val_split:]
+
+        with open(self._paths["val_annotations_file"], "w") as val_file:
+            val_file.writelines(val_lines)
+        with open(self._paths["train_annotations_file"], "w") as train_file:
+            train_file.writelines(train_lines)
 
     # pylint: disable=no-self-use
     def _get_global_step(self, checkpoint_path: str) -> int:
