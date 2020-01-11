@@ -135,7 +135,6 @@ class Dataset:
             raise ValueError("<props> must be strictly positive and sum to 1.")
 
         images = self.images
-        annotations = self.annotations
 
         inds = np.arange(len(images))
         np.random.shuffle(inds)
@@ -146,8 +145,7 @@ class Dataset:
         ranges[-1] = len(images) + 1
 
         for low, high in zip(ranges[:-1], ranges[1:]):
-            image_split = list(np.array(images)[inds[low:high]])
-            splits.append((image_split, {image: annotations[image] for image in image_split}))
+            splits.append(list(np.array(images)[inds[low:high]]))  # type: ignore
 
         return splits
 
