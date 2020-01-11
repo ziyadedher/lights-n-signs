@@ -127,13 +127,12 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
             _, _, _ = gpu_nms(pred_boxes, pred_scores, num_class, max_boxes=20, score_thresh=0.5, nms_thresh=0.5)
             # restore weight
             saver = tf.train.Saver()
-            saver.restore(sess, "./data/darknet_weights/yolov3.ckpt")
+            saver.restore(sess, self.get_weights_path())
             # save
             output_node_names = [
                 "output/boxes",
                 "output/scores",
                 "output/labels",
-                "output/num_detections",
                 "input",
             ]
 
