@@ -4,7 +4,7 @@ Manages all data processing for the generation of data ready to be trained
 on with OpenCV Haar training scripts.
 """
 import os
-from typing import List, Tuple
+from typing import List
 
 import cv2  # type: ignore
 from tqdm import tqdm  # type: ignore

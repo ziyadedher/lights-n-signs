@@ -28,8 +28,6 @@ class YoloData(ProcessedData):
         self.__train_annotations = train_annotations
         self.__test_annotations = test_annotations
 
-
-
     def get_classes(self) -> str:
         """Get the path to the class names file."""
         return self.__classes
@@ -41,7 +39,6 @@ class YoloData(ProcessedData):
     def get_test_annotations(self) -> str:
         """Get the path to the testing annotations file."""
         return self.__test_annotations
-
 
 
 class YoloProcessor(Processor[YoloData]):
@@ -92,7 +89,6 @@ class YoloProcessor(Processor[YoloData]):
             train_file.writelines(generate_annotations(images[test_split:]))
 
         return YoloData(classes_path, train_annotations_path, test_annotations_path)
-
 
 
 YoloProcessor.init_cached_processed_data()
