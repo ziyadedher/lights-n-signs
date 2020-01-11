@@ -26,6 +26,7 @@ class LearningRateType(str, Enum):
     PIECEWISE: str = "piecewise"
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
 class YoloSettings(Settings):
     """Settings encapsulation for all YOLO trainer settings."""
@@ -116,3 +117,4 @@ class YoloSettings(Settings):
 
     # Number of k-means clusters to compute and use
     num_clusters: int = 9
+# pylint: enable=too-many-instance-attributes

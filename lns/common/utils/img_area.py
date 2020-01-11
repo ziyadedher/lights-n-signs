@@ -57,8 +57,7 @@ def _get_image_size(file_path):  # pylint: disable-msg=too-many-branches
                         input_file.read(3)
                         raw_h, raw_w = struct.unpack(">HH", input_file.read(4))
                         break
-                    else:
-                        input_file.read(int(struct.unpack(">H", input_file.read(2))[0]) - 2)
+                    input_file.read(int(struct.unpack(">H", input_file.read(2))[0]) - 2)
                     binary = input_file.read(1)
                 width = int(raw_w)
                 height = int(raw_h)

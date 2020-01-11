@@ -50,6 +50,7 @@ pylint:
   run: true
   options:
     max-line-length: 120
+    disable: import-outside-toplevel
 
 pyroma:
   run: false
