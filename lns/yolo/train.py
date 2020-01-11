@@ -15,7 +15,7 @@ from lns.yolo.model import YoloModel
 from lns.yolo.process import YoloData, YoloProcessor
 from lns.yolo.settings import YoloSettings
 from lns.yolo._lib.utils.misc_utils import parse_anchors, read_class_names
-from lns.yolo._lib.utils.nms_utils import batch_nms
+from lns.yolo._lib.utils.nms_utils import gpu_nms
 from lns.yolo._lib.model import yolov3
 
 
@@ -124,7 +124,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
                 pred_feature_maps = yolo_model.forward(input_data, False)
             pred_boxes, pred_confs, pred_probs = yolo_model.predict(pred_feature_maps)
             pred_scores = pred_confs * pred_probs
-            _, _, _, _ = batch_nms(pred_boxes, pred_scores, max_boxes=20, score_thresh=0.5, nms_thresh=0.5)
+            _, _, _ = gpu_nms(pred_boxes, pred_scores, num_class, max_boxes=20, score_thresh=0.5, nms_thresh=0.5)
             # restore weight
             saver = tf.train.Saver()
             saver.restore(sess, "./data/darknet_weights/yolov3.ckpt")
