@@ -138,9 +138,11 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         train_lines = lines[val_split:]
 
         with open(self._paths["val_annotations_file"], "w") as val_file:
-            val_file.writelines(val_lines)
+            for line in val_lines:
+                val_file.write(line + "\n")
         with open(self._paths["train_annotations_file"], "w") as train_file:
-            train_file.writelines(train_lines)
+            for line in train_lines:
+                train_file.write(line + "\n")
 
     # pylint: disable=no-self-use
     def _get_global_step(self, checkpoint_path: str) -> int:
