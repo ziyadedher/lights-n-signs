@@ -52,6 +52,9 @@ class YoloSettings(Settings):
     # Number of epochs between saving a model checkpoint
     save_epoch: int = 5
 
+    # Percentage of data to use for validation
+    val_split: float = 0.1
+
     batch_norm_decay: float = 0.99
     weight_decay: float = 5e-4
     global_step: int = 0
