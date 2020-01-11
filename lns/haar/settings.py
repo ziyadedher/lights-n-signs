@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from lns.common.settings import Settings
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
 class HaarSettings(Settings):
     """Settings encapsulation for all Haar trainer settings."""
@@ -26,3 +27,4 @@ class HaarSettings(Settings):
     # Inference metrics, how much to scale the features by neighbour threshold
     scale_factor: float = 1.1
     min_neighbours: float = 3
+# pylint: enable=too-many-instance-attributes

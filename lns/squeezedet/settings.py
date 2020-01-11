@@ -16,6 +16,7 @@ class Optimizer(str, Enum):
     RMSPROP: str = "rmsprop"
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
 class SqueezedetSettings(Settings):
     """Settings encapsulation for all Squeezedet trainer settings."""
@@ -77,3 +78,4 @@ class SqueezedetSettings(Settings):
         [224., 108.], [78., 170.], [72., 43.]
     ])
     anchor_size: int = 16
+# pylint: enable=too-many-instance-attributes
