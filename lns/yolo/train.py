@@ -87,7 +87,6 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
 
         self._generate_split()
 
-        # TODO: use different labels for testing and validation
         from lns.yolo._lib import args
         args.train_file = self._paths["train_annotations_file"]
         args.val_file = self._paths["val_annotations_file"]
