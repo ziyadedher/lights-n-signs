@@ -4,6 +4,7 @@ The module manages the representation of a YOLOv3 training session along with al
 """
 import dataclasses
 import os
+import tensorflow as tf
 from typing import Optional, Union
 
 from lns.common import config
@@ -13,6 +14,9 @@ from lns.yolo._lib.get_kmeans import get_kmeans, parse_anno
 from lns.yolo.model import YoloModel
 from lns.yolo.process import YoloData, YoloProcessor
 from lns.yolo.settings import YoloSettings
+from lns.yolo._lib.utils.misc_utils import parse_anchors, read_class_names
+from lns.yolo._lib.utils.nms_utils import batch_nms
+from lns.yolo._lib.model import yolov3
 
 
 class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
@@ -30,6 +34,8 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
             path="anchors", temporal=False, required=False, path_type=Trainer.PathType.FILE),
         "progress_file": Trainer.Subpath(
             path="progress", temporal=False, required=False, path_type=Trainer.PathType.FILE),
+        "frozen_graph_file": Trainer.Subpath(
+            path="frozen_graph.pb", temporal=False, required=False, path_type=Trainer.PathType.FILE)
     }
 
     INITIAL_WEIGHTS_NAME = "yolov3.ckpt"
@@ -102,6 +108,47 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
             print(f"Training interrupted")
         else:
             print(f"Training completed succesfully")
+
+    def export_graph(self) -> None:
+        """Export a frozen graph in .pb format to the specified path"""
+        anchors = parse_anchors(self._paths["anchors_file"])
+        classes = read_class_names(self.data.get_classes())
+        num_class = len(classes)
+
+        with tf.Session() as sess:
+            # build graph
+            input_data = tf.placeholder(tf.float32, [None, None, None, 3], name='input')
+            yolo_model = yolov3(num_class, anchors)
+            with tf.variable_scope('yolov3'):
+                pred_feature_maps = yolo_model.forward(input_data, False)
+            pred_boxes, pred_confs, pred_probs = yolo_model.predict(pred_feature_maps)
+            pred_scores = pred_confs * pred_probs
+            boxes, scores, labels, num_dects = batch_nms(pred_boxes, pred_scores, max_boxes=20, score_thresh=0.5,
+                                                         nms_thresh=0.5)  # noqa
+            # restore weight
+            saver = tf.train.Saver()
+            saver.restore(sess, "./data/darknet_weights/yolov3.ckpt")
+            # save
+            output_node_names = [
+                "output/boxes",
+                "output/scores",
+                "output/labels",
+                "output/num_detections",
+                "input",
+            ]
+            output_node_names = ",".join(output_node_names)
+
+            output_graph_def = tf.graph_util.convert_variables_to_constants(
+                sess,
+                tf.get_default_graph().as_graph_def(),
+                output_node_names.split(",")
+            )
+
+            with tf.gfile.GFile(self._paths['frozen_graph_file'], "wb") as f:
+                f.write(output_graph_def.SerializeToString())
+
+            print("{} ops written to {}.".format(len(output_graph_def.node), self._paths['frozen_graph_file']))
+
 
     def _generate_anchors(self) -> None:
         print("Generating anchors...")
