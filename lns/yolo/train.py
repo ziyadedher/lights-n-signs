@@ -119,7 +119,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         with tf.Session() as sess:
             # build graph
             input_data = tf.placeholder(tf.float32, [None, None, None, 3], name='input')
-            yolo_model = yolov3(num_class, anchors)
+            yolo_model = yolov3(num_class, anchors, use_static_shape=False)
             with tf.variable_scope('yolov3'):
                 pred_feature_maps = yolo_model.forward(input_data, False)
             pred_boxes, pred_confs, pred_probs = yolo_model.predict(pred_feature_maps)
