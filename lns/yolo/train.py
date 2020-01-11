@@ -82,10 +82,10 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         """Begin training the model."""
         settings = settings if settings else self._load_settings()
         self._set_settings(settings)
+        self._generate_split()
         self._generate_anchors()
         weights_path = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
 
-        self._generate_split()
 
         from lns.yolo._lib import args
         args.train_file = self._paths["train_annotations_file"]
