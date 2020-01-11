@@ -3,6 +3,7 @@
 Manages all data processing for the generation of data ready to be trained on with our YOLOv3 training backend.
 """
 import os
+import random
 from typing import Iterable, Tuple
 
 from PIL import Image  # type: ignore
