@@ -32,17 +32,15 @@ structure of the generated file is below.
     }
 }
 """
-from typing import Callable, Dict
-
+import importlib
 import os
 import pickle
 import pkgutil
-import importlib
+from typing import Callable, Dict
 
 from lns.common import config
 from lns.common.dataset import Dataset
 from lns.common.resources import Resources
-
 
 DatasetPreprocessor = Callable[[str], Dataset]
 

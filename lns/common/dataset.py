@@ -151,11 +151,18 @@ class Dataset:
 
     def __add__(self, other: 'Dataset') -> 'Dataset':
         """Magic method for adding two preprocessing data objects."""
-        return Dataset(f"{self.name}-{other.name}",
-                       self.images + other.images,
-                       list(set(self.classes + other.classes)),
-                       {**self.annotations, **other.annotations},
-                       dynamic=self.dynamic or other.dynamic)
+        name = f"{self.name}-{other.name}"
+        images = list(set(self.images + other.images))
+        classes = list(set(self.classes + other.classes))
+        annotations = self.annotations
+        for image, labels in other.annotations.items():
+            if image in annotations:
+                annotations[image].extend(labels)
+            else:
+                annotations[image] = labels
+        dynamic = self.dynamic or other.dynamic
+
+        return Dataset(name, images, classes, annotations, dynamic=dynamic)
 
     def __len__(self) -> int:
         """Magic method to get the length of this `Dataset`.
