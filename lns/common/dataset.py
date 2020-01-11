@@ -7,6 +7,7 @@ as well as simple utility functions for operation on the datasets.
 import collections
 import copy
 from typing import Dict, List, Tuple
+
 import numpy as np  # type: ignore
 
 from lns.common.structs import Object2D
@@ -127,11 +128,11 @@ class Dataset:
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
-    def split(self, props) -> List[Tuple[List[str], Dict[str, List[Object2D]]]]:
-        """Shuffles and partitions dataset into portions with size <props>."""
+    def split(self, *props: List[float]) -> List[Tuple[List[str], Dict[str, List[Object2D]]]]:
+        """Shuffles and partitions dataset into portions <props>."""
         props = np.array(props)
-        if sum(props) != 1 or any(props <= 0):
-            raise Exception("<props> must be strictly positive and sum to 1.")
+        if sum(props) != 1 or any(props <= 0):  # type: ignore
+            raise ValueError("<props> must be strictly positive and sum to 1.")
 
         images = self.images
         annotations = self.annotations
