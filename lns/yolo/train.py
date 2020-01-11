@@ -36,7 +36,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         "progress_file": Trainer.Subpath(
             path="progress", temporal=False, required=False, path_type=Trainer.PathType.FILE),
         "frozen_graph_file": Trainer.Subpath(
-            path="frozen_graph.pb", temporal=False, required=False, path_type=Trainer.PathType.FILE)
+            path="frozen_graph.pb", temporal=False, required=False, path_type=Trainer.PathType.FILE),
         "train_annotations_file": Trainer.Subpath(
             path="train_annotations", temporal=True, required=False, path_type=Trainer.PathType.FILE),
         "val_annotations_file": Trainer.Subpath(
