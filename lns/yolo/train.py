@@ -4,8 +4,8 @@ The module manages the representation of a YOLOv3 training session along with al
 """
 import dataclasses
 import os
-import tensorflow as tf
 from typing import Optional, Union
+import tensorflow as tf  # type: ignore
 
 from lns.common import config
 from lns.common.dataset import Dataset
@@ -109,8 +109,9 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         else:
             print(f"Training completed succesfully")
 
+    # pylint: disable=too-many-locals
     def export_graph(self) -> None:
-        """Export a frozen graph in .pb format to the specified path"""
+        """Export a frozen graph in .pb format to the specified path."""
         anchors = parse_anchors(self._paths["anchors_file"])
         classes = read_class_names(self.data.get_classes())
         num_class = len(classes)
@@ -123,8 +124,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
                 pred_feature_maps = yolo_model.forward(input_data, False)
             pred_boxes, pred_confs, pred_probs = yolo_model.predict(pred_feature_maps)
             pred_scores = pred_confs * pred_probs
-            boxes, scores, labels, num_dects = batch_nms(pred_boxes, pred_scores, max_boxes=20, score_thresh=0.5,
-                                                         nms_thresh=0.5)  # noqa
+            _, _, _, _ = batch_nms(pred_boxes, pred_scores, max_boxes=20, score_thresh=0.5, nms_thresh=0.5)
             # restore weight
             saver = tf.train.Saver()
             saver.restore(sess, "./data/darknet_weights/yolov3.ckpt")
@@ -136,19 +136,17 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
                 "output/num_detections",
                 "input",
             ]
-            output_node_names = ",".join(output_node_names)
 
             output_graph_def = tf.graph_util.convert_variables_to_constants(
                 sess,
                 tf.get_default_graph().as_graph_def(),
-                output_node_names.split(",")
+                output_node_names
             )
 
-            with tf.gfile.GFile(self._paths['frozen_graph_file'], "wb") as f:
-                f.write(output_graph_def.SerializeToString())
+            with tf.gfile.GFile(self._paths['frozen_graph_file'], "wb") as new_file:
+                new_file.write(output_graph_def.SerializeToString())
 
-            print("{} ops written to {}.".format(len(output_graph_def.node), self._paths['frozen_graph_file']))
-
+            print("{} ops written to {}.".format(len(output_graph_def.node), self._paths['frozen_graph_file']))  # noqa
 
     def _generate_anchors(self) -> None:
         print("Generating anchors...")
