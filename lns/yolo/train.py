@@ -126,11 +126,8 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
 
         val_split = int(self.settings.val_split * len(lines))
         for i, line in enumerate(lines):
-            if i >= val_split:
-                i -= val_split
-
             split_line = line.split()
-            split_line[0] = str(i)
+            split_line[0] = str(i if i < val_split else (i - val_split))
             lines[i] = " ".join(split_line)
 
         val_lines = lines[:val_split]
