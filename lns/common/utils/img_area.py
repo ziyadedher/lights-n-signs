@@ -6,7 +6,7 @@ import struct
 
 def img_area(img_name: str) -> float:
     """Determine dimensions of image stored at absolute path <img_name>."""
-    width, height = _get_image_size(img_name)
+    width, height = get_image_size(img_name)
     return width * height
 
 
@@ -16,7 +16,7 @@ class UnknownImageFormat(Exception):
     """Exception for parsing metadata of image in unknown format."""
 
 
-def _get_image_size(file_path):  # pylint: disable-msg=too-many-branches
+def get_image_size(file_path):  # pylint: disable-msg=too-many-branches
     """Return (width, height) for a given img file content w/ no external dependencies."""
     size = os.path.getsize(file_path)
 
