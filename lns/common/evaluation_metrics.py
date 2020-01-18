@@ -32,29 +32,17 @@ def compute_stats(cm, classes):
     #TP is along the diagnol
     return TP, FP, FN
 
-
-def benchmark(model: Model, dataset: Dataset, threshold: float):
-    # INPUTS:
-    # model is the model used to compute predictions
-    # data set is the structure that contains classes, annotations and the data
-
-    # using the concept of "nothingness"
-    # Get the classes and add the `none` class for predictions that are less than the IOU threshold
-    # Create a confusion matrix where the keys of the outer dict are the row names (true classes)
-    # the keys of the inner dict are the column names (predicted classes)
+def init(dataset: Dataset):
     classes = dataset.classes + ["__none__"]
     stats = {stat: 0.0 for stat in ['precision', 'recall', 'f1']}
     aggregateConfusionMatrix = np.zeros((len(classes),len(classes)))
     IOU_aggregate = 0.0  # only for TP?
     count = 0
     annotations = dataset.annotations.items()
-    TP_aggregate, FP_aggregate, FN_aggregate = 0, 0, 0
-    for image, target_obj in tqdm.tqdm(list(annotations)[:100]):
-        predictions = model.predict_path(image)
-        detected = np.array([False]*len(target_obj))  # identify gt objects that have been detected by model
-        matched = np.array([False]*len(predictions))  # identify predictions that correspond to some gt
+    return classes, stats, aggregateConfusionMatrix, IOU_aggregate, count, annotations
 
-        for j, pred_obj in enumerate(predictions):
+def loops(target_obj,predictions,detected,matched,aggregateConfusionMatrix,IOU_aggregate,count):
+    for j, pred_obj in enumerate(predictions):
             if not matched[j]:
                 for i, ground_truth_obj in enumerate(target_obj):
                     if not detected[i]:
@@ -69,6 +57,9 @@ def benchmark(model: Model, dataset: Dataset, threshold: float):
                                 aggregateConfusionMatrix[ground_truth_obj.class_index, pred_obj.class_index] += 1
                                 detected[i], matched[j] = True, True  # mark as detected on both
 
+    return aggregateConfusionMatrix,detected, matched, IOU_aggregate, count
+
+def stats_modify(detected, matched, aggregateConfusionMatrix,target_obj, predictions):
     # apply boolean masks to extract objects that were not detected or not matched with a ground truth object
     for i in range(len(detected)):
         if not detected[i]:
@@ -76,16 +67,42 @@ def benchmark(model: Model, dataset: Dataset, threshold: float):
     for i in range(len(matched)):
         if not matched[i]:
             aggregateConfusionMatrix[-1,predictions[i].class_index] += 1
+    return aggregateConfusionMatrix
 
-    TP, FP, FN = compute_stats(aggregateConfusionMatrix, len(classes))
-    TP_aggregate += TP
-    FP_aggregate += FP
-    FN_aggregate += FN
-
+def provide_stats(TP_aggregate, FP_aggregate, FN_aggregate, stats):
     if TP_aggregate+FP_aggregate:
         stats["precision"] = TP_aggregate / (TP_aggregate + FP_aggregate)
     if TP_aggregate+FN_aggregate:
         stats["recall"] = TP_aggregate / (TP_aggregate + FN_aggregate)
     if 2*TP_aggregate+FP_aggregate+FN_aggregate:
         stats["f1"] = 2 * (stats["precision"]) * (stats["recall"]) / (stats["precision"] + stats["recall"])
+    return stats
+
+def compute_predictions(image, target_obj, model):
+    predictions = model.predict_path(image)
+    detected = np.array([False]*len(target_obj))  # identify gt objects that have been detected by model
+    matched = np.array([False]*len(predictions))  # identify predictions that correspond to some gt
+    return predictions, detected, matched
+
+def benchmark(model: Model, dataset: Dataset, threshold: float):
+    # INPUTS:
+    # model is the model used to compute predictions
+    # data set is the structure that contains classes, annotations and the data
+
+    # using the concept of "nothingness"
+    # Get the classes and add the `none` class for predictions that are less than the IOU threshold
+    # Create a confusion matrix where the keys of the outer dict are the row names (true classes)
+    # the keys of the inner dict are the column names (predicted classes)
+    classes, stats, aggregateConfusionMatrix, IOU_aggregate, count, annotations = init(dataset)
+
+    for image, target_obj in tqdm.tqdm(list(annotations)[:100]):
+        predictions, detected, matched = compute_predictions(image, target_obj, model)
+       
+        aggregateConfusionMatrix, detected, matched, IOU_aggregate, count = loops(target_obj,predictions,detected,matched,aggregateConfusionMatrix,IOU_aggregate,count)
+        aggregateConfusionMatrix = stats_modify(detected, matched, aggregateConfusionMatrix,target_obj, predictions)
+   
+    TP_aggregate, FP_aggregate, FN_aggregate = compute_stats(aggregateConfusionMatrix, len(classes))
+
+    stats = provide_stats(TP_aggregate, FP_aggregate, FN_aggregate, stats)
+
     return IOU_aggregate/count, aggregateConfusionMatrix, stats
