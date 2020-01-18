@@ -105,7 +105,7 @@ class Dataset:
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
-    def prune(self, threshold: float) -> 'Dataset':
+    def prune(self, threshold: float, delete_empty=True) -> 'Dataset':
         """Return a new dataset with relative annotation sizes under a given <threshold> pruned."""
         dists: Dict[float, List[Tuple[str, Object2D]]] = collections.defaultdict(list)
 
@@ -125,6 +125,18 @@ class Dataset:
             for image, detection in dists[dist]:
                 if detection in annotations[image]:
                     annotations[image].remove(detection)
+
+        # Delete images with no labels
+        if delete_empty:
+            remove_img_list = []
+            for image in annotations:
+                if not annotations[image]:
+                    remove_img_list.append(image)
+            for image in set(remove_img_list):
+                if image in images:
+                    images.remove(image)
+                if image in annotations:
+                    del annotations[image]
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
