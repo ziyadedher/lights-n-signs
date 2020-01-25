@@ -6,7 +6,7 @@ import cv2  # type: ignore
 
 from lns.common.model import Model
 from lns.common.dataset import Dataset
-from lns.common.utils.visualization import put_labels_on_image, put_predictions_on_image
+# from lns.common.utils.visualization import put_labels_on_image, put_predictions_on_image
 
 
 cv2.namedWindow("visualization", cv2.WINDOW_NORMAL)
@@ -21,12 +21,12 @@ def visualize_image(image_path: str, *,
     if show_labels:
         if labels is None:
             raise ValueError("Labels cannot be none if <show_labels> is set to `True`.")
-        image = put_labels_on_image(image, labels)
+ #       image = put_labels_on_image(image, labels)
 
     if visualize_model:
         if model is None:
             raise ValueError("Need to set a model if <visualize_model> is set to `True`.")
-        image = put_predictions_on_image(image, model.predict(image))
+ #       image = put_predictions_on_image(image, model.predict(image))
 
     cv2.imshow("visualization", image)
     key = cv2.waitKey(0)
@@ -63,4 +63,4 @@ if __name__ == '__main__':
     annotations = dataset.annotations
     for image_paths in dataset.image_split(0.1)[0].values():
         for image_path in image_paths:
-            visualize_image(image_path, model=None, visualize_model=False, labels=annotations[image_path], show_labels=True)
+            visualize_image(image_path, model=None, visualize_model=False, labels=annotations[image_path], show_labels=False)
