@@ -20,8 +20,8 @@ _Annotations = Dict[str, _Labels]
 
 
 def kmeans(boxes, k, dist=np.median):
-    """
-    Calculates k-means clustering with the Intersection over Union (IoU) metric.
+    """Calculate k-means clustering with the Intersection over Union (IoU) metric.
+
     param:
         boxes: numpy array of shape (r, 2), where r is the number of rows
         k: number of clusters
@@ -46,9 +46,10 @@ def kmeans(boxes, k, dist=np.median):
         last_clusters = nearest_clusters
     return clusters
 
+
 def iou(box, clusters):
-    """
-    Calculates the Intersection over Union (IoU) between a box and k clusters.
+    """Calculate the Intersection over Union (IoU) between a box and k clusters.
+
     param:
         box: tuple or array, shifted to the origin (i. e. width and height)
         clusters: numpy array of shape (k, 2) where k is the number of clusters
@@ -69,9 +70,10 @@ def iou(box, clusters):
 
     return iou_
 
+
 def avg_iou(boxes, clusters):
-    """
-    Calculates the average Intersection over Union (IoU) between a numpy array of boxes and k clusters.
+    """Calculate the average Intersection over Union (IoU) between a numpy array of boxes and k clusters.
+
     param:
         boxes: numpy array of shape (r, 2), where r is the number of rows
         clusters: numpy array of shape (k, 2) where k is the number of clusters
@@ -79,7 +81,6 @@ def avg_iou(boxes, clusters):
         average IoU as a single float
     """
     return np.mean([np.max(iou(boxes[i], clusters)) for i in range(boxes.shape[0])])
-
 
 
 class Dataset:
@@ -169,31 +170,30 @@ class Dataset:
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
     def generate_anchors(self, num_clusters: int) -> List[List[float]]:
-        '''return anchors (N, 2)'''
+        """Return anchors (N, 2)."""
+
         def get_kmeans(boxes, num_clusters):
-            anchors = kmeans(boxes, cluster_num)
+            anchors = kmeans(boxes, num_clusters)
             ave_iou = avg_iou(boxes, anchors)
             anchors = anchors.astype('int').tolist()
-            anchors = sorted(anchors, key= lambda x:x[0] * x[1])
+            anchors = sorted(anchors, key=lambda x: x[0] * x[1])
             return anchors, ave_iou
 
         def get_boxes_from_annotation(annotations):
-            '''return a list of box (r, 2)'''
+            """Return a list of box (r, 2)."""
             boxes = []
             for file in annotations:
-                for object in annotations[file]:
-                    box = [object.bounds.__width, object.bounds.__height]
+                for object2d in annotations[file]:
+                    box = [object2d.bounds.__width, object2d.bounds.__height]
                     boxes.append(box)
             return boxes
-
 
         annotations = self.__annotations
         boxes = get_boxes_from_annotation(annotations)
         anchors, _ = get_kmeans(boxes, num_clusters)
-        anchors = np.reshape(np.asarray(anchors, np.float32), [-1,2])
+        anchors = np.reshape(np.asarray(anchors, np.float32), [-1, 2])
         print("Anchors generated: {}".format(anchors))
         return anchors
-
 
     def prune(self, threshold: float, delete_empty=True) -> 'Dataset':
         """Return a new dataset with relative annotation sizes under a given <threshold> pruned."""
