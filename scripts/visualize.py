@@ -21,7 +21,7 @@ def visualize_image(image_path: str, *,
     if show_labels:
         if labels is None:
             raise ValueError("Labels cannot be none if <show_labels> is set to `True`.")
- #       image = put_labels_on_image(image, labels)
+        image = put_labels_on_image(image, labels)
 
     if visualize_model:
         if model is None:
@@ -35,6 +35,10 @@ def visualize_image(image_path: str, *,
         if key == 27:
             sys.exit(0)
 
+def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels):
+    for label in labels:
+        image = cv2.rectangle(image, (label.left, label.top), (label.right, label.bottom), (0, 255, 0))
+    return image
 
 if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
