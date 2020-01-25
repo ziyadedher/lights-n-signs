@@ -80,6 +80,11 @@ class Preprocessor:
         with open(dataset_pkl, "wb") as file:
             pickle.dump(dataset, file)
 
+        #TEST
+        k = 5
+        dataset.generate_anchors(k)
+        #####
+
     @classmethod
     def register_default_preprocessors(cls) -> None:
         """Register default preprocessors in preprocessing."""
