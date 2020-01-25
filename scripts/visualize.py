@@ -9,10 +9,6 @@ from lns.common.dataset import Dataset
 # from lns.common.utils.visualization import put_labels_on_image, put_predictions_on_image
 
 
-cv2.namedWindow("visualization", cv2.WINDOW_NORMAL)
-cv2.resizeWindow("visualization", 1920, 1080)
-
-
 def visualize_image(image_path: str, *,
                     model: Optional[Model] = None, visualize_model: bool = False,
                     labels: Optional[Dataset.Labels] = None, show_labels: bool = False) -> None:
@@ -41,13 +37,16 @@ def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels):
     return image
 
 if __name__ == '__main__':
+    cv2.namedWindow("visualization", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("visualization", 1920, 1080)
+
     from lns.common.preprocess import Preprocessor
-    #bosch = Preprocessor.preprocess("Bosch")
+    bosch = Preprocessor.preprocess("Bosch")
     #lights = Preprocessor.preprocess("lights")
     #scale = Preprocessor.preprocess("scale_lights")
-    print(Preprocessor._dataset_preprocessors)
-    mturk = Preprocessor.preprocess("scale_lights")
-    dataset = mturk
+    # print(Preprocessor._dataset_preprocessors)
+    # mturk = Preprocessor.preprocess("scale_lights")
+
     dataset = dataset.merge_classes({
         "green": [
             "GreenLeft", "Green", "GreenRight", "GreenStraight",
@@ -59,12 +58,10 @@ if __name__ == '__main__':
         ],
         "off": ["off"]
     })
-    dataset = dataset.minimum_area(0)
 
     #from lns.squeezedet.model import SqueezeDetModel
     #model = SqueezeDetModel("/home/lns/lns/xiyan/models/alllights-414000/train/model.ckpt-415500")
 
     annotations = dataset.annotations
-    for image_paths in dataset.image_split(0.1)[0].values():
-        for image_path in image_paths:
-            visualize_image(image_path, model=None, visualize_model=False, labels=annotations[image_path], show_labels=False)
+    for image_path in annotations:
+        visualize_image(image_path, model=None, visualize_model=False, labels=annotations[image_path], show_labels=True)
