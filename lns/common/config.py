@@ -26,6 +26,7 @@ PKL_EXTENSION = ".pkl"
 POSSIBLE_DATASETS: List[str] = [
     "mocked",
     "LISA",
+    "lisa_signs",
     "Bosch",
     "ScaleLights",
     "ScaleSigns",
