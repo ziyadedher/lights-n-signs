@@ -12,10 +12,11 @@ PY_VERSION = sys.version_info[0]
 iter_cnt = 0
 
 
-def parse_line(line):
+def parse_line(line,crop_ratio):
     '''
     Given a line from the training/test txt file, return parsed info.
     line format: line_index, img_path, img_width, img_height, [box_info_1 (5 number)], ...
+    crop_ratio to exclude labels in the cropped region
     return:
         line_idx: int64
         pic_path: string.
@@ -41,8 +42,11 @@ def parse_line(line):
     for i in range(box_cnt):
         label, x_min, y_min, x_max, y_max = int(s[i * 5]), float(s[i * 5 + 1]), float(s[i * 5 + 2]), float(
             s[i * 5 + 3]), float(s[i * 5 + 4])
-        boxes.append([x_min, y_min, x_max, y_max])
-        labels.append(label)
+        if y_min < img_height*crop_ratio:
+            if y_max > img_height*crop_ratio:
+                y_max = int(img_height*crop_ratio)-1
+            boxes.append([x_min, y_min, x_max, y_max])
+            labels.append(label)
     boxes = np.asarray(boxes, np.float32)
     labels = np.asarray(labels, np.int64)
     return line_idx, pic_path, boxes, labels, img_width, img_height
@@ -115,7 +119,7 @@ def process_box(boxes, labels, img_size, class_num, anchors):
     return y_true_13, y_true_26, y_true_52
 
 
-def parse_data(line, class_num, img_size, anchors, mode, letterbox_resize):
+def parse_data(line, class_num, img_size, anchors, mode, letterbox_resize, crop_ratio):
     '''
     param:
         line: a line from the training/test txt file
@@ -126,18 +130,20 @@ def parse_data(line, class_num, img_size, anchors, mode, letterbox_resize):
         letterbox_resize: whether to use the letterbox resize, i.e., keep the original aspect ratio in the resized image.
     '''
     if not isinstance(line, list):
-        img_idx, pic_path, boxes, labels, _, _ = parse_line(line)
+        img_idx, pic_path, boxes, labels, _, _ = parse_line(line,crop_ratio)
         img = cv2.imread(pic_path)
+        img = img[:int(img.shape[0]*crop_ratio),:]
         # expand the 2nd dimension, mix up weight default to 1.
         boxes = np.concatenate((boxes, np.full(shape=(boxes.shape[0], 1), fill_value=1., dtype=np.float32)), axis=-1)
     else:
         # the mix up case
-        _, pic_path1, boxes1, labels1, _, _ = parse_line(line[0])
+        _, pic_path1, boxes1, labels1, _, _ = parse_line(line[0],crop_ratio)
         img1 = cv2.imread(pic_path1)
-        img_idx, pic_path2, boxes2, labels2, _, _ = parse_line(line[1])
+        img_idx, pic_path2, boxes2, labels2, _, _ = parse_line(line[1],crop_ratio)
         img2 = cv2.imread(pic_path2)
 
         img, boxes = mix_up(img1, img2, boxes1, boxes2)
+        img = img[:int(img.shape[0]*crop_ratio),:]
         labels = np.concatenate((labels1, labels2))
 
     if mode == 'train':
@@ -176,7 +182,7 @@ def parse_data(line, class_num, img_size, anchors, mode, letterbox_resize):
     return img_idx, img, y_true_13, y_true_26, y_true_52
 
 
-def get_batch_data(batch_line, class_num, img_size, anchors, mode, multi_scale=False, mix_up=False, letterbox_resize=True, interval=10):
+def get_batch_data(batch_line, class_num, img_size, anchors, mode, multi_scale=False, mix_up=False, letterbox_resize=True, interval=10, crop_ratio=1.0):
     '''
     generate a batch of imgs and labels
     param:
@@ -211,7 +217,7 @@ def get_batch_data(batch_line, class_num, img_size, anchors, mode, multi_scale=F
         batch_line = mix_lines
 
     for line in batch_line:
-        img_idx, img, y_true_13, y_true_26, y_true_52 = parse_data(line, class_num, img_size, anchors, mode, letterbox_resize)
+        img_idx, img, y_true_13, y_true_26, y_true_52 = parse_data(line, class_num, img_size, anchors, mode, letterbox_resize, crop_ratio)
 
         img_idx_batch.append(img_idx)
         img_batch.append(img)

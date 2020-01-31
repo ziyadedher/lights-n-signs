@@ -120,4 +120,7 @@ class YoloSettings(Settings):
 
     # Number of k-means clusters to compute and use
     num_clusters: int = 9
+
+    # Vertical ratio to crop the input image (eg if ratio 0.6 then remove bottom 40%)
+    crop_ratio: float = 1.0
 # pylint: enable=too-many-instance-attributes

@@ -36,7 +36,7 @@ train_dataset = train_dataset.shuffle(args.train_img_cnt)
 train_dataset = train_dataset.batch(args.batch_size)
 train_dataset = train_dataset.map(
     lambda x: tf.py_func(get_batch_data,
-                         inp=[x, args.class_num, args.img_size, args.anchors, 'train', args.multi_scale_train, args.use_mix_up, args.letterbox_resize],
+                         inp=[x, args.class_num, args.img_size, args.anchors, 'train', args.multi_scale_train, args.use_mix_up, args.letterbox_resize, args.crop_ratio],
                          Tout=[tf.int64, tf.float32, tf.float32, tf.float32, tf.float32]),
     num_parallel_calls=args.num_threads
 )
@@ -46,7 +46,7 @@ val_dataset = tf.data.TextLineDataset(args.val_file)
 val_dataset = val_dataset.batch(1)
 val_dataset = val_dataset.map(
     lambda x: tf.py_func(get_batch_data,
-                         inp=[x, args.class_num, args.img_size, args.anchors, 'val', False, False, args.letterbox_resize],
+                         inp=[x, args.class_num, args.img_size, args.anchors, 'val', False, False, args.letterbox_resize, args.crop_ratio],
                          Tout=[tf.int64, tf.float32, tf.float32, tf.float32, tf.float32]),
     num_parallel_calls=args.num_threads
 )

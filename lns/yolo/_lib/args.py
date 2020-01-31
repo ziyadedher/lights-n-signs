@@ -83,6 +83,7 @@ train_img_cnt = 0
 val_img_cnt = 0
 train_batch_num = 0
 lr_decay_freq = 0
+crop_ratio = 1.0
 
 def init():
     global anchors, classes, class_num, train_img_cnt, val_img_cnt, train_batch_num, lr_decay_freq, pw_boundaries, pw_values
