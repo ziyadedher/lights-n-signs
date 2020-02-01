@@ -66,7 +66,7 @@ def confusion(model: Model, dataset: Union[str, Dataset],
             print(label.class_index)
             print(label.bounds.top, label.bounds.left)
         for pred in preds:
-            print(pred.class_index)
+            print(class_mapping(pred.class_index))
             print(pred.bounds.top, pred.bounds.left)
         cv2.imwrite(f"test.png", img)
         input()
