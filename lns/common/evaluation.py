@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Tuple, Union
 
 from tqdm import tqdm  # type: ignore
 import numpy as np  # type: ignore
