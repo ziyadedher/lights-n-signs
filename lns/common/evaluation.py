@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union, Callable
+from typing import List, Tuple, Union, Callable, Optional
 
 import time
 
@@ -17,6 +17,7 @@ Metrics = List[Tuple[float, float, float]]
 
 def confusion(model: Model, dataset: Union[str, Dataset],
               class_mapping: Callable[[int], int] = lambda x: x,
+              num_to_sample: Optional[int] = None,
               iou_threshold: float = 0.25) -> Tuple[ConfusionMatrix, float]:
     if isinstance(dataset, str):
         dataset = Preprocessor.preprocess(dataset)
@@ -24,8 +25,15 @@ def confusion(model: Model, dataset: Union[str, Dataset],
     num_classes = len(dataset.classes)
     mat = np.zeros((num_classes + 1, num_classes + 1), dtype=np.int32)
 
+    if num_to_sample:
+        idx = np.random.choice(len(dataset.images), size=num_to_sample, replace=False)
+        imgs = [dataset.images[i] for i in idx]
+        anns = {img: dataset.annotations[img] for img in imgs}
+    else:
+        anns = dataset.annotations
+
     total_time = 0.
-    for img_path, labels in tqdm(dataset.annotations.items()):
+    for img_path, labels in tqdm(anns.items()):
         start_time = time.time()
         preds = model.predict_path(img_path)
         total_time += time.time() - start_time
