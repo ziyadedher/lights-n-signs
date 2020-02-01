@@ -62,13 +62,13 @@ def confusion(model: Model, dataset: Union[str, Dataset],
         img = cv2.imread(img_path)
         visualization.draw_labels(img, labels, (255, 255, 255), 2)
         visualization.draw_labels(img, preds, (0, 0, 0), 2)
-        print("LABELS:")
+        print("\nLABELS:")
         for label in labels:
             print(label.class_index)
             print(label.bounds.top, label.bounds.left)
         print("PREDS:")
         for pred in preds:
-            print(class_mapping(pred.class_index))
+            print(pred.class_index, class_mapping(pred.class_index))
             print(pred.bounds.top, pred.bounds.left)
         cv2.imwrite(f"test.png", img)
         input()
