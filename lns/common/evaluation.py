@@ -15,6 +15,30 @@ ConfusionMatrix = List[List[float]]
 Metrics = List[Tuple[float, float, float]]
 
 
+def _sample_annotations(dataset: Dataset, num_to_sample: Optional[int] = None) -> Dataset.Annotations:
+    if num_to_sample:
+        idx = np.random.choice(len(dataset.images), size=num_to_sample, replace=False)
+        imgs = [dataset.images[i] for i in idx]
+        return {img: dataset.annotations[img] for img in imgs}
+    return dataset.annotations
+
+
+def latency(model: Model, dataset: Union[str, Dataset],
+            num_to_sample: Optional[int] = None) -> List[float]:
+    if isinstance(dataset, str):
+        dataset = Preprocessor.preprocess(dataset)
+
+    anns = _sample_annotations(dataset, num_to_sample)
+    times = np.empty(len(anns))
+
+    for i, img_path in enumerate(tqdm(anns)):
+        start_time = time.time()
+        model.predict_path(img_path)
+        times[i] = time.time() - start_time
+
+    return times
+
+
 def confusion(model: Model, dataset: Union[str, Dataset],
               class_mapping: Callable[[int], int] = lambda x: x,
               num_to_sample: Optional[int] = None,
@@ -25,21 +49,12 @@ def confusion(model: Model, dataset: Union[str, Dataset],
     num_classes = len(dataset.classes)
     mat = np.zeros((num_classes + 1, num_classes + 1), dtype=np.int32)
 
-    if num_to_sample:
-        idx = np.random.choice(len(dataset.images), size=num_to_sample, replace=False)
-        imgs = [dataset.images[i] for i in idx]
-        anns = {img: dataset.annotations[img] for img in imgs}
-    else:
-        anns = dataset.annotations
+    anns = _sample_annotations(dataset, num_to_sample)
 
-    total_time = 0.
     for img_path, labels in tqdm(anns.items()):
-        start_time = time.time()
         preds = model.predict_path(img_path)
-        total_time += time.time() - start_time
-
-        label_detected = np.zeros((len(labels)), dtype=np.bool)
-        pred_associated = np.zeros((len(preds)), dtype=np.bool)
+        label_detected = np.zeros(len(labels), dtype=np.bool)
+        pred_associated = np.zeros(len(preds), dtype=np.bool)
 
         for i, label in enumerate(labels):
             for j, pred in enumerate(preds):
@@ -57,12 +72,12 @@ def confusion(model: Model, dataset: Union[str, Dataset],
 
         for i, label in enumerate(labels):
             if not label_detected[i]:
-                mat[label.class_index][-1] += 1
+                mat[label_class][-1] += 1
         for j, pred in enumerate(preds):
             if not pred_associated[j]:
-                mat[-1][pred.class_index] += 1
+                mat[-1][pred_class] += 1
 
-    return mat, (total_time / len(dataset.images))
+    return mat
 
 
 def metrics(mat: ConfusionMatrix) -> Metrics:
