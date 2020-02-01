@@ -21,7 +21,7 @@ def evaluate(model: Model, dataset: Union[str, Dataset],
     num_classes = len(dataset.classes)
     confusion = np.zeros((num_classes + 1, num_classes + 1), dtype=np.int32)
 
-    for img_path, labels in tqdm(dataset.annotations):
+    for img_path, labels in tqdm(dataset.annotations.items()):
         preds = model.predict_path(img_path)
         label_detected = np.zeros((len(labels)), dtype=np.bool)
         pred_associated = np.zeros((len(preds)), dtype=np.bool)
