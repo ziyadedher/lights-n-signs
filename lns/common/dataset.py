@@ -9,9 +9,9 @@ import copy
 from typing import Dict, List, Tuple
 
 import numpy as np  # type: ignore
-
 from lns.common.structs import Object2D
 from lns.common.utils.img_area import img_area
+from lns.common.utils.kmeans import kmeans, avg_iou
 
 _Images = List[str]
 _Classes = List[str]
@@ -104,6 +104,35 @@ class Dataset:
                         break
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
+
+    def generate_anchors(self, num_clusters: int) -> List[List[float]]:
+        """Return anchors (N, 2)."""
+
+        def get_kmeans(boxes, num_clusters):
+            anchors = kmeans(boxes, num_clusters)
+            ave_iou = avg_iou(boxes, anchors)
+            anchors = anchors.astype('int').tolist()
+            anchors = sorted(anchors, key=lambda x: x[0] * x[1])
+            return anchors, ave_iou
+
+        def get_boxes_from_annotation(annotations):
+            """Return a list of box (r, 2)."""
+            boxes = []
+            for file in annotations:
+                for object2d in annotations[file]:
+                    box = [object2d.bounds.width, object2d.bounds.height]
+                    if box[0] <= 0 or box[1] <= 0 or np.isnan(box[0]) or np.isnan(box[1]):
+                        print('invalid bounding box:{}'.format(box))
+                        continue
+                    boxes.append(np.array(box))
+            return np.array(boxes)
+
+        annotations = self.__annotations
+        boxes = get_boxes_from_annotation(annotations)
+        anchors, _ = get_kmeans(boxes, num_clusters)
+        anchors = np.reshape(np.asarray(anchors, np.float32), [-1, 2])
+        print("Anchors generated: {}".format(anchors))
+        return anchors
 
     def prune(self, threshold: float, delete_empty=True) -> 'Dataset':
         """Return a new dataset with relative annotation sizes under a given <threshold> pruned."""
