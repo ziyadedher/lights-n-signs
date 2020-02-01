@@ -115,10 +115,7 @@ class Preprocessor:
         # Uses memoization to speed up preprocessing acquisition
         if not force and name in cls._preprocessed_data:
             print(f"Getting dataset {name} from dataset cache.")
-            dataset = cls._preprocessed_data[name]
-            # num_anchors = 8
-            # dataset.generate_anchors(num_anchors)
-            return copy.copy(dataset)
+            return copy.copy(cls._preprocessed_data[name])
 
         try:
             dataset_path = Resources.get_dataset_path(name)
