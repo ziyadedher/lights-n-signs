@@ -4,6 +4,7 @@ import time
 
 from tqdm import tqdm  # type: ignore
 import numpy as np  # type: ignore
+import cv2  # type: ignore
 
 from lns.common.model import Model
 from lns.common.dataset import Dataset
@@ -32,8 +33,9 @@ def latency(model: Model, dataset: Union[str, Dataset],
     times = np.empty(len(anns))
 
     for i, img_path in enumerate(tqdm(anns)):
+        img = cv2.imread(img_path)
         start_time = time.time()
-        model.predict_path(img_path)
+        model.predict(img)
         times[i] = time.time() - start_time
 
     return times
