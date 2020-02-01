@@ -63,10 +63,7 @@ class YoloModel(Model[YoloSettings]):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
         image = image / 255.0
 
-        import time
-        start_time = time.time()
         y_pred = self._session.run(self._y_pred, feed_dict={self._is_training: False, self._image: np.array([image])})
-        print(time.time() - start_time)
         pred_content = get_preds_gpu(self._session, self._gpu_nms_op, self._pred_boxes_flag,
                                      self._pred_scores_flag, [0], y_pred)
 
