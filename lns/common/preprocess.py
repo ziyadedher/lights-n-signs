@@ -80,11 +80,6 @@ class Preprocessor:
         with open(dataset_pkl, "wb") as file:
             pickle.dump(dataset, file)
 
-        #TEST
-        k = 5
-        dataset.generate_anchors(k)
-        #####
-
     @classmethod
     def register_default_preprocessors(cls) -> None:
         """Register default preprocessors in preprocessing."""
@@ -120,7 +115,10 @@ class Preprocessor:
         # Uses memoization to speed up preprocessing acquisition
         if not force and name in cls._preprocessed_data:
             print(f"Getting dataset {name} from dataset cache.")
-            return copy.copy(cls._preprocessed_data[name])
+            dataset = cls._preprocessed_data[name]
+            # num_anchors = 8
+            # dataset.generate_anchors(num_anchors)
+            return copy.copy(dataset)
 
         try:
             dataset_path = Resources.get_dataset_path(name)

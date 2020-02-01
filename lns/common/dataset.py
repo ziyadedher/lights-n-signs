@@ -9,7 +9,6 @@ import copy
 from typing import Dict, List, Tuple
 
 import numpy as np  # type: ignore
-
 from lns.common.structs import Object2D
 from lns.common.utils.img_area import img_area
 
@@ -38,12 +37,14 @@ def kmeans(boxes, k, dist=np.median):
     while True:
         for row in range(rows):
             distances[row] = 1 - iou(boxes[row], clusters)
+
         nearest_clusters = np.argmin(distances, axis=1)
         if (last_clusters == nearest_clusters).all():
             break
         for cluster in range(k):
             clusters[cluster] = dist(boxes[nearest_clusters == cluster], axis=0)
         last_clusters = nearest_clusters
+
     return clusters
 
 
@@ -56,18 +57,15 @@ def iou(box, clusters):
     return:
         numpy array of shape (k, 0) where k is the number of clusters
     """
-    x = np.minimum(clusters[:, 0], box[0])
-    y = np.minimum(clusters[:, 1], box[1])
-    if np.count_nonzero(x == 0) > 0 or np.count_nonzero(y == 0) > 0:
+    x_min = np.minimum(clusters[:, 0], box[0])
+    y_min = np.minimum(clusters[:, 1], box[1])
+    if np.count_nonzero(x_min == 0) > 0 or np.count_nonzero(y_min == 0) > 0:
         raise ValueError("Box has no area")
 
-    intersection = x * y
+    intersection = x_min * y_min
     box_area = box[0] * box[1]
     cluster_area = clusters[:, 0] * clusters[:, 1]
-
     iou_ = np.true_divide(intersection, box_area + cluster_area - intersection + 1e-10)
-    # iou_ = intersection / (box_area + cluster_area - intersection + 1e-10)
-
     return iou_
 
 
@@ -184,9 +182,12 @@ class Dataset:
             boxes = []
             for file in annotations:
                 for object2d in annotations[file]:
-                    box = [object2d.bounds.__width, object2d.bounds.__height]
-                    boxes.append(box)
-            return boxes
+                    box = [object2d.bounds.width, object2d.bounds.height]
+                    if box[0] <= 0 or box[1] <= 0 or np.isnan(box[0]) or np.isnan(box[1]):
+                        print('invalid bounding box:{}'.format(box))
+                        continue
+                    boxes.append(np.array(box))
+            return np.array(boxes)
 
         annotations = self.__annotations
         boxes = get_boxes_from_annotation(annotations)
