@@ -74,10 +74,10 @@ def confusion(model: Model, dataset: Union[str, Dataset],
 
         for i, label in enumerate(labels):
             if not label_detected[i]:
-                mat[label_class][-1] += 1
+                mat[label.class_index][-1] += 1
         for j, pred in enumerate(preds):
             if not pred_associated[j]:
-                mat[-1][pred_class] += 1
+                mat[-1][class_mapping(pred.class_index)] += 1
 
     return mat
 
