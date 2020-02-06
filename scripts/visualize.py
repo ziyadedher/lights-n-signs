@@ -1,9 +1,10 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 
 import os
 import sys
 
 import cv2  # type: ignore
+import numpy as np
 
 from lns.common.model import Model
 from lns.common.dataset import Dataset
@@ -11,7 +12,7 @@ from lns.common.structs import Object2D
 
 def visualize_image(image_path: str, *,
                     model: Optional[Model] = None, visualize_model: bool = False,
-                    labels: Optional[Dataset.Labels] = None, show_labels: bool = False) -> None:
+                    labels: Optional[Dataset.Labels] = None, show_labels: bool = False) -> np.ndarray:
     image = cv2.imread(image_path)
 
     if show_labels:
@@ -23,7 +24,8 @@ def visualize_image(image_path: str, *,
         if model is None:
             raise ValueError("Need to set a model if <visualize_model> is Optional[] set to `True`.")
  #       image = put_predictions_on_image(image, model.predict(image))
-    handle_image_window(image)
+    return image
+    # handle_image_window(image)
 
 def handle_image_window(self, image: np.ndarray) -> None:
     cv2.imshow("visualization", image)
@@ -34,21 +36,27 @@ def handle_image_window(self, image: np.ndarray) -> None:
             sys.exit(0)
 
 def generate_video_stream(annotations: Dict[str, Object2D], *, 
-                        output_path: Optional[str] = os.path.curdir() + 'output.mp4', fps: Optional[int] = 5,
+                        output_path: Optional[str] = 'output.mp4', fps: Optional[int] = 5,
                         size: Optional[Tuple[int, int]] = (1920, 1080), num_frames: Optional[int] = 1000) -> None:
     frame_stream = []
     frame_count = 0
+
+    print('Writing video stream to:', output_path)
     for image_path in annotations:
         if frame_count < num_frames:
             frame_stream.append(visualize_image(image_path, model=None, visualize_model=False, labels=annotations[image_path], show_labels=True))
             frame_count += 1
         else:
             break
-    video_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'DIVX'), fps, size)
+    video_writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'XVID'), fps, size)
 
     for frame in frame_stream:
-        video_writer.write(frame)
+        video_writer.write(cv2.resize(frame, size))
+
+    print("Processed all image frames and annotated them")
+    print(f"Processed {frame_count} frames")
     video_writer.release()
+    print("Video stream written!")
 
 def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels) -> np.ndarray:
     for label in labels:
