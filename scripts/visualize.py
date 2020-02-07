@@ -28,6 +28,8 @@ def visualize_image(image_path: str, *,
     return image
 
 def handle_image_window(self, image: np.ndarray) -> None:
+    cv2.namedWindow("visualization", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("visualization", 1920, 1080)
     cv2.imshow("visualization", image)
     key = cv2.waitKey(0)
     while key != ord("a"):
@@ -81,9 +83,6 @@ def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Data
     return image
 
 if __name__ == '__main__':
-    cv2.namedWindow("visualization", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("visualization", 1920, 1080)
-
     from lns.common.preprocess import Preprocessor
     bosch = Preprocessor.preprocess("Bosch")
     
