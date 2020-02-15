@@ -4,6 +4,7 @@ import os
 import urllib.request
 from urllib.error import HTTPError
 import cgi
+from typing import List, Union
 import requests
 import scaleapi  # type: ignore
 
@@ -18,11 +19,15 @@ HEADERS = {"Content-Type": "application/json"}
 MAX_TO_PROCESS = 999999
 
 LIGHTS_DATASET_NAME = "ScaleLights"
+NEW_LIGHTS_YOUTUBE_NAME = "ScaleLights_New_Youtube"
+NEW_LIGHTS_UTIAS_NAME = "ScaleLights_New_Utias"
+NEW_LIGHTS_TRC_NAME = "ScaleLights_New_TRC"
+NEW_LIGHTS_TEST_NAME = "ScaleLights_New_Test"
 SIGNS_DATASET_NAME = "ScaleSigns"
 OBJECTS_DATASET_NAME = "ScaleObjects"
 
 
-def _scale_common(name: str, path: str, project: str, batch: str = None) -> Dataset:  # noqa
+def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str]] = None) -> Dataset:  # noqa
     images: Dataset.Images = []
     classes: Dataset.Classes = []
     annotations: Dataset.Annotations = {}
@@ -35,11 +40,23 @@ def _scale_common(name: str, path: str, project: str, batch: str = None) -> Data
         auth=(SCALE_API_KEY, '')).json()
 
     batch_names = [b['name'] for b in available_batches['docs'] if b['status'] == 'completed']
-    if batch or batch == '' and batch not in batch_names + ['']:
+    if batch or batch == '' and isinstance(batch, str) and batch not in batch_names + ['']:
         raise ValueError("Batch name {} does not exist".format(batch))
 
+    if batch and isinstance(batch, list):
+        for bat in batch:
+            if bat not in batch_names:
+                raise ValueError("Batch name {} does not exist".format(bat))
+
     client = scaleapi.ScaleClient(SCALE_API_KEY)
-    batches_to_retrieve = [batch] if batch or batch == '' else batch_names
+
+    if batch is None:
+        batches_to_retrieve = batch_names
+    elif isinstance(batch, str) or batch == '':
+        batches_to_retrieve = [batch]
+    else:
+        batches_to_retrieve = batch
+
     for batch_name in batches_to_retrieve:
         proper_batch_name = batch_name if batch_name else 'default'
         batch_path = os.path.join(scale_data_path, proper_batch_name)
@@ -124,9 +141,41 @@ def _scale_common(name: str, path: str, project: str, batch: str = None) -> Data
     return Dataset(name, images, classes, annotations)
 
 
+@Preprocessor.register_dataset_preprocessor(NEW_LIGHTS_UTIAS_NAME)
+def _scale_lights_new_utias(path: str) -> Dataset:  # noqa
+    dataset = _scale_common(NEW_LIGHTS_UTIAS_NAME, path, "light_labeling", batch="autoronto-lights-01-25-2020")
+    return dataset
+
+
+@Preprocessor.register_dataset_preprocessor(NEW_LIGHTS_TRC_NAME)
+def _scale_lights_new_trc(path: str) -> Dataset:  # noqa
+    dataset = _scale_common(NEW_LIGHTS_TRC_NAME, path, "light_labeling", batch="autoronto-lights-year3kickoff")
+    return dataset
+
+
+@Preprocessor.register_dataset_preprocessor(NEW_LIGHTS_YOUTUBE_NAME)
+def _scale_lights_new_youtube(path: str) -> Dataset:  # noqa
+    full = _scale_common("full", path, "light_labeling", batch="autoronto-lights-boston-chicago")
+    splits = full.split([0.9, 0.1])
+    youtube_dataset = splits[0]
+    youtube_dataset._name = NEW_LIGHTS_YOUTUBE_NAME  # noqa
+    test_dataset = splits[1] + Preprocessor.preprocess(NEW_LIGHTS_TRC_NAME)
+    test_dataset._name = NEW_LIGHTS_TEST_NAME  # noqa
+    Preprocessor.cache_preprocessed_data(NEW_LIGHTS_TEST_NAME, test_dataset)
+    return youtube_dataset
+
+
+@Preprocessor.register_dataset_preprocessor(NEW_LIGHTS_TEST_NAME)
+def _scale_lights_new_test(path: str) -> Dataset:  # noqa
+    youtube = Preprocessor.preprocess(NEW_LIGHTS_YOUTUBE_NAME)  # noqa
+    dataset = Preprocessor.preprocess(NEW_LIGHTS_TEST_NAME)
+    return dataset
+
+
 @Preprocessor.register_dataset_preprocessor(LIGHTS_DATASET_NAME)
-def _scale_lights(path: str, batch: str = None) -> Dataset:  # noqa
-    dataset = _scale_common("lights1", path, "light_labeling", batch=batch) + \
+def _scale_lights(path: str) -> Dataset:  # noqa
+    dataset = \
+        _scale_common("lights1", path, "light_labeling", batch=['lights_2', 'mcity_lights', 'multipart_lights_1']) + \
         _scale_common("lights2", path, "light_labeling_old", batch='')
     dataset._name = LIGHTS_DATASET_NAME  # noqa
     return dataset

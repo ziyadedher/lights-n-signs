@@ -29,6 +29,10 @@ POSSIBLE_DATASETS: List[str] = [
     "lisa_signs",
     "Bosch",
     "ScaleLights",
+    "ScaleLights_New_Utias",
+    "ScaleLights_New_Youtube",
+    "ScaleLights_New_TRC",
+    "ScaleLights_New_Test",
     "ScaleSigns",
     "ScaleObjects"
 ]
