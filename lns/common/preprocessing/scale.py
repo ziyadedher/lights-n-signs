@@ -40,7 +40,7 @@ def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str
         auth=(SCALE_API_KEY, '')).json()
 
     batch_names = [b['name'] for b in available_batches['docs'] if b['status'] == 'completed']
-    if batch or batch == '' and isinstance(batch, str) and batch not in batch_names + ['']:
+    if (batch or batch == '') and isinstance(batch, str) and batch not in batch_names + ['']:
         raise ValueError("Batch name {} does not exist".format(batch))
 
     if batch and isinstance(batch, list):
