@@ -9,9 +9,9 @@ import copy
 from typing import Dict, List, Tuple
 
 import numpy as np  # type: ignore
-
 from lns.common.structs import Object2D
 from lns.common.utils.img_area import img_area
+from lns.common.utils.kmeans import kmeans, avg_iou
 
 _Images = List[str]
 _Classes = List[str]
@@ -105,6 +105,35 @@ class Dataset:
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
+    def generate_anchors(self, num_clusters: int) -> List[List[float]]:
+        """Return anchors (N, 2)."""
+
+        def get_kmeans(boxes, num_clusters):
+            anchors = kmeans(boxes, num_clusters)
+            ave_iou = avg_iou(boxes, anchors)
+            anchors = anchors.astype('int').tolist()
+            anchors = sorted(anchors, key=lambda x: x[0] * x[1])
+            return anchors, ave_iou
+
+        def get_boxes_from_annotation(annotations):
+            """Return a list of box (r, 2)."""
+            boxes = []
+            for file in annotations:
+                for object2d in annotations[file]:
+                    box = [object2d.bounds.width, object2d.bounds.height]
+                    if box[0] <= 0 or box[1] <= 0 or np.isnan(box[0]) or np.isnan(box[1]):
+                        print('invalid bounding box:{}'.format(box))
+                        continue
+                    boxes.append(np.array(box))
+            return np.array(boxes)
+
+        annotations = self.__annotations
+        boxes = get_boxes_from_annotation(annotations)
+        anchors, _ = get_kmeans(boxes, num_clusters)
+        anchors = np.reshape(np.asarray(anchors, np.float32), [-1, 2])
+        print("Anchors generated: {}".format(anchors))
+        return anchors
+
     def prune(self, threshold: float, delete_empty=True) -> 'Dataset':
         """Return a new dataset with relative annotation sizes under a given <threshold> pruned."""
         dists: Dict[float, List[Tuple[str, Object2D]]] = collections.defaultdict(list)
@@ -140,10 +169,10 @@ class Dataset:
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
-    def split(self, *props: List[float]) -> List[Tuple[List[str], Dict[str, List[Object2D]]]]:
+    def split(self, *props: List[float]) -> List['Dataset']:
         """Shuffles and partitions dataset into portions <props>."""
         props = np.array(props)
-        if sum(props) != 1 or any(props <= 0):  # type: ignore
+        if np.sum(props) != 1 or np.any(props <= 0):  # type: ignore
             raise ValueError("<props> must be strictly positive and sum to 1.")
 
         images = self.images
@@ -151,13 +180,21 @@ class Dataset:
         inds = np.arange(len(images))
         np.random.shuffle(inds)
 
-        splits: List[Tuple[List[str], Dict[str, List[Object2D]]]] = []
+        splits: List[Dataset] = []
 
         ranges = np.insert(np.ceil(np.cumsum(props) * len(images)).astype(int), 0, 0)
         ranges[-1] = len(images) + 1
 
         for low, high in zip(ranges[:-1], ranges[1:]):
-            splits.append(list(np.array(images)[inds[low:high]]))  # type: ignore
+            new_images = list(np.array(images)[inds[low:high]])
+            splits.append(
+                Dataset(
+                    "{}_{}_{}".format(self.name, low, high),
+                    new_images,
+                    self.classes,
+                    {i: self.annotations[i] for i in new_images},
+                    dynamic=True
+                ))  # type: ignore
 
         return splits
 
