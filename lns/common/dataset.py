@@ -172,7 +172,7 @@ class Dataset:
     def split(self, *props: List[float]) -> List['Dataset']:
         """Shuffles and partitions dataset into portions <props>."""
         props = np.array(props)
-        if sum(props) != 1 or any(props <= 0):  # type: ignore
+        if np.sum(props) != 1 or np.any(props <= 0):  # type: ignore
             raise ValueError("<props> must be strictly positive and sum to 1.")
 
         images = self.images
