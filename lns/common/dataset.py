@@ -169,10 +169,10 @@ class Dataset:
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
-    def split(self, *props: List[float]) -> List[Tuple[List[str], Dict[str, List[Object2D]]]]:
+    def split(self, *props: List[float]) -> List['Dataset']:
         """Shuffles and partitions dataset into portions <props>."""
         props = np.array(props)
-        if sum(props) != 1 or any(props <= 0):  # type: ignore
+        if np.sum(props) != 1 or np.any(props <= 0):  # type: ignore
             raise ValueError("<props> must be strictly positive and sum to 1.")
 
         images = self.images
@@ -180,13 +180,21 @@ class Dataset:
         inds = np.arange(len(images))
         np.random.shuffle(inds)
 
-        splits: List[Tuple[List[str], Dict[str, List[Object2D]]]] = []
+        splits: List[Dataset] = []
 
         ranges = np.insert(np.ceil(np.cumsum(props) * len(images)).astype(int), 0, 0)
         ranges[-1] = len(images) + 1
 
         for low, high in zip(ranges[:-1], ranges[1:]):
-            splits.append(list(np.array(images)[inds[low:high]]))  # type: ignore
+            new_images = list(np.array(images)[inds[low:high]])
+            splits.append(
+                Dataset(
+                    "{}_{}_{}".format(self.name, low, high),
+                    new_images,
+                    self.classes,
+                    {i: self.annotations[i] for i in new_images},
+                    dynamic=True
+                ))  # type: ignore
 
         return splits
 
