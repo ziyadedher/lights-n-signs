@@ -38,7 +38,7 @@ def handle_image_window(self, image: np.ndarray) -> None:
             sys.exit(0)
 
 def generate_video_stream(dataset: Dataset, *, 
-                        output_path: Optional[str] = 'output.mp4', fps: Optional[int] = 5,
+                        output_path: Optional[str] = 'output.avi', fps: Optional[int] = 5,
                         size: Optional[Tuple[int, int]] = (1920, 1080), num_frames: Optional[int] = 1000) -> None:
     frame_stream = []
     frame_count = 0
@@ -75,7 +75,7 @@ def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Data
     for label in labels:
         image = cv2.rectangle(image, (label.bounds.left, label.bounds.top),
                              (label.bounds.right, label.bounds.bottom),
-                             classes_to_color[classes[label.class_index]])
+                             class_to_color[classes[label.class_index]])
         image = cv2.putText(image, # Put label on the image
                             classes[label.class_index],
                             (label.bounds.right, label.bounds.bottom), cv2.FONT_HERSHEY_PLAIN,
