@@ -104,4 +104,5 @@ if __name__ == '__main__':
     # for image_path in annotations:
     #     visualize_image(image_path, model=None, visualize_model=False, labels=annotations[image_path], show_labels=True)
 
-    generate_video_stream(dataset)
+    from lns.yolo import YoloTrainer
+    generate_video_stream(dataset, trainer=YoloTrainer('new_dataset_3c_2'))
