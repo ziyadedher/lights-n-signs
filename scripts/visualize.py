@@ -75,7 +75,7 @@ def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Data
     class_to_color = {
         'green': (0, shade, 0),
         'red': (0, 0, shade),
-        'yellow': (shade, 153, 0), 
+        'yellow': (0, 153, shade), 
         'off': (0, 0, 0)
     }
     for label in labels:
