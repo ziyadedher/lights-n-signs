@@ -41,6 +41,8 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
             path="train_annotations", temporal=True, required=False, path_type=Trainer.PathType.FILE),
         "val_annotations_file": Trainer.Subpath(
             path="val_annotations", temporal=True, required=False, path_type=Trainer.PathType.FILE),
+        "classes_file": Trainer.Subpath(
+            path="classes", temporal=False, required=False, path_type=Trainer.PathType.FILE),
     }
 
     INITIAL_WEIGHTS_NAME = "yolov3.ckpt"
@@ -66,7 +68,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         """
         weights = self.get_weights_path()
         anchors = self._paths["anchors_file"]
-        classes = self.data.get_classes()
+        classes = self._paths["classes_file"]
 
         model = None
         if all(os.path.exists(path) for path in (anchors, classes)):
@@ -90,6 +92,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         self._set_settings(settings)
         self._generate_split()
         self._generate_anchors()
+        self._generate_classes()
         weights_path = self.settings.initial_weights if self.settings.initial_weights else self.get_weights_path()
 
         from lns.yolo._lib import args
@@ -100,7 +103,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         args.log_dir = self._paths["log_folder"]
         args.progress_log_path = self._paths["progress_file"]
         args.anchor_path = self._paths["anchors_file"]
-        args.class_name_path = self.data.get_classes()
+        args.class_name_path = self._paths["classes_file"]
         args.global_step = self._get_global_step(weights_path)
         for field, setting in dataclasses.asdict(self.settings).items():
             setattr(args, field, setting)
@@ -118,7 +121,7 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
     def export_graph(self) -> None:
         """Export a frozen graph in .pb format to the specified path."""
         anchors = parse_anchors(self._paths["anchors_file"])
-        classes = read_class_names(self.data.get_classes())
+        classes = read_class_names(self._paths["classes_file"])
         num_class = len(classes)
 
         with tf.Session() as sess:
@@ -182,6 +185,9 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         with open(self._paths["train_annotations_file"], "w") as train_file:
             for line in train_lines:
                 train_file.write(line + "\n")
+
+    def _generate_classes(self) -> None:
+        shutil.copy(self.data.get_classes(), self._paths["classes_file"])
 
     # pylint: disable=no-self-use
     def _get_global_step(self, checkpoint_path: str) -> int:
