@@ -6,6 +6,7 @@ as well as simple utility functions for operation on the datasets.
 
 import collections
 import copy
+import shutil
 from typing import Dict, List, Tuple
 
 import numpy as np  # type: ignore
