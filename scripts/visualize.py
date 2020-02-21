@@ -7,11 +7,12 @@ import cv2  # type: ignore
 import numpy as np
 
 from lns.common.model import Model
+from lns.common.train import Trainer
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D
 
 def visualize_image(image_path: str, *,
-                    model: Optional[Model] = None, visualize_model: bool = False,
+                    trainer: Optional[Trainer] = None, visualize_model: bool = False,
                     labels: Optional[Dataset.Labels] = None, classes: Optional[Dataset.Classes] = None,
                     show_labels: bool = False) -> np.ndarray:
     image = cv2.imread(image_path)
@@ -22,9 +23,9 @@ def visualize_image(image_path: str, *,
         image = put_labels_on_image(image, labels, classes)
 
     if visualize_model:
-        if model is None:
-            raise ValueError("Need to set a model if <visualize_model> is Optional[] set to `True`.")
- #       image = put_predictions_on_image(image, model.predict(image))
+        if trainer is None:
+            raise ValueError("Need to set a trainer if <visualize_model> is Optional[] set to `True`.")
+        image = put_labels_on_image(image, trainer.model.predict(image), trainer.dataset.classes, is_pred=True)
     return image
 
 def handle_image_window(self, image: np.ndarray) -> None:
@@ -39,7 +40,8 @@ def handle_image_window(self, image: np.ndarray) -> None:
 
 def generate_video_stream(dataset: Dataset, *, 
                         output_path: Optional[str] = 'output.avi', fps: Optional[int] = 5,
-                        size: Optional[Tuple[int, int]] = (1920, 1080), num_frames: Optional[int] = 1000) -> None:
+                        size: Optional[Tuple[int, int]] = (1920, 1080),
+                        trainer: Optional[Trainer] = None, num_frames: Optional[int] = 1000) -> None:
     frame_stream = []
     frame_count = 0
     annotations = dataset.annotations
@@ -48,7 +50,7 @@ def generate_video_stream(dataset: Dataset, *,
     for image_path in annotations:
         if frame_count < num_frames:
             frame_stream.append(visualize_image(image_path,
-                                                model=None, visualize_model=False,
+                                                trainer=trainer, visualize_model=True,
                                                 labels=annotations[image_path],
                                                 show_labels=True,
                                                 classes=dataset.classes))
