@@ -2,9 +2,8 @@
 
 Manages all data processing for the generation of data ready to be trained on with our YOLOv3 training backend.
 """
-from typing import Iterable, Tuple
-
 import os
+from typing import Iterable, Tuple
 
 from PIL import Image  # type: ignore
 from tqdm import tqdm  # type: ignore
@@ -67,7 +66,7 @@ class YoloProcessor(Processor[YoloData]):
                         str(label.bounds.right), str(label.bounds.bottom))
 
             def generate_annotations() -> Iterable[str]:
-                for i, image in tqdm(enumerate(images), desc=f"YOLO Processing `{dataset.name}`"):
+                for i, image in tqdm(list(enumerate(images)), desc=f"YOLO Processing `{dataset.name}`"):
                     labels_str = " ".join(" ".join(order_label(label)) for label in annotations[image])
                     if not labels_str:
                         continue

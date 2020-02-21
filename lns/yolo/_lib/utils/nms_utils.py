@@ -45,7 +45,9 @@ def gpu_nms(boxes, scores, num_classes, max_boxes=50, score_thresh=0.5, nms_thre
     score = tf.concat(score_list, axis=0)
     label = tf.concat(label_list, axis=0)
 
-    return boxes, score, label
+    return tf.identity(boxes, name='output/boxes'), \
+           tf.identity(score,name='output/scores'), \
+           tf.identity(label, name='output/labels')
 
 
 def py_nms(boxes, scores, max_boxes=50, iou_thresh=0.5):

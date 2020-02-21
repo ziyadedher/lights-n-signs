@@ -32,6 +32,7 @@ structure of the generated file is below.
     }
 }
 """
+import copy
 import importlib
 import os
 import pickle
@@ -114,7 +115,7 @@ class Preprocessor:
         # Uses memoization to speed up preprocessing acquisition
         if not force and name in cls._preprocessed_data:
             print(f"Getting dataset {name} from dataset cache.")
-            return cls._preprocessed_data[name]
+            return copy.copy(cls._preprocessed_data[name])
 
         try:
             dataset_path = Resources.get_dataset_path(name)
@@ -128,7 +129,7 @@ class Preprocessor:
 
         dataset = _preprocessor(dataset_path)
         cls.cache_preprocessed_data(name, dataset)
-        return dataset
+        return copy.copy(dataset)
 
 
 Preprocessor.init_cached_preprocessed_data()
