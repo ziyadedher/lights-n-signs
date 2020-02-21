@@ -14,7 +14,7 @@ from lns.common.structs import Object2D
 def visualize_image(image_path: str, *,
                     trainer: Optional[Trainer] = None, visualize_model: bool = False,
                     labels: Optional[Dataset.Labels] = None, classes: Optional[Dataset.Classes] = None,
-                    show_labels: bool = False) -> np.ndarray:
+                    show_labels: bool = False, color_mapping: Optional[Dict] = None) -> np.ndarray:
     image = cv2.imread(image_path)
 
     if show_labels:
@@ -25,7 +25,7 @@ def visualize_image(image_path: str, *,
     if visualize_model:
         if trainer is None:
             raise ValueError("Need to set a trainer if <visualize_model> is Optional[] set to `True`.")
-        image = put_labels_on_image(image, trainer.model.predict(image), trainer.dataset.classes, is_pred=True)
+        image = put_labels_on_image(image, trainer.model.predict(image), trainer.dataset.classes, is_pred=True, color_mapping=color_mapping)
     return image
 
 def handle_image_window(self, image: np.ndarray) -> None:
@@ -41,7 +41,8 @@ def handle_image_window(self, image: np.ndarray) -> None:
 def generate_video_stream(dataset: Dataset, *, 
                         output_path: Optional[str] = 'output.avi', fps: Optional[int] = 5,
                         size: Optional[Tuple[int, int]] = (1920, 1080),
-                        trainer: Optional[Trainer] = None, num_frames: Optional[int] = 1000) -> None:
+                        trainer: Optional[Trainer] = None, num_frames: Optional[int] = 1000,
+                        trainer_color_mapping: Optional[Dict] = None) -> None:
     frame_stream = []
     frame_count = 0
     annotations = dataset.annotations
@@ -53,7 +54,7 @@ def generate_video_stream(dataset: Dataset, *,
                                                 trainer=trainer, visualize_model=True,
                                                 labels=annotations[image_path],
                                                 show_labels=True,
-                                                classes=dataset.classes))
+                                                classes=dataset.classes, color_mapping=trainer_color_mapping))
             frame_count += 1
         else:
             break
@@ -67,21 +68,24 @@ def generate_video_stream(dataset: Dataset, *,
     video_writer.release()
     print("Video stream written!")
 
-def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Dataset.Classes, is_pred: bool = False) -> np.ndarray:
+def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Dataset.Classes, is_pred: bool = False,
+                        color_mapping: Optional[Dict] = None) -> np.ndarray:
     shade = 255 if not is_pred else 150
     class_to_color = {
         'green': (0, shade, 0),
         'red': (0, 0, shade),
+        'yellow': (shade, 153, 0), 
         'off': (0, 0, 0)
     }
     for label in labels:
+        lbl = classes[label.class_index] if not color_mapping else color_mapping.get(classes[label.class_index], "red")
         image = cv2.rectangle(image, (label.bounds.left, label.bounds.top),
                              (label.bounds.right, label.bounds.bottom),
-                             class_to_color[classes[label.class_index]])
+                             class_to_color[lbl])
         image = cv2.putText(image, # Put label on the image
                             classes[label.class_index],
                             (label.bounds.right, label.bounds.bottom), cv2.FONT_HERSHEY_PLAIN,
-                            1, class_to_color[classes[label.class_index]], thickness=2)
+                            1, class_to_color[lbl], thickness=2)
     return image
 
 if __name__ == '__main__':
@@ -101,7 +105,9 @@ if __name__ == '__main__':
         "off": ["off"]
     })
 
-    # for image_path in annotations:
-    #     visualize_image(image_path, model=None, visualize_model=False, labels=annotations[image_path], show_labels=True)
-
-    generate_video_stream(dataset)
+    from lns.yolo import YoloTrainer
+    trainer = YoloTrainer('new_dataset_ac_1')
+    color_mapping = {
+        #pred_class: any("red", "green", "yellow", "off") # This for coloring only
+    }
+    generate_video_stream(dataset, trainer=trainer, trainer_color_mapping=color_mapping)
