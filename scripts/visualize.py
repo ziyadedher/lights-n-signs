@@ -12,7 +12,7 @@ from lns.common.dataset import Dataset
 from lns.common.structs import Object2D
 
 def visualize_image(image_path: str, *,
-                    trainer: Optional[Trainer] = None, visualize_model: bool = False,
+                    model: Optional[Model] = None, visualize_model: bool = False,
                     labels: Optional[Dataset.Labels] = None, classes: Optional[Dataset.Classes] = None,
                     show_labels: bool = False, color_mapping: Optional[Dict] = None) -> np.ndarray:
     image = cv2.imread(image_path)
@@ -23,9 +23,9 @@ def visualize_image(image_path: str, *,
         image = put_labels_on_image(image, labels, classes)
 
     if visualize_model:
-        if trainer is None:
+        if model is None:
             raise ValueError("Need to set a trainer if <visualize_model> is Optional[] set to `True`.")
-        image = put_labels_on_image(image, trainer.model.predict(image), trainer.dataset.classes, is_pred=True, color_mapping=color_mapping)
+        image = put_labels_on_image(image, model.predict(image), trainer.dataset.classes, is_pred=True, color_mapping=color_mapping)
     return image
 
 def handle_image_window(self, image: np.ndarray) -> None:
@@ -48,10 +48,11 @@ def generate_video_stream(dataset: Dataset, *,
     annotations = dataset.annotations
 
     print('Writing video stream to:', output_path)
+    model = trainer.model
     for image_path in annotations:
         if frame_count < num_frames:
             frame_stream.append(visualize_image(image_path,
-                                                trainer=trainer, visualize_model=True,
+                                                model=model, visualize_model=True,
                                                 labels=annotations[image_path],
                                                 show_labels=True,
                                                 classes=dataset.classes, color_mapping=trainer_color_mapping))
