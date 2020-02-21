@@ -109,5 +109,7 @@ if __name__ == '__main__':
     trainer = YoloTrainer('new_dataset_ac_1')
     color_mapping = {
         #pred_class: any("red", "green", "yellow", "off") # This for coloring only
+        k : v for k, v in zip(['5-red-green', '4-red-green', 'red', '5-red-yellow', 'green', 'yellow', 'off'],
+                                ['red'] * 4 + ['green'] + ['yellow'] + ['off'])
     }
     generate_video_stream(dataset, trainer=trainer, trainer_color_mapping=color_mapping)
