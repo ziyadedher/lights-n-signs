@@ -92,7 +92,7 @@ class Dataset:
         classes = classes | set(mapping.keys())
         classes = list(classes)
 
-        for annotation in self.annotations:
+        for annotation in self.annotations.values():
             for label in annotation:
                 label_name = original_classes[label.class_index]
                 label_name = mapping.get(label_name, label_name)
