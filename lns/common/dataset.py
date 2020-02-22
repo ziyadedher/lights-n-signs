@@ -86,21 +86,18 @@ class Dataset:
         """
         images = self.images
         original_classes = self.classes
-        classes = list(set(self.classes) - set(c for l in list(mapping.values()) for c in l) | set(mapping.keys()))
         annotations = self.annotations
 
-        for image in images:
-            for detection in annotations[image]:
-                # Check if the detection class is in the new classes
-                if original_classes[detection.class_index] in classes:
-                    detection.class_index = classes.index(original_classes[detection.class_index])
-                    continue
+        classes = list((set(self.classes) - set(c for l in mapping.values() for c in l)) | set(mapping.keys()))
 
-                # Change the detection class if required
-                for new_class, mapping_classes in mapping.items():
-                    if self.classes[detection.class_index] in mapping_classes:
-                        detection.class_index = classes.index(new_class)
+        for annotation in self.annotations.values():
+            for label in annotation:
+                label_name = original_classes[label.class_index]
+                for base_class_name, class_names in mapping.items():
+                    if label_name in class_names:
+                        label_name = base_class_name
                         break
+                label.class_index = classes.index(label_name)
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
