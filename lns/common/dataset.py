@@ -199,8 +199,8 @@ class Dataset:
 
     def __add__(self, other: 'Dataset') -> 'Dataset':
         """Magic method for adding two preprocessing data objects."""
-        other_class_names = other.classes[:]
         self_class_names = self.classes[:]
+        other_class_names = other.classes[:]
 
         name = f"{self.name}-{other.name}"
         images = list(set(self.images + other.images))
@@ -210,7 +210,7 @@ class Dataset:
         for annotation in self_annotations.values():
             for label in annotation:
                 label.class_index = classes.index(self_class_names[label.class_index])
-        other_annotations = self.annotations
+        other_annotations = other.annotations
         for annotation in other_annotations.values():
             for label in annotation:
                 label.class_index = classes.index(other_class_names[label.class_index])
