@@ -88,16 +88,16 @@ class Dataset:
         original_classes = self.classes
         annotations = self.annotations
 
-        classes = set(self.classes) - set(c for l in list(mapping.values()) for c in l)
+        classes = set(self.classes) - set(c for l in mapping.values() for c in l)
         classes = classes | set(mapping.keys())
         classes = list(classes)
 
         for annotation in self.annotations.values():
             for label in annotation:
                 label_name = original_classes[label.class_index]
-                for base_class, classes in mapping.items():
-                    if label_name in classes:
-                        label_name = base_class
+                for base_class_name, class_names in mapping.items():
+                    if label_name in class_names:
+                        label_name = base_class_name
                         break
                 label.class_index = classes.index(label_name)
 
