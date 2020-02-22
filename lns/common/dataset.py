@@ -95,7 +95,10 @@ class Dataset:
         for annotation in self.annotations.values():
             for label in annotation:
                 label_name = original_classes[label.class_index]
-                label_name = mapping.get(label_name, label_name)
+                for base_class, classes:
+                    if label_name in classes:
+                        label_name = base_class
+                        break
                 label.class_index = classes.index(label_name)
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
