@@ -95,7 +95,7 @@ class Dataset:
         for annotation in self.annotations.values():
             for label in annotation:
                 label_name = original_classes[label.class_index]
-                for base_class, classes:
+                for base_class, classes in mapping.items():
                     if label_name in classes:
                         label_name = base_class
                         break
