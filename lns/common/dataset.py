@@ -206,20 +206,20 @@ class Dataset:
         images = list(set(self.images + other.images))
         classes = list(set(self.classes + other.classes))
 
-        self_annotations = self.annotations
+        self_annotations = copy.deepcopy(self.annotations)
         for annotation in self_annotations.values():
             for label in annotation:
                 label.class_index = classes.index(self_class_names[label.class_index])
-        other_annotations = other.annotations
+        other_annotations = copy.deepcopy(other.annotations)
         for annotation in other_annotations.values():
             for label in annotation:
                 label.class_index = classes.index(other_class_names[label.class_index])
 
-        for image, labels in other.annotations.items():
-            if image in annotations:
-                annotations[image].extend(labels)
+        for image, labels in other_annotations.items():
+            if image in self_annotations:
+                self_annotations[image].extend(labels)
             else:
-                annotations[image] = labels
+                self_annotations[image] = labels
         dynamic = self.dynamic or other.dynamic
 
         return Dataset(name, images, classes, annotations, dynamic=dynamic)
