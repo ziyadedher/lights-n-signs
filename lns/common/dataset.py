@@ -222,7 +222,7 @@ class Dataset:
                 self_annotations[image] = labels
         dynamic = self.dynamic or other.dynamic
 
-        return Dataset(name, images, classes, annotations, dynamic=dynamic)
+        return Dataset(name, images, classes, self_annotations, dynamic=dynamic)
 
     def __len__(self) -> int:
         """Magic method to get the length of this `Dataset`.
