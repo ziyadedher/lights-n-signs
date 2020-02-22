@@ -83,7 +83,7 @@ def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Data
             image = cv2.rectangle(image, (label.bounds.left, label.bounds.top),
                                 (label.bounds.right, label.bounds.bottom),
                                 class_to_color[lbl])
-            label_score = f'{label.score}' if label.score is not 1 else ''
+            label_score = f'{label.score:.2f}' if label.score is not 1 else ''
             image = cv2.putText(image, # Put label on the image
                                 f'{classes[label.class_index]} {label_score}',
                                 (label.bounds.right, label.bounds.bottom), cv2.FONT_HERSHEY_PLAIN,
