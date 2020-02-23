@@ -239,5 +239,11 @@ class Dataset:
 
     def __copy__(self) -> 'Dataset':
         """Magic method to copy over this dataset."""
-        return Dataset(self.name, self.images, self.classes, self.annotations, dynamic=True)
+        return Dataset(
+            copy.deepcopy(self.name),
+            copy.deepcopy(self.images),
+            copy.deepcopy(self.classes),
+            copy.deepcopy(self.annotations),
+            dynamic=True
+        )
     __deepcopy__ = __copy__
