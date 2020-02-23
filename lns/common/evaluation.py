@@ -45,7 +45,8 @@ def latency(model: Model, dataset: Union[str, Dataset],
 def confusion(model: Model, dataset: Union[str, Dataset],
               class_mapping: Callable[[int], int] = lambda x: x,
               num_to_sample: Optional[int] = None,
-              iou_threshold: float = 0.25) -> Tuple[ConfusionMatrix, float]:
+              iou_threshold: float = 0.25,
+              score_threshold: float = 0.5) -> Tuple[ConfusionMatrix, float]:
     if isinstance(dataset, str):
         dataset = Preprocessor.preprocess(dataset)
 
@@ -56,6 +57,8 @@ def confusion(model: Model, dataset: Union[str, Dataset],
 
     for img_path, labels in tqdm(anns.items()):
         preds = model.predict_path(img_path)
+        preds = list(filter(lambda pred: pred.score >= score_threshold, preds))
+
         label_detected = np.zeros(len(labels), dtype=np.bool)
         pred_associated = np.zeros(len(preds), dtype=np.bool)
 
@@ -64,11 +67,11 @@ def confusion(model: Model, dataset: Union[str, Dataset],
         visualization.draw_labels(img, preds, (0, 0, 0), 2)
         print("\nLABELS:")
         for label in labels:
-            print(label.class_index)
+            print(label.class_index, dataset.classes[label.class_index])
             print(label.bounds.top, label.bounds.left)
         print("PREDS:")
         for pred in preds:
-            print(pred.class_index, class_mapping(pred.class_index))
+            print(pred.class_index, class_mapping(pred.class_index), dataset.classes[class_mapping(pred.class_index)])
             print(pred.bounds.top, pred.bounds.left)
         cv2.imwrite(f"test.png", img)
         input()
