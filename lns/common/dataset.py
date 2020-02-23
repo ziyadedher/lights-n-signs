@@ -82,26 +82,22 @@ class Dataset:
         """Get a new `Dataset` that has classes merged together.
 
         Merges the classes under the values in <mapping> under the class given
-        by the respective key. Postfixes <name_postfix> to the dataset name to
-        get a new name.
+        by the respective key.
         """
         images = self.images
         original_classes = self.classes
-        classes = list(set(self.classes) - set(c for l in list(mapping.values()) for c in l) | set(mapping.keys()))
         annotations = self.annotations
 
-        for image in images:
-            for detection in annotations[image]:
-                # Check if the detection class is in the new classes
-                if original_classes[detection.class_index] in classes:
-                    detection.class_index = classes.index(original_classes[detection.class_index])
-                    continue
+        classes = list((set(self.classes) - set(c for l in mapping.values() for c in l)) | set(mapping.keys()))
 
-                # Change the detection class if required
-                for new_class, mapping_classes in mapping.items():
-                    if self.classes[detection.class_index] in mapping_classes:
-                        detection.class_index = classes.index(new_class)
+        for annotation in self.annotations.values():
+            for label in annotation:
+                label_name = original_classes[label.class_index]
+                for base_class_name, class_names in mapping.items():
+                    if label_name in class_names:
+                        label_name = base_class_name
                         break
+                label.class_index = classes.index(label_name)
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
@@ -200,18 +196,30 @@ class Dataset:
 
     def __add__(self, other: 'Dataset') -> 'Dataset':
         """Magic method for adding two preprocessing data objects."""
+        self_class_names = self.classes[:]
+        other_class_names = other.classes[:]
+
         name = f"{self.name}-{other.name}"
         images = list(set(self.images + other.images))
         classes = list(set(self.classes + other.classes))
-        annotations = self.annotations
-        for image, labels in other.annotations.items():
-            if image in annotations:
-                annotations[image].extend(labels)
+
+        self_annotations = copy.deepcopy(self.annotations)
+        for annotation in self_annotations.values():
+            for label in annotation:
+                label.class_index = classes.index(self_class_names[label.class_index])
+        other_annotations = copy.deepcopy(other.annotations)
+        for annotation in other_annotations.values():
+            for label in annotation:
+                label.class_index = classes.index(other_class_names[label.class_index])
+
+        for image, labels in other_annotations.items():
+            if image in self_annotations:
+                self_annotations[image].extend(labels)
             else:
-                annotations[image] = labels
+                self_annotations[image] = labels
         dynamic = self.dynamic or other.dynamic
 
-        return Dataset(name, images, classes, annotations, dynamic=dynamic)
+        return Dataset(name, images, classes, self_annotations, dynamic=dynamic)
 
     def __len__(self) -> int:
         """Magic method to get the length of this `Dataset`.
