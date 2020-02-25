@@ -1,7 +1,11 @@
-from typing import Optional, Tuple, Dict
+"""Module to visualize any model on a given dataset.
 
-import os
-import sys
+Given a Trainer object and a Dataset object, the module
+is capable of either visualizing the labels frame-by-frame, or
+by generating a video stream.
+"""
+
+from typing import Optional, Tuple, Dict
 
 import cv2  # type: ignore
 import numpy as np
@@ -9,7 +13,7 @@ import numpy as np
 from lns.common.model import Model
 from lns.common.train import Trainer
 from lns.common.dataset import Dataset
-from lns.common.structs import Object2D
+
 
 def visualize_image(image_path: str, *,
                     model: Optional[Model] = None, visualize_model: bool = False, threshold: Optional[float] = 0.2,
@@ -28,17 +32,23 @@ def visualize_image(image_path: str, *,
         image = put_labels_on_image(image, model.predict(image), trainer.dataset.classes, is_pred=True, color_mapping=color_mapping, threshold=threshold)
     return image
 
-def generate_video_stream(dataset: Dataset, *, 
-                        output_path: Optional[str] = 'output.avi', fps: Optional[int] = 5,
-                        size: Optional[Tuple[int, int]] = (1920, 1080),
-                        trainer: Optional[Trainer] = None, num_frames: Optional[int] = 1000,
-                        trainer_color_mapping: Optional[Dict] = None, threshold: Optional[float] = 0.2) -> None:
+
+def generate_video_stream(dataset: Dataset, *,
+                          output_path: Optional[str] = 'output.avi', fps: Optional[int] = 5,
+                          size: Optional[Tuple[int, int]] = (1920, 1080),
+                          trainer: Optional[Trainer] = None, num_frames: Optional[int] = 1000,
+                          trainer_color_mapping: Optional[Dict] = None, threshold: Optional[float] = 0.2) -> None:
     frame_stream = []
     frame_count = 0
     annotations = dataset.annotations
 
     print('Writing video stream to:', output_path)
-    model = trainer.model
+    
+    if trainer:
+        model = trainer.model
+    else:
+        raise ValueError("You did not pass a trainer")
+
     for image_path in annotations:
         if frame_count < num_frames:
             frame_stream.append(visualize_image(image_path,
@@ -58,6 +68,7 @@ def generate_video_stream(dataset: Dataset, *,
     video_writer.release()
     print("Video stream written!")
 
+
 def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Dataset.Classes, is_pred: bool = False,
                         color_mapping: Optional[Dict] = None, threshold: Optional[float] = 0.2) -> np.ndarray:
     shade = 255 if not is_pred else 150
@@ -71,8 +82,8 @@ def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Data
         if label.score > threshold:
             lbl = classes[label.class_index] if not color_mapping else color_mapping.get(classes[label.class_index], "red")
             image = cv2.rectangle(image, (label.bounds.left, label.bounds.top),
-                                (label.bounds.right, label.bounds.bottom),
-                                class_to_color[lbl])
+                                  (label.bounds.right, label.bounds.bottom),
+                                  class_to_color[lbl])
             label_score = f'{label.score:.2f}' if label.score is not 1 else ''
             image = cv2.putText(image, # Put label on the image
                                 f'{classes[label.class_index]} {label_score}',
@@ -80,10 +91,10 @@ def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Data
                                 1, class_to_color[lbl], thickness=2)
     return image
 
+
 if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
-    bosch = Preprocessor.preprocess("Bosch")
-    
+    bosch = Preprocessor.preprocess("Bosch")   
     dataset = bosch
     dataset = dataset.merge_classes({
         "green": [
@@ -99,9 +110,9 @@ if __name__ == '__main__':
 
     from lns.yolo import YoloTrainer
     trainer = YoloTrainer('new_dataset_ac_1')
-    color_mapping = {
-        #pred_class: any("red", "green", "yellow", "off") # This for coloring only
-        k : v for k, v in zip(['5-red-green', '4-red-green', 'red', '5-red-yellow', 'green', 'yellow', 'off'],
-                                ['red'] * 4 + ['green'] + ['yellow'] + ['off'])
+    COLOR_MAPPING = {
+        # pred_class: any("red", "green", "yellow", "off") # This for coloring only
+        k: v for k, v in zip(['5-red-green', '4-red-green', 'red', '5-red-yellow', 'green', 'yellow', 'off'],
+                             ['red'] * 4 + ['green'] + ['yellow'] + ['off'])
     }
-    generate_video_stream(dataset, trainer=trainer, trainer_color_mapping=color_mapping)
+    generate_video_stream(dataset, trainer=trainer, trainer_color_mapping=COLOR_MAPPING)
