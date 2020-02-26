@@ -16,34 +16,36 @@ from lns.common.dataset import Dataset
 
 
 def visualize_image(image_path: str, *,
-                    model: Optional[Model] = None, visualize_model: bool = False, threshold: Optional[float] = 0.2,
-                    labels: Optional[Dataset.Labels] = None, classes: Optional[Dataset.Classes] = None,
+                    model: Optional[Model] = None, visualize_model: bool = False, threshold: float = 0.2,
+                    labels: Optional[Dataset.Labels] = None, classes: Dataset.Classes,
                     show_labels: bool = False, color_mapping: Optional[Dict] = None) -> np.ndarray:
+    """Visualizes the predictions of any model on a single frame in the dataset."""
     image = cv2.imread(image_path)
 
     if show_labels:
         if labels is None or classes is None:
             raise ValueError("Labels cannot be none if <show_labels> is set to `True`.")
-        image = put_labels_on_image(image, labels, classes)
+        image = _put_labels_on_image(image, labels, classes)
 
     if visualize_model:
         if model is None:
             raise ValueError("Need to set a trainer if <visualize_model> is Optional[] set to `True`.")
-        image = put_labels_on_image(image, model.predict(image), trainer.dataset.classes, is_pred=True, color_mapping=color_mapping, threshold=threshold)
+        image = _put_labels_on_image(image, model.predict(image), classes, is_pred=True, color_mapping=color_mapping,
+                                     threshold=threshold)
     return image
 
 
 def generate_video_stream(dataset: Dataset, *,
                           output_path: Optional[str] = 'output.avi', fps: Optional[int] = 5,
                           size: Optional[Tuple[int, int]] = (1920, 1080),
-                          trainer: Optional[Trainer] = None, num_frames: Optional[int] = 1000,
-                          trainer_color_mapping: Optional[Dict] = None, threshold: Optional[float] = 0.2) -> None:
+                          trainer: Optional[Trainer] = None, num_frames: int = 1000,
+                          trainer_color_mapping: Optional[Dict] = None, threshold: float = 0.2) -> None:
+    """Generate a video stream with the predictions of the model drawn onto each frame in the dataset."""
     frame_stream = []
     frame_count = 0
     annotations = dataset.annotations
 
     print('Writing video stream to:', output_path)
-    
     if trainer:
         model = trainer.model
     else:
@@ -69,23 +71,27 @@ def generate_video_stream(dataset: Dataset, *,
     print("Video stream written!")
 
 
-def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Dataset.Classes, is_pred: bool = False,
-                        color_mapping: Optional[Dict] = None, threshold: Optional[float] = 0.2) -> np.ndarray:
+def _put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Dataset.Classes, is_pred: bool = False,
+                         color_mapping: Optional[Dict] = None, threshold: float = 0.2) -> np.ndarray:
     shade = 255 if not is_pred else 150
     class_to_color = {
         'green': (0, shade, 0),
         'red': (0, 0, shade),
-        'yellow': (0, 153, shade), 
+        'yellow': (0, 153, shade),
         'off': (0, 0, 0)
     }
     for label in labels:
         if label.score > threshold:
-            lbl = classes[label.class_index] if not color_mapping else color_mapping.get(classes[label.class_index], "red")
+            if not color_mapping:
+                lbl = classes[label.class_index]
+            else:
+                color_mapping.get(classes[label.class_index], "red")
+
             image = cv2.rectangle(image, (label.bounds.left, label.bounds.top),
                                   (label.bounds.right, label.bounds.bottom),
                                   class_to_color[lbl])
-            label_score = f'{label.score:.2f}' if label.score is not 1 else ''
-            image = cv2.putText(image, # Put label on the image
+            label_score = f'{label.score:.2f}' if label.score != 1 else ''
+            image = cv2.putText(image,  # Put label on the image
                                 f'{classes[label.class_index]} {label_score}',
                                 (label.bounds.right, label.bounds.bottom), cv2.FONT_HERSHEY_PLAIN,
                                 1, class_to_color[lbl], thickness=2)
@@ -94,9 +100,9 @@ def put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Data
 
 if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
-    bosch = Preprocessor.preprocess("Bosch")   
-    dataset = bosch
-    dataset = dataset.merge_classes({
+    BOSCH = Preprocessor.preprocess("Bosch")
+    DATASET = BOSCH
+    DATASET = DATASET.merge_classes({
         "green": [
             "GreenLeft", "Green", "GreenRight", "GreenStraight",
             "GreenStraightRight", "GreenStraightLeft", "Green traffic light"
@@ -109,10 +115,9 @@ if __name__ == '__main__':
     })
 
     from lns.yolo import YoloTrainer
-    trainer = YoloTrainer('new_dataset_ac_1')
-    COLOR_MAPPING = {
-        # pred_class: any("red", "green", "yellow", "off") # This for coloring only
-        k: v for k, v in zip(['5-red-green', '4-red-green', 'red', '5-red-yellow', 'green', 'yellow', 'off'],
-                             ['red'] * 4 + ['green'] + ['yellow'] + ['off'])
-    }
-    generate_video_stream(dataset, trainer=trainer, trainer_color_mapping=COLOR_MAPPING)
+    TRAINER = YoloTrainer('new_dataset_ac_1')
+    # pred_class: any("red", "green", "yellow", "off") # This for coloring only
+    COLOR_MAPPING = dict(zip(['5-red-green', '4-red-green', 'red', '5-red-yellow', 'green', 'yellow', 'off'],
+                             ['red'] * 4 + ['green'] + ['yellow'] + ['off']))
+
+    generate_video_stream(DATASET, trainer=TRAINER, trainer_color_mapping=COLOR_MAPPING)
