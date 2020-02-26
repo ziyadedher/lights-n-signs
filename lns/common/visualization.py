@@ -8,7 +8,7 @@ by generating a video stream.
 from typing import Optional, Tuple, Dict
 
 import cv2  # type: ignore
-import numpy as np
+import numpy as np  # type: ignore
 
 from lns.common.model import Model
 from lns.common.train import Trainer
@@ -71,6 +71,7 @@ def generate_video_stream(dataset: Dataset, *,
     print("Video stream written!")
 
 
+# pylint: disable=too-many-arguments
 def _put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Dataset.Classes, is_pred: bool = False,
                          color_mapping: Optional[Dict] = None, threshold: float = 0.2) -> np.ndarray:
     shade = 255 if not is_pred else 150
