@@ -46,63 +46,53 @@ def confusion(model: Model, dataset: Union[str, Dataset],
               class_mapping: Callable[[int], int] = lambda x: x,
               num_to_sample: Optional[int] = None,
               iou_threshold: float = 0.25,
-              score_threshold: float = 0.5) -> Tuple[ConfusionMatrix, float]:
+              score_threshold: Union[float, List[float]] = 0.5) -> List[ConfusionMatrix]:
     if isinstance(dataset, str):
         dataset = Preprocessor.preprocess(dataset)
 
     num_classes = len(dataset.classes)
-    mat = np.zeros((num_classes + 1, num_classes + 1), dtype=np.int32)
+    score_thresholds = [score_threshold] if isinstance(score_threshold, float) else score_threshold
+    mat = np.zeros((len(score_thresholds), num_classes + 1, num_classes + 1), dtype=np.int32)
 
     anns = _sample_annotations(dataset, num_to_sample)
 
     for img_path, labels in tqdm(anns.items()):
         preds = model.predict_path(img_path)
-        preds = list(filter(lambda pred: pred.score >= score_threshold, preds))
 
-        label_detected = np.zeros(len(labels), dtype=np.bool)
-        pred_associated = np.zeros(len(preds), dtype=np.bool)
+        for threshold_i, threshold in enumerate(score_thresholds):
+            preds_filtered = list(filter(lambda pred: pred.score >= threshold, preds))
 
-        img = cv2.imread(img_path)
-        visualization.draw_labels(img, labels, (255, 255, 255), 2)
-        visualization.draw_labels(img, preds, (0, 0, 0), 2)
-        print("\nLABELS:")
-        for label in labels:
-            print(label.class_index, dataset.classes[label.class_index])
-            print(label.bounds.top, label.bounds.left)
-        print("PREDS:")
-        for pred in preds:
-            print(pred.class_index, class_mapping(pred.class_index), dataset.classes[class_mapping(pred.class_index)])
-            print(pred.bounds.top, pred.bounds.left)
-        cv2.imwrite(f"test.png", img)
-        input()
+            label_detected = np.zeros(len(labels), dtype=np.bool)
+            pred_associated = np.zeros(len(preds_filtered), dtype=np.bool)
 
-        for i, label in enumerate(labels):
-            for j, pred in enumerate(preds):
-                if pred_associated[j]:
-                    continue
+            for i, label in enumerate(labels):
+                for j, pred in enumerate(preds_filtered):
+                    if pred_associated[j]:
+                        continue
 
-                label_class = label.class_index
-                pred_class = class_mapping(pred.class_index)
+                    label_class = label.class_index
+                    pred_class = class_mapping(pred.class_index)
 
-                if iou(pred.bounds, label.bounds) >= iou_threshold:
-                    mat[label_class][pred_class] += 1
-                    if label_class == pred_class:
-                        label_detected[i] = True
-                        pred_associated[j] = True
+                    if iou(pred.bounds, label.bounds) >= iou_threshold:
+                        mat[threshold_i, label_class, pred_class] += 1
+                        if label_class == pred_class:
+                            label_detected[i] = True
+                            pred_associated[j] = True
 
-        for i, label in enumerate(labels):
-            if not label_detected[i]:
-                mat[label.class_index][-1] += 1
-        for j, pred in enumerate(preds):
-            if not pred_associated[j]:
-                mat[-1][class_mapping(pred.class_index)] += 1
+            for i, label in enumerate(labels):
+                if not label_detected[i]:
+                    mat[threshold_i, label.class_index, -1] += 1
+            for j, pred in enumerate(preds_filtered):
+                if not pred_associated[j]:
+                    mat[threshold_i, -1, class_mapping(pred.class_index)] += 1
 
     return mat
 
 
 def metrics(mat: ConfusionMatrix) -> Metrics:
     mets = np.empty((len(mat), 3))
-    mets[:, 0] = np.diagonal(mat) / np.sum(mat, axis=1)  # precision
-    mets[:, 1] = np.diagonal(mat) / np.sum(mat, axis=0)  # recall
+
+    mets[:, 0] = np.diagonal(mat) / (np.diagonal(mat) + mat[-1, :])
+    mets[:, 1] = np.diagonal(mat) / (np.diagonal(mat) + mat[:, -1])
     mets[:, 2] = 2 * (mets[:, 0] * mets[:, 1]) / (mets[:, 0] + mets[:, 1])  # f1 score
     return mets
