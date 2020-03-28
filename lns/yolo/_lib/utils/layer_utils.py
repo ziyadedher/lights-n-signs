@@ -46,22 +46,22 @@ def darknet53_body(inputs):
 
     net = conv2d(net, 256, 3, strides=2)
 
-    # res_block * 8
-    for i in range(8):
+    # res_block * 2
+    for i in range(2):
         net = res_block(net, 128)
 
     route_1 = net
     net = conv2d(net, 512, 3, strides=2)
 
-    # res_block * 8
-    for i in range(8):
+    # res_block * 2
+    for i in range(2):
         net = res_block(net, 256)
 
     route_2 = net
     net = conv2d(net, 1024, 3, strides=2)
 
-    # res_block * 4
-    for i in range(4):
+    # res_block * 2
+    for i in range(2):
         net = res_block(net, 512)
     route_3 = net
 
