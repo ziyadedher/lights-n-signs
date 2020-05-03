@@ -7,7 +7,7 @@ from lns.common.structs import Object2D, Bounds2D
 from lns.common.preprocess import Preprocessor
 
 
-DATASET_NAME = "SCALE_od_ped"
+DATASET_NAME = "SCALE"
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
