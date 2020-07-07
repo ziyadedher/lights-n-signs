@@ -27,7 +27,10 @@ def _nuscenes(path: str) -> Dataset:  # noqa
     gt_boxes_val = load_gt(nuscenes, "val", DetectionBox).all
 
     for box in chain(gt_boxes_train, gt_boxes_val):
-        img_path = nuscenes.get_sample_data_path(box.sample_token)
+        try:
+            img_path = nuscenes.get_sample_data_path(box.sample_token)
+        except KeyError:
+            continue
 
         if img_path not in images:
             images.append(img_path)
