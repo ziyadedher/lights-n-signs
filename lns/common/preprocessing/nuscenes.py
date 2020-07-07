@@ -1,6 +1,5 @@
 """nuScenes dataset preprocessor."""
 
-
 from itertools import chain
 
 from lns.common.dataset import Dataset
@@ -11,11 +10,12 @@ from lns.common.preprocessing.nuscenes.eval.common.loaders import load_gt
 from lns.common.preprocessing.nuscenes.eval.detection.constants import DETECTION_NAMES
 from lns.common.preprocessing.nuscenes.eval.detection.data_classes import DetectionBox
 
+
 DATASET_NAME = "nuScenes"
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
-def _scale_od_ped(path: str) -> Dataset:  # noqa
+def _nuscenes(path: str) -> Dataset:  # noqa
     images: Dataset.Images = []
     classes: Dataset.Classes = DETECTION_NAMES
     annotations: Dataset.Annotations = {}
