@@ -88,7 +88,11 @@ class Dataset:
         original_classes = self.classes
         annotations = self.annotations
 
-        classes = list((set(self.classes) - set(c for l in mapping.values() for c in l)) | set(mapping.keys()))
+        classes = sorted(list((set(self.classes) - set(c for l in mapping.values() for c in l)) | set(mapping.keys())))
+        # classes = ["5-red-yellow", "yellow", "off", "green", "5-red-green", "red", "4-red-green"]  # new_dataset_ac_all_update_16
+        # classes = ["yellow", "5-red-green", "red", "4-red-green", "off", "5-red-yellow", "green"]  # new_dataset_ac_medium_1
+        # classes = ["yellow", "5-red-green", "red", "green", "off", "4-red-green", "5-red-yellow"]  # new_dataset_ac_21
+
 
         for annotation in self.annotations.values():
             for label in annotation:

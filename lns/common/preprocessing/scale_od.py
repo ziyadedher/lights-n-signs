@@ -29,7 +29,9 @@ def _scale_od_ped(path: str) -> Dataset:  # noqa
             image_annotations = []
             with open(label_path, "r") as file:
                 for line in file:
-                    bounds = Bounds2D(*[float(s) for s in line.split()[4:8]])
+                    left, top, right, bottom = [float(s) for s in line.split()[4:8]]
+                    width, height = right - left, bottom - top
+                    bounds = Bounds2D(left, top, width, height)
                     image_annotations.append(Object2D(bounds, 0))
             annotations[image_path] = image_annotations
 
