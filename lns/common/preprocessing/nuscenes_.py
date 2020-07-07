@@ -1,4 +1,6 @@
-"""nuScenes dataset preprocessor."""
+"""nuScenes dataset preprocessor.
+
+The name has an appended _ to avoid a name conflict with the package."""
 
 from itertools import chain
 
