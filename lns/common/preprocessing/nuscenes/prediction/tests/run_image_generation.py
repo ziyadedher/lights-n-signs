@@ -5,11 +5,11 @@ import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 
-from nuscenes import NuScenes
-from nuscenes.prediction import PredictHelper
-from nuscenes.prediction.input_representation.static_layers import StaticLayerRasterizer
-from nuscenes.prediction.models.backbone import ResNetBackbone
-from nuscenes.prediction.models.mtp import MTP, MTPLoss
+from lns.common.preprocessing.nuscenes import NuScenes
+from lns.common.preprocessing.nuscenes.prediction import PredictHelper
+from lns.common.preprocessing.nuscenes.prediction.input_representation.static_layers import StaticLayerRasterizer
+from lns.common.preprocessing.nuscenes.prediction.models.backbone import ResNetBackbone
+from lns.common.preprocessing.nuscenes.prediction.models.mtp import MTP, MTPLoss
 
 
 class TestDataset(Dataset):

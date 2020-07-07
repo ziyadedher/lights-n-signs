@@ -6,9 +6,9 @@ import unittest
 import numpy as np
 from pyquaternion import Quaternion
 
-from nuscenes.eval.common.utils import quaternion_yaw
-from nuscenes.utils.data_classes import Box
-from nuscenes.utils.geometry_utils import points_in_box
+from lns.common.preprocessing.nuscenes.eval.common.utils import quaternion_yaw
+from lns.common.preprocessing.nuscenes.utils.data_classes import Box
+from lns.common.preprocessing.nuscenes.utils.geometry_utils import points_in_box
 
 
 class TestGeometryUtils(unittest.TestCase):

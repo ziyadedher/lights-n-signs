@@ -6,9 +6,9 @@ from typing import Tuple
 import numpy as np
 from pyquaternion import Quaternion
 
-from nuscenes.eval.common.utils import quaternion_yaw
-from nuscenes.eval.prediction.data_classes import Prediction
-from nuscenes.prediction import PredictHelper
+from lns.common.preprocessing.nuscenes.eval.common.utils import quaternion_yaw
+from lns.common.preprocessing.nuscenes.eval.prediction.data_classes import Prediction
+from lns.common.preprocessing.nuscenes.prediction import PredictHelper
 
 KinematicsData = Tuple[float, float, float, float, float, float, float, float, float, float]
 

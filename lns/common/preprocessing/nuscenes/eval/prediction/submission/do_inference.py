@@ -6,13 +6,13 @@ import json
 import os
 from typing import List, Any
 
-from nuscenes import NuScenes
-from nuscenes.eval.prediction.config import PredictionConfig
-from nuscenes.eval.prediction.config import load_prediction_config
-from nuscenes.eval.prediction.data_classes import Prediction
-from nuscenes.eval.prediction.splits import get_prediction_challenge_split
-from nuscenes.prediction import PredictHelper
-from nuscenes.prediction.models.physics import ConstantVelocityHeading
+from lns.common.preprocessing.nuscenes import NuScenes
+from lns.common.preprocessing.nuscenes.eval.prediction.config import PredictionConfig
+from lns.common.preprocessing.nuscenes.eval.prediction.config import load_prediction_config
+from lns.common.preprocessing.nuscenes.eval.prediction.data_classes import Prediction
+from lns.common.preprocessing.nuscenes.eval.prediction.splits import get_prediction_challenge_split
+from lns.common.preprocessing.nuscenes.prediction import PredictHelper
+from lns.common.preprocessing.nuscenes.prediction.models.physics import ConstantVelocityHeading
 
 
 def load_model(helper: PredictHelper, config: PredictionConfig, path_to_model_weights: str) -> Any:

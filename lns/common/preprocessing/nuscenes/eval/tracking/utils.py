@@ -8,8 +8,8 @@ import motmetrics
 import numpy as np
 from motmetrics.metrics import MetricsHost
 
-from nuscenes.eval.tracking.data_classes import TrackingMetrics
-from nuscenes.eval.tracking.metrics import motar, mota_custom, motp_custom, faf, track_initialization_duration, \
+from lns.common.preprocessing.nuscenes.eval.tracking.data_classes import TrackingMetrics
+from lns.common.preprocessing.nuscenes.eval.tracking.metrics import motar, mota_custom, motp_custom, faf, track_initialization_duration, \
     longest_gap_duration, num_fragmentations_custom
 
 

@@ -19,9 +19,9 @@ from matplotlib.axes import Axes
 from pyquaternion import Quaternion
 from tqdm import tqdm
 
-from nuscenes.utils.data_classes import LidarPointCloud, RadarPointCloud, Box
-from nuscenes.utils.geometry_utils import view_points, box_in_image, BoxVisibility, transform_matrix
-from nuscenes.utils.map_mask import MapMask
+from lns.common.preprocessing.nuscenes.utils.data_classes import LidarPointCloud, RadarPointCloud, Box
+from lns.common.preprocessing.nuscenes.utils.geometry_utils import view_points, box_in_image, BoxVisibility, transform_matrix
+from lns.common.preprocessing.nuscenes.utils.map_mask import MapMask
 
 PYTHON_VERSION = sys.version_info[0]
 

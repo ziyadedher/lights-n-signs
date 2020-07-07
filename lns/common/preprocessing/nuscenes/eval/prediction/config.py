@@ -4,8 +4,8 @@ import json
 import os
 from typing import List, Dict, Any
 
-from nuscenes.eval.prediction.metrics import Metric, deserialize_metric
-from nuscenes.prediction import PredictHelper
+from lns.common.preprocessing.nuscenes.eval.prediction.metrics import Metric, deserialize_metric
+from lns.common.preprocessing.nuscenes.prediction import PredictHelper
 
 
 class PredictionConfig:

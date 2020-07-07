@@ -3,7 +3,7 @@ import unittest
 import math
 import numpy as np
 
-from nuscenes.map_expansion import arcline_path_utils
+from lns.common.preprocessing.nuscenes.map_expansion import arcline_path_utils
 
 
 class TestUtils(unittest.TestCase):

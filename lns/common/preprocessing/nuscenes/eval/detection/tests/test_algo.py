@@ -8,14 +8,14 @@ from typing import Dict, List
 import numpy as np
 from pyquaternion import Quaternion
 
-from nuscenes.eval.common.config import config_factory
-from nuscenes.eval.common.data_classes import EvalBoxes
-from nuscenes.eval.common.utils import center_distance
-from nuscenes.eval.detection.algo import accumulate, calc_ap, calc_tp
-from nuscenes.eval.detection.constants import TP_METRICS
-from nuscenes.eval.detection.data_classes import DetectionMetrics, DetectionMetricData, DetectionBox, \
+from lns.common.preprocessing.nuscenes.eval.common.config import config_factory
+from lns.common.preprocessing.nuscenes.eval.common.data_classes import EvalBoxes
+from lns.common.preprocessing.nuscenes.eval.common.utils import center_distance
+from lns.common.preprocessing.nuscenes.eval.detection.algo import accumulate, calc_ap, calc_tp
+from lns.common.preprocessing.nuscenes.eval.detection.constants import TP_METRICS
+from lns.common.preprocessing.nuscenes.eval.detection.data_classes import DetectionMetrics, DetectionMetricData, DetectionBox, \
     DetectionMetricDataList
-from nuscenes.eval.detection.utils import detection_name_to_rel_attributes
+from lns.common.preprocessing.nuscenes.eval.detection.utils import detection_name_to_rel_attributes
 
 
 class TestAlgo(unittest.TestCase):

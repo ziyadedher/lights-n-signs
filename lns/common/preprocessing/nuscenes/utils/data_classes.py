@@ -13,7 +13,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from pyquaternion import Quaternion
 
-from nuscenes.utils.geometry_utils import view_points, transform_matrix
+from lns.common.preprocessing.nuscenes.utils.geometry_utils import view_points, transform_matrix
 
 
 class PointCloud(ABC):

@@ -7,10 +7,10 @@ import cv2
 import numpy as np
 from pyquaternion import Quaternion
 
-from nuscenes.prediction import PredictHelper
-from nuscenes.prediction.helper import quaternion_yaw
-from nuscenes.prediction.input_representation.interface import AgentRepresentation
-from nuscenes.prediction.input_representation.utils import convert_to_pixel_coords, get_crops, get_rotation_matrix
+from lns.common.preprocessing.nuscenes.prediction import PredictHelper
+from lns.common.preprocessing.nuscenes.prediction.helper import quaternion_yaw
+from lns.common.preprocessing.nuscenes.prediction.input_representation.interface import AgentRepresentation
+from lns.common.preprocessing.nuscenes.prediction.input_representation.utils import convert_to_pixel_coords, get_crops, get_rotation_matrix
 
 History = Dict[str, List[Dict[str, Any]]]
 

@@ -6,8 +6,8 @@ from typing import List, Dict, Any
 import numpy as np
 from pyquaternion import Quaternion
 
-from nuscenes.eval.common.data_classes import EvalBox
-from nuscenes.utils.data_classes import Box
+from lns.common.preprocessing.nuscenes.eval.common.data_classes import EvalBox
+from lns.common.preprocessing.nuscenes.utils.data_classes import Box
 
 DetectionBox = Any  # Workaround as direct imports lead to cyclic dependencies.
 

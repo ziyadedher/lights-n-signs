@@ -16,9 +16,9 @@ from PIL import Image
 from pyquaternion import Quaternion
 from tqdm import tqdm
 
-from nuscenes import NuScenes
-from nuscenes.utils.data_classes import LidarPointCloud
-from nuscenes.utils.geometry_utils import view_points
+from lns.common.preprocessing.nuscenes import NuScenes
+from lns.common.preprocessing.nuscenes.utils.data_classes import LidarPointCloud
+from lns.common.preprocessing.nuscenes.utils.geometry_utils import view_points
 
 
 def export_scene_pointcloud(nusc: NuScenes,

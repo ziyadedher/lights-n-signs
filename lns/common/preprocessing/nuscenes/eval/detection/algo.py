@@ -5,9 +5,9 @@ from typing import Callable
 
 import numpy as np
 
-from nuscenes.eval.common.data_classes import EvalBoxes
-from nuscenes.eval.common.utils import center_distance, scale_iou, yaw_diff, velocity_l2, attr_acc, cummean
-from nuscenes.eval.detection.data_classes import DetectionMetricData
+from lns.common.preprocessing.nuscenes.eval.common.data_classes import EvalBoxes
+from lns.common.preprocessing.nuscenes.eval.common.utils import center_distance, scale_iou, yaw_diff, velocity_l2, attr_acc, cummean
+from lns.common.preprocessing.nuscenes.eval.detection.data_classes import DetectionMetricData
 
 
 def accumulate(gt_boxes: EvalBoxes,

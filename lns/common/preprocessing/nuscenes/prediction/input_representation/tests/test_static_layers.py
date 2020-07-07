@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 import cv2
 import numpy as np
 
-from nuscenes.prediction import PredictHelper
-from nuscenes.prediction.input_representation.static_layers import StaticLayerRasterizer, draw_lanes_on_image
+from lns.common.preprocessing.nuscenes.prediction import PredictHelper
+from lns.common.preprocessing.nuscenes.prediction.input_representation.static_layers import StaticLayerRasterizer, draw_lanes_on_image
 
 
 class TestStaticLayerRasterizer(unittest.TestCase):

@@ -2,8 +2,8 @@ import unittest
 
 import torch
 
-from nuscenes.prediction.models import backbone
-from nuscenes.prediction.models import mtp
+from lns.common.preprocessing.nuscenes.prediction.models import backbone
+from lns.common.preprocessing.nuscenes.prediction.models import mtp
 
 
 class TestMTP(unittest.TestCase):

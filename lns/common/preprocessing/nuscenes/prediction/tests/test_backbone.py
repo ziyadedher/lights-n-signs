@@ -3,7 +3,7 @@ import unittest
 import torch
 from torchvision.models.resnet import BasicBlock, Bottleneck
 
-from nuscenes.prediction.models.backbone import ResNetBackbone, MobileNetBackbone
+from lns.common.preprocessing.nuscenes.prediction.models.backbone import ResNetBackbone, MobileNetBackbone
 
 
 class TestBackBones(unittest.TestCase):

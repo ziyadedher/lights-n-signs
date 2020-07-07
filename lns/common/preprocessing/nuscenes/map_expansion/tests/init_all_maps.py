@@ -1,6 +1,6 @@
 import unittest
 
-from nuscenes.map_expansion.map_api import NuScenesMap
+from lns.common.preprocessing.nuscenes.map_expansion.map_api import NuScenesMap
 
 
 class TestInitAllMaps(unittest.TestCase):

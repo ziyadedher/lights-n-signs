@@ -8,14 +8,14 @@ import cv2
 import numpy as np
 from pyquaternion import Quaternion
 
-from nuscenes.eval.common.utils import quaternion_yaw
-from nuscenes.map_expansion.map_api import NuScenesMap
-from nuscenes.prediction import PredictHelper
-from nuscenes.prediction.helper import angle_of_rotation, angle_diff
-from nuscenes.prediction.input_representation.combinators import Rasterizer
-from nuscenes.prediction.input_representation.interface import \
+from lns.common.preprocessing.nuscenes.eval.common.utils import quaternion_yaw
+from lns.common.preprocessing.nuscenes.map_expansion.map_api import NuScenesMap
+from lns.common.preprocessing.nuscenes.prediction import PredictHelper
+from lns.common.preprocessing.nuscenes.prediction.helper import angle_of_rotation, angle_diff
+from lns.common.preprocessing.nuscenes.prediction.input_representation.combinators import Rasterizer
+from lns.common.preprocessing.nuscenes.prediction.input_representation.interface import \
     StaticLayerRepresentation
-from nuscenes.prediction.input_representation.utils import get_crops, get_rotation_matrix, convert_to_pixel_coords
+from lns.common.preprocessing.nuscenes.prediction.input_representation.utils import get_crops, get_rotation_matrix, convert_to_pixel_coords
 
 Color = Tuple[float, float, float]
 

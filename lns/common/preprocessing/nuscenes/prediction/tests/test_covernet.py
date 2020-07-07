@@ -7,8 +7,8 @@ import unittest
 import torch
 from torch.nn.functional import cross_entropy
 
-from nuscenes.prediction.models.backbone import ResNetBackbone
-from nuscenes.prediction.models.covernet import mean_pointwise_l2_distance, ConstantLatticeLoss, CoverNet
+from lns.common.preprocessing.nuscenes.prediction.models.backbone import ResNetBackbone
+from lns.common.preprocessing.nuscenes.prediction.models.covernet import mean_pointwise_l2_distance, ConstantLatticeLoss, CoverNet
 
 
 class TestCoverNet(unittest.TestCase):

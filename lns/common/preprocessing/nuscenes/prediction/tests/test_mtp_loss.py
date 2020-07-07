@@ -4,7 +4,7 @@ import unittest
 
 import torch
 
-from nuscenes.prediction.models import mtp
+from lns.common.preprocessing.nuscenes.prediction.models import mtp
 
 
 class TestMTPLoss(unittest.TestCase):

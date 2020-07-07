@@ -7,11 +7,11 @@ import argparse
 import json
 import os
 
-from nuscenes import NuScenes
-from nuscenes.eval.prediction.config import load_prediction_config
-from nuscenes.eval.prediction.splits import get_prediction_challenge_split
-from nuscenes.prediction import PredictHelper
-from nuscenes.prediction.models.physics import ConstantVelocityHeading, PhysicsOracle
+from lns.common.preprocessing.nuscenes import NuScenes
+from lns.common.preprocessing.nuscenes.eval.prediction.config import load_prediction_config
+from lns.common.preprocessing.nuscenes.eval.prediction.splits import get_prediction_challenge_split
+from lns.common.preprocessing.nuscenes.prediction import PredictHelper
+from lns.common.preprocessing.nuscenes.prediction.models.physics import ConstantVelocityHeading, PhysicsOracle
 
 
 def main(version: str, data_root: str,
