@@ -36,7 +36,7 @@ POSSIBLE_DATASETS: List[str] = [
     "ScaleSigns",
     "ScaleObjects",
     "SCALE",
-    "nuScenes",
+    "nuscenes",
 ]
 
 
