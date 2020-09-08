@@ -62,6 +62,8 @@ class YoloModel(Model[YoloSettings]):
         image, ratio, d_w, d_h = letterbox_resize(image, args.img_size[0], args.img_size[1], interp=1)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
         image = image / 255.0
+        print("size 0 ",args.img_size[0])
+        print("size 1 ",args.img_size[1])
 
         y_pred = self._session.run(self._y_pred, feed_dict={self._is_training: False, self._image: np.array([image])})
         pred_content = get_preds_gpu(self._session, self._gpu_nms_op, self._pred_boxes_flag,

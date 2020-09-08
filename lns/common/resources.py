@@ -26,9 +26,11 @@ class Resources:
         the new data root.
         """
         new_root_path = os.path.abspath(new_root)
+        print("Resources")
 
         # Create the data folder if the flag is set
         if force_create and not os.path.exists(new_root_path):
+            print("Create Resource")
             config.generate_resources_filetree(new_root_path)
 
         # Ensure the new data root exists

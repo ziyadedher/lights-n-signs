@@ -109,5 +109,8 @@ venv.bak/
 # vscode stuff
 .vscode/
 
+# pycharm
+.idea/
+
 scripts/annotations.txt
 scripts/classes.txt

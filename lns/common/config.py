@@ -24,17 +24,7 @@ SUBROOT_FOLDERS = [
 PKL_EXTENSION = ".pkl"
 
 POSSIBLE_DATASETS: List[str] = [
-    "mocked",
-    "LISA",
-    "lisa_signs",
-    "Bosch",
-    "ScaleLights",
-    "ScaleLights_New_Utias",
-    "ScaleLights_New_Youtube",
-    "ScaleLights_New_TRC",
-    "ScaleLights_New_Test",
-    "ScaleSigns",
-    "ScaleObjects"
+    "ScaleLights_New_TRC"
 ]
 
 

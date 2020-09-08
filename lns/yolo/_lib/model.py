@@ -175,9 +175,9 @@ class yolov3(object):
         # shape: [N, (13*13+26*26+52*52)*3, 4]
         boxes = tf.concat(boxes_list, axis=1)
         # shape: [N, (13*13+26*26+52*52)*3, 1]
-        confs = tf.concat(confs_list, axis=1)
+        confs = tf.concat(confs_list, axis=1, name='output/scores')
         # shape: [N, (13*13+26*26+52*52)*3, class_num]
-        probs = tf.concat(probs_list, axis=1)
+        probs = tf.concat(probs_list, axis=1, name='output/labels')
 
         center_x, center_y, width, height = tf.split(boxes, [1, 1, 1, 1], axis=-1)
         x_min = center_x - width / 2
@@ -185,7 +185,7 @@ class yolov3(object):
         x_max = center_x + width / 2
         y_max = center_y + height / 2
 
-        boxes = tf.concat([x_min, y_min, x_max, y_max], axis=-1)
+        boxes = tf.concat([x_min, y_min, x_max, y_max], axis=-1, name='output/boxes')
 
         return boxes, confs, probs
 

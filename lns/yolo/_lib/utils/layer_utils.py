@@ -26,13 +26,17 @@ def darknet53_body(inputs):
         shortcut = inputs
         net = conv2d(inputs, filters * 1, 1)
         net = conv2d(net, filters * 2, 3)
-
         net = net + shortcut
+        #
+        # ##Print block
+        # printout = tf.reduce_min(tf.abs(net))
+        # net = tf.Print(net, ['Res block max value', printout], summarize=-1)
 
         return net
     
     # first two conv2d layers
     net = conv2d(inputs, 32,  3, strides=1)
+
     net = conv2d(net, 64,  3, strides=2)
 
     # res_block * 1
@@ -53,6 +57,7 @@ def darknet53_body(inputs):
     route_1 = net
     net = conv2d(net, 512, 3, strides=2)
 
+
     # res_block * 8
     for i in range(8):
         net = res_block(net, 256)
@@ -60,10 +65,16 @@ def darknet53_body(inputs):
     route_2 = net
     net = conv2d(net, 1024, 3, strides=2)
 
+    # printout = tf.reduce_mean(tf.abs(net))
+    # net = tf.Print(net, ['Route2 block min value', printout], summarize=-1)
+
     # res_block * 4
     for i in range(4):
         net = res_block(net, 512)
     route_3 = net
+
+    # printout = tf.reduce_mean(tf.abs(net))
+    # net = tf.Print(net, ['Route3 block min value', printout], summarize=-1)
 
     return route_1, route_2, route_3
 
@@ -76,6 +87,9 @@ def yolo_block(inputs, filters):
     net = conv2d(net, filters * 1, 1)
     route = net
     net = conv2d(net, filters * 2, 3)
+
+    # printout = tf.reduce_mean(tf.abs(net))
+    # net = tf.Print(net, ['Yolo block min value', printout], summarize=-1)
     return route, net
 
 
