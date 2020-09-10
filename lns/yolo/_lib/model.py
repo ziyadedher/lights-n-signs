@@ -48,13 +48,16 @@ class yolov3(object):
                                 activation_fn=lambda x: tf.nn.leaky_relu(x, alpha=0.1),
                                 weights_regularizer=slim.l2_regularizer(self.weight_decay)):
                 with tf.variable_scope('darknet53_body'):
-                    route_1, route_2, route_3 = darknet53_body(inputs)
+                    route_1, route_2, route_3 , conv1out = darknet53_body(inputs)
 
                 with tf.variable_scope('yolov3_head'):
                     inter1, net = yolo_block(route_3, 512)
                     feature_map_1 = slim.conv2d(net, 3 * (5 + self.class_num), 1,
                                                 stride=1, normalizer_fn=None,
                                                 activation_fn=None, biases_initializer=tf.zeros_initializer())
+                    #  ##Print block
+                    # # printout = tf.reduce_min(tf.abs(net))
+                    # feature_map_1 = tf.Print(feature_map_1, ['Feature map 1', feature_map_1], summarize=-1)
                     feature_map_1 = tf.identity(feature_map_1, name='feature_map_1')
 
                     inter1 = conv2d(inter1, 256, 1)
@@ -77,7 +80,7 @@ class yolov3(object):
                                                 activation_fn=None, biases_initializer=tf.zeros_initializer())
                     feature_map_3 = tf.identity(feature_map_3, name='feature_map_3')
 
-            return feature_map_1, feature_map_2, feature_map_3
+            return feature_map_1, feature_map_2, feature_map_3, conv1out
 
     def reorg_layer(self, feature_map, anchors):
         '''

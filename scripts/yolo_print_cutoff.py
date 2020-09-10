@@ -21,8 +21,6 @@ threshold = 0.2
 # Read Image from repo root
 image_path = "../image.png"
 image = cv2.imread(image_path)
-
-# Crop the image as inference engine preprocessing
 image = image[0:1377, 0:2448]
 # Show the sample image
 # cv2.imshow("visualization", image)
@@ -30,8 +28,6 @@ image = image[0:1377, 0:2448]
 
 # Run prediction and put labels on image
 # The model.predict(image) is the step to run tensorflow model
-image2 = put_labels_on_image(image, model.predict_dla(image), trainer.dataset.classes, is_pred=True, color_mapping= color_mapping, threshold=threshold)
 
-# Show the result image
-cv2.imshow("visualization", image2)
-cv2.waitKey()
+
+model.predict_featuremap(image)

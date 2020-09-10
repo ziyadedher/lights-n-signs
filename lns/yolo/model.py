@@ -49,7 +49,8 @@ class YoloModel(Model[YoloSettings]):
 
         yolo_model = yolov3(args.class_num, args.anchors)
         with tf.variable_scope('yolov3'):
-            pred_feature_maps = yolo_model.forward(self._image, is_training=self._is_training)
+            self._fm1, self._fm2, self._fm3, self.conv1out = yolo_model.forward(self._image, is_training=self._is_training)
+            pred_feature_maps = self._fm1, self._fm2, self._fm3
         self._y_pred = yolo_model.predict(pred_feature_maps)
 
         self._session = tf.Session()
@@ -79,3 +80,64 @@ class YoloModel(Model[YoloSettings]):
 
             predictions.append(Object2D(Bounds2D(x_min, y_min, x_max - x_min, y_max - y_min), label, score))
         return predictions
+
+    def predict_dla(self, image: np.ndarray) -> List[Object2D]:  # pylint:disable=too-many-locals
+        """Predict the required bounding boxes on the given <image>."""
+        # TODO: implement non-letterbox resizing inference
+        ori_height, ori_width = image.shape[:2]
+
+        image = cv2.resize(image, (args.img_size[0], args.img_size[1]), interpolation=1)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
+        image = image / 255.0
+        print("size 0 ",args.img_size[0])
+        print("size 1 ",args.img_size[1])
+        ratio_h = ori_height / args.img_size[1]
+        ratio_w = ori_width / args.img_size[0]
+
+        y_pred = self._session.run(self._y_pred, feed_dict={self._is_training: False, self._image: np.array([image])})
+        pred_content = get_preds_gpu(self._session, self._gpu_nms_op, self._pred_boxes_flag,
+                                     self._pred_scores_flag, [0], y_pred)
+
+        predictions = []
+        for pred in pred_content:
+            _, x_min, y_min, x_max, y_max, score, label = pred
+            x_min = int(x_min * ratio_w)
+            x_max = int(x_max * ratio_w)
+            y_min = int(y_min * ratio_h)
+            y_max = int(y_max * ratio_h)
+
+            predictions.append(Object2D(Bounds2D(x_min, y_min, x_max - x_min, y_max - y_min), label, score))
+        return predictions
+
+    def predict_featuremap(self, image: np.ndarray) -> None:  # pylint:disable=too-many-locals
+        """Predict the required bounding boxes on the given <image>."""
+        # TODO: implement non-letterbox resizing inference
+        image = cv2.resize(image, (args.img_size[0], args.img_size[1]), interpolation=1)
+      #  image, ratio, d_w, d_h = letterbox_resize(image, args.img_size[0], args.img_size[1], interp=0)
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
+        cv2.imwrite('processed_image.jpg', image)
+
+        image = image / 255.0
+
+        # cv2.imshow("visualization", image)
+        # cv2.waitKey()
+
+        from PIL import Image
+
+        print("size 0 ",args.img_size[0])
+        print("size 1 ",args.img_size[1])
+
+        y_pred = self._session.run(self.conv1out, feed_dict={self._is_training: False, self._image: np.array([image])})
+        print(y_pred)
+
+        with open('test.txt', 'w') as outfile:
+            np.savetxt(outfile, y_pred[0][0][0])
+            # for slice_3d in y_pred:
+            #     slice_3d = y_pred[0]
+            #     for slice2d in slice_3d:
+            #         for row in slice2d:
+            #             np.savetxt(outfile, row)
+            #             outfile.write("=================\n")
+       ## np.savetxt('cutoff_output1.txt', y_pred)
+        return

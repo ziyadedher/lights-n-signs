@@ -114,3 +114,5 @@ venv.bak/
 
 scripts/annotations.txt
 scripts/classes.txt
+scripts/*.txt
+scripts/*.jpg
