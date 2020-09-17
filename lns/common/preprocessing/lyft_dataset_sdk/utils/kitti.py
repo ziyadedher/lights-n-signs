@@ -7,9 +7,9 @@ from typing import Any, List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from lyft_dataset_sdk.lyftdataset import LyftDatasetExplorer
-from lyft_dataset_sdk.utils.data_classes import Box, LidarPointCloud
-from lyft_dataset_sdk.utils.geometry_utils import BoxVisibility, box_in_image, view_points
+from lns.common.preprocessing.lyft_dataset_sdk.lyftdataset import LyftDatasetExplorer
+from lns.common.preprocessing.lyft_dataset_sdk.utils.data_classes import Box, LidarPointCloud
+from lns.common.preprocessing.lyft_dataset_sdk.utils.geometry_utils import BoxVisibility, box_in_image, view_points
 from matplotlib.axes import Axes
 from PIL import Image
 from pyquaternion import Quaternion

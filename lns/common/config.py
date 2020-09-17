@@ -34,7 +34,8 @@ POSSIBLE_DATASETS: List[str] = [
     "ScaleLights_New_TRC",
     "ScaleLights_New_Test",
     "ScaleSigns",
-    "ScaleObjects"
+    "ScaleObjects",
+    "LyftPerception"
 ]
 
 

@@ -31,10 +31,10 @@ import fire
 import matplotlib.pyplot as plt
 import numpy as np
 from joblib import Parallel, delayed, parallel_backend
-from lyft_dataset_sdk.lyftdataset import LyftDataset
-from lyft_dataset_sdk.utils.data_classes import LidarPointCloud
-from lyft_dataset_sdk.utils.geometry_utils import BoxVisibility, transform_matrix
-from lyft_dataset_sdk.utils.kitti import KittiDB
+from lns.common.preprocessing.lyft_dataset_sdk.lyftdataset import LyftDataset
+from lns.common.preprocessing.lyft_dataset_sdk.utils.data_classes import LidarPointCloud
+from lns.common.preprocessing.lyft_dataset_sdk.utils.geometry_utils import BoxVisibility, transform_matrix
+from lns.common.preprocessing.lyft_dataset_sdk.utils.kitti import KittiDB
 from PIL import Image
 from pyquaternion import Quaternion
 from tqdm import tqdm

@@ -21,9 +21,9 @@ from matplotlib.axes import Axes
 from pyquaternion import Quaternion
 from tqdm import tqdm
 
-from lyft_dataset_sdk.utils.data_classes import Box, LidarPointCloud, RadarPointCloud  # NOQA
-from lyft_dataset_sdk.utils.geometry_utils import BoxVisibility, box_in_image, view_points  # NOQA
-from lyft_dataset_sdk.utils.map_mask import MapMask
+from lns.common.preprocessing.lyft_dataset_sdk.utils.data_classes import Box, LidarPointCloud, RadarPointCloud  # NOQA
+from lns.common.preprocessing.lyft_dataset_sdk.utils.geometry_utils import BoxVisibility, box_in_image, view_points  # NOQA
+from lns.common.preprocessing.lyft_dataset_sdk.utils.map_mask import MapMask
 
 PYTHON_VERSION = sys.version_info[0]
 

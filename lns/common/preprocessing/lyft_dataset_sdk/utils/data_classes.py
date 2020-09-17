@@ -15,7 +15,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from pyquaternion import Quaternion
 
-from lyft_dataset_sdk.utils.geometry_utils import view_points, transform_matrix
+from lns.common.preprocessing.lyft_dataset_sdk.utils.geometry_utils import view_points, transform_matrix
 
 
 class PointCloud(ABC):
