@@ -37,7 +37,7 @@ You're ready to develop the repository.
 ### Usage
 Since you installed the package in development mode using `-e`, any changes you make in your package will be reflected in your Python environment. So the easiest way to test out changes would be to run an interpreter and just run the code through it. For example, if I changed the `Preprocessor` and I want to verify the `preprocess` function still exists, I can do the following in an interactive Python shell in the sourced environment (there should be a `(.venv)` in your command line):
 ```python
-from lns.common.preprocessing import Preprocessor
+from lns.common.preprocess import Preprocessor
 Preprocessor.preprocess()
 ```
 
