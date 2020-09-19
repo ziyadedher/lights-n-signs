@@ -109,6 +109,6 @@ class SqueezedetTrainer(Trainer[SqueezedetModel, SqueezedetData, SqueezedetSetti
         try:
             train.train()
         except KeyboardInterrupt:
-            print(f"Training interrupted")
+            print("Training interrupted")
         else:
-            print(f"Training completed succesfully")
+            print("Training completed succesfully")

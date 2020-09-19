@@ -88,7 +88,7 @@ class Dataset:
         original_classes = self.classes
         annotations = self.annotations
 
-        classes = list((set(self.classes) - set(c for l in mapping.values() for c in l)) | set(mapping.keys()))
+        classes = list((set(self.classes) - set(c for l_val in mapping.values() for c in l_val)) | set(mapping.keys()))
 
         for annotation in self.annotations.values():
             for label in annotation:
