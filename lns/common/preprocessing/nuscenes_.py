@@ -1,6 +1,4 @@
-"""
-nuScenes dataset preprocessor.
-
+""" nuScenes dataset preprocessor.
 The name has an appended _ to avoid a name conflict with the package.
 """
 
@@ -48,7 +46,7 @@ def _nuscenes(path: str) -> Dataset:  # noqa
             bounds = Bounds2D(xmin, ymin, xmax - xmin, ymax - ymin)
             label = category_to_detection_name(str(box.name))
             if label is not None:
-                class_index = classes.index(category_to_detection_name(str(box.name)))
+                class_index = classes.index(str(category_to_detection_name(str(box.name))))
                 annotations[data_path].append(Object2D(bounds, class_index))
 
     return Dataset(DATASET_NAME, images, classes, annotations)
