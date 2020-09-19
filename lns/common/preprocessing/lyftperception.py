@@ -19,14 +19,15 @@ DATASET_NAME = "LyftPerception"
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
 def _lyftperception(path: str = '/home/lns/.lns-training/resources/data/LyftPerception/train', datatype: str ='train') -> Dataset:  # noqa
     images: Dataset.Images = []
-    classes: Dataset.Classes = ['car', 'pedestrian', 'animal', 'other_vehicle', 'bus', 
+    classes: Dataset.Classes = ['car', 'pedestrian', 'animal', 'other_vehicle', 'bus',
                                 'motorcycle', 'truck', 'emergency_vehicle', 'bicycle']
     annotations: Dataset.Annotations = {}
 
-    lyft = LyftDataset(data_path = path,  #'/home/lns/.lns-training/resources/data/LyftPerception/train',
-                    json_path = os.path.join(path, datatype + '_data'),
-                    verbose = True, map_resolution = 0.1)  #'/home/lns/.lns-training/resources/data/LyftPerception/train/train_data', 
-
+    lyft = LyftDataset(data_path=path,  # '/home/lns/.lns-training/resources/data/LyftPerception/train',
+                    json_path=os.path.join(path, datatype + '_data'),
+                        verbose=True, map_resolution = 0.1)
+    # '/home/lns/.lns-training/resources/data/LyftPerception/train/train_data',
+    
     for sample in lyft.sample:
         cam_token = sample['data']['CAM_FRONT']
 
