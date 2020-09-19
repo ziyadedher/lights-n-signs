@@ -24,10 +24,10 @@ def _lyftperception(path: str = '/home/lns/.lns-training/resources/data/LyftPerc
     annotations: Dataset.Annotations = {}
 
     lyft = LyftDataset(data_path=path,  # '/home/lns/.lns-training/resources/data/LyftPerception/train',
-                    json_path=os.path.join(path, datatype + '_data'),
-                        verbose=True, map_resolution = 0.1)
+                       json_path=os.path.join(path, datatype + '_data'),
+                       verbose=True, map_resolution=0.1)
     # '/home/lns/.lns-training/resources/data/LyftPerception/train/train_data',
-    
+
     for sample in lyft.sample:
         cam_token = sample['data']['CAM_FRONT']
 
