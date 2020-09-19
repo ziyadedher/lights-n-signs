@@ -12,6 +12,10 @@ from lns.common.preprocessing.nuscenes.eval.detection.constants import DETECTION
 from lns.common.preprocessing.nuscenes.eval.detection.utils import category_to_detection_name
 from lns.common.preprocessing.nuscenes.utils.geometry_utils import view_points
 
+# # unused imports from before
+# from itertools import chain
+# from lns.common.preprocessing.nuscenes.eval.common.loaders import load_gt
+# import matplotlib.pyplot as plt
 
 DATASET_NAME = "nuscenes"
 
