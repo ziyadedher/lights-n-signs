@@ -115,11 +115,12 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         try:
             from lns.yolo._lib import train  # pylint:disable=unused-import  # noqa
         except KeyboardInterrupt:
-            print(f"Training interrupted")
+            print("Training interrupted")
         else:
-            print(f"Training completed succesfully")
+            print("Training completed succesfully")
 
     # pylint: disable=too-many-locals
+    # pylint: disable=E1101
     def export_graph(self) -> None:
         """Export a frozen graph in .pb format to the specified path."""
         anchors = parse_anchors(self._paths["anchors_file"])
