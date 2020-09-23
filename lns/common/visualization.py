@@ -110,24 +110,10 @@ def _put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Dat
 
 if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
-    BOSCH = Preprocessor.preprocess("Bosch")
-    DATASET = BOSCH
-    DATASET = DATASET.merge_classes({
-        "green": [
-            "GreenLeft", "Green", "GreenRight", "GreenStraight",
-            "GreenStraightRight", "GreenStraightLeft", "Green traffic light"
-        ],
-        "red": [
-            "Yellow", "RedLeft", "Red", "RedRight", "RedStraight",
-            "RedStraightLeft", "Red traffic light", "Yellow traffic light"
-        ],
-        "off": ["off"]
-    })
+    SCALE = Preprocessor.preprocess("SCALE")
+    DATASET = SCALE
 
     from lns.yolo import YoloTrainer
-    TRAINER = YoloTrainer('new_dataset_ac_1')
-    # pred_class: any("red", "green", "yellow", "off") # This for coloring only
-    COLOR_MAPPING = dict(zip(['5-red-green', '4-red-green', 'red', '5-red-yellow', 'green', 'yellow', 'off'],
-                             ['red'] * 4 + ['green'] + ['yellow'] + ['off']))
+    TRAINER = YoloTrainer('pedestrian_5')
 
-    generate_video_stream(DATASET, trainer=TRAINER, trainer_color_mapping=COLOR_MAPPING)
+    generate_video_stream(DATASET, trainer=TRAINER)

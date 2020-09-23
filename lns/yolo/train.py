@@ -82,10 +82,17 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         checkpoints = os.listdir(self._paths["checkpoint_folder"])
         if "checkpoint" in checkpoints:
             checkpoints.remove("checkpoint")
-        if checkpoints:
+        _checkpoints = []
+        for checkpoint in checkpoints:
+            try:
+                _checkpoints.append((checkpoint, int(checkpoint.split("_")[5])))
+            except ValueError:
+                continue
+
+        if _checkpoints:
             return os.path.join(
                 self._paths["checkpoint_folder"],
-                max(checkpoints, key=lambda checkpoint: int(checkpoint.split("_")[3])).rsplit(".", 1)[0])
+                max(_checkpoints, key=lambda item: item[1])[0].rsplit(".", 1)[0])
         return YoloTrainer.INITIAL_WEIGHTS
 
     def train(self, settings: Optional[YoloSettings] = None) -> None:
@@ -196,9 +203,9 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         print("Restoring global step from checkpoint file name...")
         name = os.path.basename(checkpoint_path)
 
-        # Example model checkpoint name: model-epoch_60_step_43309_loss_0.3424_lr_1e-05
+        # Example model checkpoint name: best_model_Epoch_26_step_23165_mAP_0.8246_loss_3.7733_lr_0.0001
         try:
-            step = int(name.split("_")[3])
+            step = int(name.split("_")[5])
             print(f"Determined global step to be {step}.")
             return step
         except (IndexError, ValueError, TypeError):
