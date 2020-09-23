@@ -123,7 +123,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
             if stage > -1:
                 self.train(dataclasses.replace(self.settings, num_stages=stage + 1))
             else:
-                print(f"Training ended prematurely, no stages were trained.")
+                print("Training ended prematurely, no stages were trained.")
         else:
             # Makes sure the cascade has been generated if the training ended normally
             if "cascade.xml" in os.listdir(cascade_folder):

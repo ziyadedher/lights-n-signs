@@ -122,9 +122,9 @@ class YoloTrainer(Trainer[YoloModel, YoloData, YoloSettings]):
         try:
             from lns.yolo._lib import train  # pylint:disable=unused-import  # noqa
         except KeyboardInterrupt:
-            print(f"Training interrupted")
+            print("Training interrupted")
         else:
-            print(f"Training completed succesfully")
+            print("Training completed succesfully")
 
     # pylint: disable=too-many-locals
     def export_graph(self) -> None:
