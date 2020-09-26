@@ -1,5 +1,5 @@
 # Lights and Signs Training
-## Description
+## Description 
 This repository contains all the Lights and Signs sub-team training code and infrastructure. Most lights and signs development will happen in here and then get deployed to `zeus` once it is ready and tested.
 
 ## Structure
