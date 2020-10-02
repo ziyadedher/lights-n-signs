@@ -23,8 +23,8 @@ def _lyftperception(path: str = '/home/lns/.lns-training/resources/data/LyftPerc
                                 'motorcycle', 'truck', 'emergency_vehicle', 'bicycle']
     annotations: Dataset.Annotations = {}
 
-    lyft = LyftDataset(data_path=path, #'/home/lns/.lns-training/resources/data/LyftPerception/train', # path,
-                       json_path=os.path.join(path, 'data'),#datatype + '_data'),
+    lyft = LyftDataset(data_path=path,  #'/home/lns/.lns-training/resources/data/LyftPerception/train', # path,
+                       json_path=os.path.join(path, 'data'),  #datatype + '_data'),
                        verbose=True, map_resolution=0.1)
     # '/home/lns/.lns-training/resources/data/LyftPerception/train/train_data',
 
@@ -41,7 +41,7 @@ def _lyftperception(path: str = '/home/lns/.lns-training/resources/data/LyftPerc
             img_corners = view_points(box.corners(), camera_intrinsic, normalize=True)[:2, :]
 
             # Take an outer rect of the 3d projection
-            xmin = img_corners[0].min() if img_corners[0].min() >= 0 else 0 #1224x1024
+            xmin = img_corners[0].min() if img_corners[0].min() >= 0 else 0  #1224x1024
             xmax = img_corners[0].max() if img_corners[0].max() <= 1224 else 1224
             ymin = img_corners[1].min() if img_corners[1].min() >= 0 else 0
             ymax = img_corners[1].max() if img_corners[1].max() <= 1024 else 1024
