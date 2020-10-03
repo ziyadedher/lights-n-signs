@@ -76,26 +76,35 @@ def _put_labels_on_image(image: np.ndarray, labels: Dataset.Labels, classes: Dat
                          color_mapping: Optional[Dict] = None, threshold: float = 0.2) -> np.ndarray:
     shade = 255 if not is_pred else 150
     class_to_color = {
-        'green': (0, shade, 0),
-        'red': (0, 0, shade),
-        'yellow': (0, 153, shade),
-        'off': (0, 0, 0)
+        **{cls: (255, 255, 255) for cls in classes},
+        **{
+            'green': (0, shade, 0),
+            'red': (0, 0, shade),
+            'yellow': (0, 153, shade),
+            'off': (0, 0, 0)
+        },
     }
     for label in labels:
         if label.score > threshold:
             if not color_mapping:
                 lbl = classes[label.class_index]
             else:
-                color_mapping.get(classes[label.class_index], "red")
+                lbl = color_mapping.get(classes[label.class_index], "red")
 
-            image = cv2.rectangle(image, (label.bounds.left, label.bounds.top),
-                                  (label.bounds.right, label.bounds.bottom),
-                                  class_to_color[lbl])
+            image = cv2.rectangle(
+                image,
+                (int(label.bounds.left), int(label.bounds.top)),
+                (int(label.bounds.right), int(label.bounds.bottom)),
+                class_to_color[lbl]
+            )
             label_score = f'{label.score:.2f}' if label.score != 1 else ''
-            image = cv2.putText(image,  # Put label on the image
-                                f'{classes[label.class_index]} {label_score}',
-                                (label.bounds.right, label.bounds.bottom), cv2.FONT_HERSHEY_PLAIN,
-                                1, class_to_color[lbl], thickness=2)
+            image = cv2.putText(
+                image,
+                f'{classes[label.class_index]} {label_score}',
+                (int(label.bounds.right), int(label.bounds.bottom)),
+                cv2.FONT_HERSHEY_PLAIN, 1,
+                class_to_color[lbl], thickness=2
+            )
     return image
 
 

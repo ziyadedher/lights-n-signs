@@ -17,6 +17,8 @@ ignore-paths:
   - lns\squeezedet\_lib\
   - lns/common/preprocessing/lyft_dataset_sdk/
   - lns\common\preprocessing\lyft_dataset_sdk\
+  - lns/common/preprocessing/nuscenes/
+  - lns\common\preprocessing\nuscenes\
 
 ignore-patterns:
   - ^\..*.py$
