@@ -26,6 +26,12 @@ NEW_LIGHTS_TEST_NAME = "ScaleLights_New_Test"
 SIGNS_DATASET_NAME = "ScaleSigns"
 OBJECTS_DATASET_NAME = "ScaleObjects"
 
+headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+   'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+   'Accept-Encoding': 'none',
+   'Accept-Language': 'en-US,en;q=0.8',
+   'Connection': 'keep-alive'}
 
 def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str]] = None) -> Dataset:  # noqa
     images: Dataset.Images = []
@@ -56,7 +62,7 @@ def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str
         batches_to_retrieve = [batch]
     else:
         batches_to_retrieve = batch
-
+    print(batches_to_retrieve)
     for batch_name in batches_to_retrieve:
         proper_batch_name = batch_name if batch_name else 'default'
         batch_path = os.path.join(scale_data_path, proper_batch_name)
@@ -88,7 +94,9 @@ def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str
 
                 try:
                     if 'drive.google.com' in img_url:
-                        remotefile = urllib.request.urlopen(img_url)
+                        request_=urllib.request.Request(img_url,None,headers)
+                        remotefile = urllib.request.urlopen(request_)
+                        #remotefile = urllib.request.urlopen(img_url)
                         content = remotefile.info()['Content-Disposition']
                         _, params = cgi.parse_header(content)
                         local_path = os.path.join(batch_path, params["filename"])
@@ -96,8 +104,15 @@ def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str
                         local_path = os.path.join(batch_path, img_url.rsplit('/', 1)[-1])
 
                     if needs_download or not os.path.isfile(local_path):
+                        print('Batch Path', batch_path)
+                        print('Local Path',local_path)
                         # Download the image
-                        urllib.request.urlretrieve(img_url, local_path)
+                        # urllib.request.urlretrieve(img_url, local_path)
+                        request_=urllib.request.Request(img_url,None,headers)
+                        response = urllib.request.urlopen(request_)
+                        f = open(local_path,'wb')
+                        f.write(response.read())
+                        f.close()
 
                 except HTTPError as error:
                     print("Image {} failed to download due to HTTPError {}: {}".format(
