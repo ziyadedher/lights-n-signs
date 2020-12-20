@@ -1225,7 +1225,7 @@ class LyftDatasetExplorer:
         """
 
         if out_path is not None:
-            assert out_path.suffix == ".avi"
+            assert out_path.suffix == ".mp4"
 
         # Get records from DB.
         scene_rec = self.lyftd.get("scene", scene_token)
@@ -1238,9 +1238,9 @@ class LyftDatasetExplorer:
 
         time_step = 1 / freq * 1e6  # Time-stamps are measured in micro-seconds.
 
-        window_name = f"{scene_rec['name']}"
-        cv2.namedWindow(window_name)
-        cv2.moveWindow(window_name, 0, 0)
+        # window_name = f"{scene_rec['name']}"
+        # cv2.namedWindow(window_name)
+        # cv2.moveWindow(window_name, 0, 0)
 
         # Load first sample_data record for each channel
         current_recs = {}  # Holds the current record to be displayed by channel.
@@ -1265,7 +1265,7 @@ class LyftDatasetExplorer:
 
         canvas = np.ones((2 * image_size[1], 3 * image_size[0], 3), np.uint8)
         if out_path is not None:
-            fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')#*"MJPG")
             out = cv2.VideoWriter(str(out_path), fourcc, freq, canvas.shape[1::-1])
         else:
             out = None
@@ -1314,7 +1314,7 @@ class LyftDatasetExplorer:
                     prev_recs[channel] = sd_rec  # Store here so we don't render the same image twice.
 
             # Show updated canvas.
-            cv2.imshow(window_name, canvas)
+            # cv2.imshow(window_name, canvas)
             if out_path is not None:
                 out.write(canvas)
 
@@ -1323,11 +1323,11 @@ class LyftDatasetExplorer:
             if key == 32:  # if space is pressed, pause.
                 key = cv2.waitKey()
 
-            if key == 27:  # if ESC is pressed, exit.
-                cv2.destroyAllWindows()
-                break
+            # if key == 27:  # if ESC is pressed, exit.
+            #     cv2.destroyAllWindows()
+            #     break
 
-        cv2.destroyAllWindows()
+        # cv2.destroyAllWindows()
         if out_path is not None:
             out.release()
 
