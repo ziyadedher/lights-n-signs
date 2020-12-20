@@ -36,7 +36,7 @@ OBJECTS_DATASET_NAME = "ScaleObjects"
 
 headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 \
             (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
             'Accept-Encoding': 'none',
             'Accept-Language': 'en-US,en;q=0.8',
@@ -44,11 +44,9 @@ headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 \
 
 
 def print_file_metadata(service_inst, file_id):
-
-    
     """Print a file's metadata.
-    Args:
 
+    Args:
         service_inst: Drive API service instance.
         file_id: ID of the file to print metadata for.
     """
@@ -59,15 +57,10 @@ def print_file_metadata(service_inst, file_id):
     except HTTPError as error:
         print('An error occurred: %s' % error)
 
+
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
 
 def api_initialize():
-
-
-    """Shows basic usage of the Drive v3 API.
-
-    Prints the names and ids of the first 10 files the user has access to.
-    """
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -87,8 +80,8 @@ def api_initialize():
         with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
 
-    global service 
-    service = build('drive', 'v3', credentials=creds)
+    global SERVICE  # noqa
+    SERVICE = build('drive', 'v3', credentials=creds)
 
 
 def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str]] = None) -> Dataset:  # noqa
@@ -156,32 +149,32 @@ def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str
 
                 try:
                     if 'drive.google.com' in img_url:
-                        match = re.search(regex,img_url)
-                        task_id = match[0]
+                        match = re.search(regex, img_url)
+                        task_id = match[0] # noqa
                         api_initialize()
-                        file_name = print_file_metadata(service, task_id)
+                        file_name = print_file_metadata(SERVICE, task_id)  # noqa
                         local_path = os.path.join(batch_path, file_name)
-                        '''
-                        request_=urllib.request.Request(img_url,None,headers)
-                        remotefile = urllib.request.urlopen(request_)
-                        #remotefile = urllib.request.urlopen(img_url)
-                        content = remotefile.info()['Content-Disposition']
-                        _, params = cgi.parse_header(content)
-                        local_path = os.path.join(batch_path, params["filename"])
-                        '''
+                        
+                        # request_=urllib.request.Request(img_url,None,headers)
+                        # remotefile = urllib.request.urlopen(request_)
+                        # #remotefile = urllib.request.urlopen(img_url)
+                        # content = remotefile.info()['Content-Disposition']
+                        # _, params = cgi.parse_header(content)
+                        # local_path = os.path.join(batch_path, params["filename"])
+                    
                     else:
                         local_path = os.path.join(batch_path, img_url.rsplit('/', 1)[-1])
 
                     if needs_download or not os.path.isfile(local_path):
                         print('Batch Path', batch_path)
-                        print('Local Path',local_path)
+                        print('Local Path', local_path)
                         # Download the image
                         # urllib.request.urlretrieve(img_url, local_path)
-                        request_=urllib.request.Request(img_url,None,headers)
+                        request_ = urllib.request.Request(img_url, None, headers)
                         response = urllib.request.urlopen(request_)
-                        f = open(local_path,'wb')
-                        f.write(response.read())
-                        f.close()
+                        local_file = open(local_path, 'wb')
+                        local_file.write(response.read())
+                        local_file.close()
 
                 except HTTPError as error:
                     print("Image {} failed to download due to HTTPError {}: {}".format(
