@@ -44,7 +44,7 @@ headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 \
 
 
 def print_file_metadata(service_inst, file_id): # noqa
-    """Print a file's metadata. 
+    """Print a file's metadata.
 
     Args:
         service_inst: Drive API service instance.
