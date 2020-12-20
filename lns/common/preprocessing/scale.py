@@ -11,9 +11,9 @@ import pickle
 import requests
 import scaleapi  # type: ignore
 
-from google.auth.transport.requests import Request  # type: ignore
-from googleapiclient.discovery import build  # type: ignore
-from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
+from google.auth.transport.requests import Request  # noqa
+from googleapiclient.discovery import build  # noqa
+from google_auth_oauthlib.flow import InstalledAppFlow  # noqa
 
 
 from lns.common.dataset import Dataset
@@ -34,29 +34,26 @@ NEW_LIGHTS_TEST_NAME = "ScaleLights_New_Test"
 SIGNS_DATASET_NAME = "ScaleSigns"
 OBJECTS_DATASET_NAME = "ScaleObjects"
 
-headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 \
-        (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-        'Accept-Encoding': 'none',
-        'Accept-Language': 'en-US,en;q=0.8',
-        'Connection': 'keep-alive'}
+headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 \
+            (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+            'Accept-Encoding': 'none',
+            'Accept-Language': 'en-US,en;q=0.8',
+            'Connection': 'keep-alive'}
 
 
-def print_file_metadata(service, file_id):
+def print_file_metadata(service_inst, file_id):
+
     
     """Print a file's metadata.
-
     Args:
-        service: Drive API service instance.
+
+        service_inst: Drive API service instance.
         file_id: ID of the file to print metadata for.
     """
-
     try:
-        file = service.files().get(fileId=file_id).execute()
-        #print(file)
-
-        # print('Title: %s' % file['name'])
+        file = service_inst.files().get(fileId=file_id).execute()
         return file['name']
 
     except HTTPError as error:
@@ -65,7 +62,10 @@ def print_file_metadata(service, file_id):
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
 
 def api_initialize():
+
+
     """Shows basic usage of the Drive v3 API.
+
     Prints the names and ids of the first 10 files the user has access to.
     """
     creds = None
@@ -89,7 +89,7 @@ def api_initialize():
 
     global service 
     service = build('drive', 'v3', credentials=creds)
-    
+
 
 def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str]] = None) -> Dataset:  # noqa
     images: Dataset.Images = []
@@ -121,7 +121,9 @@ def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str
     else:
         batches_to_retrieve = batch
     print(batches_to_retrieve)
-    regex = "([\w-]){33}|([\w-]){19}"
+    
+    regex = "([\w-]){33}|([\w-]){19}" # noqa
+
     for batch_name in batches_to_retrieve:
         print('On Batch', batch_name)
         proper_batch_name = batch_name if batch_name else 'default'
