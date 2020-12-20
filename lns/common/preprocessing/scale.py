@@ -1,19 +1,20 @@
 """Scale data preprocessor."""
 
 import os
+# import os.path
 import urllib.request
 from urllib.error import HTTPError
-import cgi
+# import cgi
 from typing import List, Union
+import re
+import pickle
 import requests
 import scaleapi  # type: ignore
 
-import re
-import pickle
-import os.path
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+from google.auth.transport.requests import Request  # type: ignore
+from googleapiclient.discovery import build  # type: ignore
+from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
+
 
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
@@ -33,30 +34,36 @@ NEW_LIGHTS_TEST_NAME = "ScaleLights_New_Test"
 SIGNS_DATASET_NAME = "ScaleSigns"
 OBJECTS_DATASET_NAME = "ScaleObjects"
 
-headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-   'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-   'Accept-Encoding': 'none',
-   'Accept-Language': 'en-US,en;q=0.8',
-   'Connection': 'keep-alive'}
+headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 \
+        (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+        'Accept-Encoding': 'none',
+        'Accept-Language': 'en-US,en;q=0.8',
+        'Connection': 'keep-alive'}
+
 
 def print_file_metadata(service, file_id):
+    
     """Print a file's metadata.
 
     Args:
         service: Drive API service instance.
         file_id: ID of the file to print metadata for.
     """
+
     try:
         file = service.files().get(fileId=file_id).execute()
         #print(file)
 
         # print('Title: %s' % file['name'])
         return file['name']
+
     except HTTPError as error:
         print('An error occurred: %s' % error)
 
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
+
 def api_initialize():
     """Shows basic usage of the Drive v3 API.
     Prints the names and ids of the first 10 files the user has access to.
