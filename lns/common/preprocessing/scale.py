@@ -36,15 +36,15 @@ OBJECTS_DATASET_NAME = "ScaleObjects"
 
 headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 \
             (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-            'Accept-Encoding': 'none',
-            'Accept-Language': 'en-US,en;q=0.8',
-            'Connection': 'keep-alive'}
+           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+           'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+           'Accept-Encoding': 'none',
+           'Accept-Language': 'en-US,en;q=0.8',
+           'Connection': 'keep-alive'}
 
 
-def print_file_metadata(service_inst, file_id):
-    """Print a file's metadata.
+def print_file_metadata(service_inst, file_id): # noqa
+    """Print a file's metadata. 
 
     Args:
         service_inst: Drive API service instance.
@@ -60,7 +60,8 @@ def print_file_metadata(service_inst, file_id):
 
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
 
-def api_initialize():
+
+def api_initialize(): # noqa
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -114,7 +115,6 @@ def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str
     else:
         batches_to_retrieve = batch
     print(batches_to_retrieve)
-    
     regex = "([\w-]){33}|([\w-]){19}" # noqa
 
     for batch_name in batches_to_retrieve:
@@ -154,14 +154,12 @@ def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str
                         api_initialize()
                         file_name = print_file_metadata(SERVICE, task_id)  # noqa
                         local_path = os.path.join(batch_path, file_name)
-                        
                         # request_=urllib.request.Request(img_url,None,headers)
                         # remotefile = urllib.request.urlopen(request_)
                         # #remotefile = urllib.request.urlopen(img_url)
                         # content = remotefile.info()['Content-Disposition']
                         # _, params = cgi.parse_header(content)
                         # local_path = os.path.join(batch_path, params["filename"])
-                    
                     else:
                         local_path = os.path.join(batch_path, img_url.rsplit('/', 1)[-1])
 
