@@ -8,6 +8,13 @@ from typing import List, Union
 import requests
 import scaleapi  # type: ignore
 
+import re
+import pickle
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
 from lns.common.preprocess import Preprocessor
@@ -32,6 +39,50 @@ headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTM
    'Accept-Encoding': 'none',
    'Accept-Language': 'en-US,en;q=0.8',
    'Connection': 'keep-alive'}
+
+def print_file_metadata(service, file_id):
+    """Print a file's metadata.
+
+    Args:
+        service: Drive API service instance.
+        file_id: ID of the file to print metadata for.
+    """
+    try:
+        file = service.files().get(fileId=file_id).execute()
+        #print(file)
+
+        # print('Title: %s' % file['name'])
+        return file['name']
+    except HTTPError as error:
+        print('An error occurred: %s' % error)
+
+SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
+def api_initialize():
+    """Shows basic usage of the Drive v3 API.
+    Prints the names and ids of the first 10 files the user has access to.
+    """
+    creds = None
+    # The file token.pickle stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.pickle', 'wb') as token:
+            pickle.dump(creds, token)
+
+    global service 
+    service = build('drive', 'v3', credentials=creds)
+    
 
 def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str]] = None) -> Dataset:  # noqa
     images: Dataset.Images = []
@@ -63,7 +114,9 @@ def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str
     else:
         batches_to_retrieve = batch
     print(batches_to_retrieve)
+    regex = "([\w-]){33}|([\w-]){19}"
     for batch_name in batches_to_retrieve:
+        print('On Batch', batch_name)
         proper_batch_name = batch_name if batch_name else 'default'
         batch_path = os.path.join(scale_data_path, proper_batch_name)
 
@@ -94,12 +147,19 @@ def _scale_common(name: str, path: str, project: str, batch: Union[str, List[str
 
                 try:
                     if 'drive.google.com' in img_url:
+                        match = re.search(regex,img_url)
+                        task_id = match[0]
+                        api_initialize()
+                        file_name = print_file_metadata(service, task_id)
+                        local_path = os.path.join(batch_path, file_name)
+                        '''
                         request_=urllib.request.Request(img_url,None,headers)
                         remotefile = urllib.request.urlopen(request_)
                         #remotefile = urllib.request.urlopen(img_url)
                         content = remotefile.info()['Content-Disposition']
                         _, params = cgi.parse_header(content)
                         local_path = os.path.join(batch_path, params["filename"])
+                        '''
                     else:
                         local_path = os.path.join(batch_path, img_url.rsplit('/', 1)[-1])
 
