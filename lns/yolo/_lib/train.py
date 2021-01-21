@@ -16,6 +16,9 @@ from lns.yolo._lib.utils.nms_utils import gpu_nms
 
 from lns.yolo._lib.model import yolov3
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] ="1"
+
 # setting loggers
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S', filename=args.progress_log_path, filemode='a')
