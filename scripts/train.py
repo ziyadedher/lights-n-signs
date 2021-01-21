@@ -1,6 +1,5 @@
 # from lns.common.visualization import visualize
 import sys
-sys.path.append('.')
 from lns.common.preprocess import Preprocessor
 from lns.yolo.train import YoloTrainer
 from lns.yolo.settings import YoloSettings
