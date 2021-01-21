@@ -17,7 +17,9 @@ from lns.yolo._lib.utils.nms_utils import gpu_nms
 from lns.yolo._lib.model import yolov3
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] ="1"
+
+# Specify what GPU you want to train on, possible values {"0", "1", "2", "3"}
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # setting loggers
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s',
