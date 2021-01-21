@@ -1,4 +1,6 @@
 # from lns.common.visualization import visualize
+import sys
+sys.path.append('.')
 from lns.common.preprocess import Preprocessor
 from lns.yolo.train import YoloTrainer
 from lns.yolo.settings import YoloSettings
@@ -74,12 +76,12 @@ settings = YoloSettings(
     score_threshold=0.10,
     eval_threshold=0.10,
 
-    restore_exclude=None,
-    restore_include=[],
-    update_part=None,
+    # restore_exclude=None,
+    # restore_include=[],
+    # update_part=None,
 )
 
-trainer = YoloTrainer("pedestrian_w_nuscenes_oldyolo", dataset)
+trainer = YoloTrainer("ped_tiffany_test", dataset)
 trainer.train(settings)
 
 
