@@ -5,13 +5,13 @@ import os
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
 from lns.common.preprocess import Preprocessor
-from lns.common.preprocessing.JAAD.jaad_data import JAAD
+from lns.common.preprocessing.JAAD.jaad_data import JAAD  # type: ignore
 
 DATASET_NAME = "JAADDataset"
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
-def _jaad_dataset(path: str = '/home/lns/.lns-training/resources/data/JAADDataset') -> Dataset:  # pylint:disable=too-many-locals
+def _jaad_dataset(path: str = '/home/lns/.lns-training/resources/data/JAADDataset') -> Dataset:  # pylint:disable=too-many-locals, line-too-long, too-many-branches
     images: Dataset.Images = []
     classes: Dataset.Classes = ['pedestrian', 'ped', 'people']
     annotations: Dataset.Annotations = {}
@@ -25,7 +25,7 @@ def _jaad_dataset(path: str = '/home/lns/.lns-training/resources/data/JAADDatase
         'squarify_ratio': 0
     }
 
-    jaad = JAAD(data_path = path)
+    jaad = JAAD(data_path=path)
     jaad_anns = jaad.generate_database()
 
     # get all video ids
