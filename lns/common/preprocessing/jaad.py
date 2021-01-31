@@ -11,7 +11,7 @@ DATASET_NAME = "JAADDataset"
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
-def _jaad_dataset(path: str = '/home/lns/.lns-training/resources/data/JAADDataset') -> Dataset:  # pylint:disable=too-many-locals, line-too-long, too-many-branches
+def _jaad_dataset(path: str = '/home/lns/.lns-training/resources/data/JAADDataset') -> Dataset:  # type: ignore
     images: Dataset.Images = []
     classes: Dataset.Classes = ['pedestrian', 'ped', 'people']
     annotations: Dataset.Annotations = {}
