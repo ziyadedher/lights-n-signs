@@ -1,19 +1,17 @@
 """JAAD data preprocessor."""
 
 import os
-import yaml  # XXX: this could be sped up by using PyYaml C-bindings (LibYAML)
 
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
 from lns.common.preprocess import Preprocessor
-from .JAAD.jaad_data import JAAD
-from os.path import join, abspath, exists
+from lns.common.preprocessing.JAAD.jaad_data import JAAD
 
 DATASET_NAME = "JAADDataset"
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
-def _jaad_dataset(path: str) -> Dataset:  # pylint:disable=too-many-locals
+def _jaad_dataset(path: str = '/home/lns/.lns-training/resources/data/JAADDataset') -> Dataset:  # pylint:disable=too-many-locals
     images: Dataset.Images = []
     classes: Dataset.Classes = ['pedestrian', 'ped', 'people']
     annotations: Dataset.Annotations = {}
@@ -27,23 +25,23 @@ def _jaad_dataset(path: str) -> Dataset:  # pylint:disable=too-many-locals
         'squarify_ratio': 0
     }
 
-    jaad = JAAD(data_path='/home/lns/.lns-training/resources/data/JAADDataset')
+    jaad = JAAD(data_path = path)
     jaad_anns = jaad.generate_database()
 
     # get all video ids
-    train_ids, _ = jaad._get_data_ids('train', data_params)
-    val_ids, _ = jaad._get_data_ids('val', data_params)
-    test_ids, _ = jaad._get_data_ids('test', data_params)
+    train_ids, _ = jaad.get_data_ids('train', data_params)
+    val_ids, _ = jaad.get_data_ids('val', data_params)
+    test_ids, _ = jaad.get_data_ids('test', data_params)
     video_ids = train_ids + val_ids + test_ids
 
     for vid in video_ids:
         for pid in jaad_anns[vid]['ped_annotations']:
-            imgs = [join(jaad._jaad_path, 'images', vid, '{:05d}.png'.format(f)) for f in \
+            imgs = [os.path.join(jaad.jaad_path, 'images', vid, '{:05d}.png'.format(f)) for f in
                     jaad_anns[vid]['ped_annotations'][pid]['frames']]
             boxes = jaad_anns[vid]['ped_annotations'][pid]['bbox']
-            
+
             for box, img in zip(boxes, imgs):
-                
+
                 bounds = Bounds2D(box[0], box[1], box[2] - box[0], box[3] - box[1])
                 if 'pedestrian' in jaad_anns[vid]['ped_annotations'][pid]['old_id']:
                     class_index = classes.index('pedestrian')

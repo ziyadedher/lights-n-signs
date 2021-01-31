@@ -60,17 +60,17 @@ class JAAD(object):
         self._image_ext = '.png'
 
         # Paths
-        self._jaad_path = data_path if data_path else self._get_default_path()
-        assert exists(self._jaad_path), \
-            'Jaad path does not exist: {}'.format(self._jaad_path)
-        self._data_split_ids_path = join(self._jaad_path, 'split_ids')
-        self._annotation_path = join(self._jaad_path, 'annotations')
-        self._annotation_vehicle_path = join(self._jaad_path, 'annotations_vehicle')
-        self._annotation_traffic_path = join(self._jaad_path, 'annotations_traffic')
-        self._annotation_attributes_path = join(self._jaad_path, 'annotations_attributes')
-        self._annotation_appearance_path = join(self._jaad_path, 'annotations_appearance')
-        self._clips_path = join(self._jaad_path, 'JAAD_clips')
-        self._images_path = join(self._jaad_path, 'images')
+        self.jaad_path = data_path if data_path else self._get_default_path()
+        assert exists(self.jaad_path), \
+            'Jaad path does not exist: {}'.format(self.jaad_path)
+        self._data_split_ids_path = join(self.jaad_path, 'split_ids')
+        self._annotation_path = join(self.jaad_path, 'annotations')
+        self._annotation_vehicle_path = join(self.jaad_path, 'annotations_vehicle')
+        self._annotation_traffic_path = join(self.jaad_path, 'annotations_traffic')
+        self._annotation_attributes_path = join(self.jaad_path, 'annotations_attributes')
+        self._annotation_appearance_path = join(self.jaad_path, 'annotations_appearance')
+        self._clips_path = join(self.jaad_path, 'JAAD_clips')
+        self._images_path = join(self.jaad_path, 'images')
 
     # Path generators
     @property
@@ -79,7 +79,7 @@ class JAAD(object):
         Generate a path to save cache files
         :return: Cache file folder path
         """
-        cache_path = abspath(join(self._jaad_path, 'data_cache'))
+        cache_path = abspath(join(self.jaad_path, 'data_cache'))
         if not exists(cache_path):
             makedirs(cache_path)
         return cache_path
@@ -778,7 +778,7 @@ class JAAD(object):
             height_rng = [0, float('inf')]
 
         annotations = self.generate_database()
-        video_ids, _pids = self._get_data_ids(image_set, params)
+        video_ids, _pids = self.get_data_ids(image_set, params)
 
         ped_samples = {}
         unique_samples = []
@@ -788,7 +788,7 @@ class JAAD(object):
             img_height = annotations[vid]['height']
             num_frames = annotations[vid]['num_frames']
             for i in range(0,num_frames,frame_stride):
-                ped_samples[join(self._jaad_path, 'images', vid, '{:05d}.png'.format(i))] = []
+                ped_samples[join(self.jaad_path, 'images', vid, '{:05d}.png'.format(i))] = []
             for pid in annotations[vid]['ped_annotations']:
                 if params['data_split_type'] != 'default' and pid not in _pids:
                     continue
@@ -797,7 +797,7 @@ class JAAD(object):
                     difficult = -1
                     if image_set in ['train', 'val']:
                         continue
-                imgs = [join(self._jaad_path, 'images', vid, '{:05d}.png'.format(f)) for f in \
+                imgs = [join(self.jaad_path, 'images', vid, '{:05d}.png'.format(f)) for f in \
                         annotations[vid]['ped_annotations'][pid]['frames']]
                 boxes = annotations[vid]['ped_annotations'][pid]['bbox']
                 occlusion = annotations[vid]['ped_annotations'][pid]['occlusion']
@@ -929,7 +929,7 @@ class JAAD(object):
         return data_save_path
 
     # Trajectory data generation
-    def _get_data_ids(self, image_set, params):
+    def get_data_ids(self, image_set, params):
         """
         A helper function to generate set id and ped ids (if needed) for processing
         :param image_set: Image-set to generate data
@@ -1057,7 +1057,7 @@ class JAAD(object):
         intent_seq = []
         vehicle_seq = []
 
-        video_ids, _pids = self._get_data_ids(image_set, params)
+        video_ids, _pids = self.get_data_ids(image_set, params)
 
         for vid in sorted(video_ids):
             img_width = annotations[vid]['width']
@@ -1073,7 +1073,7 @@ class JAAD(object):
                     continue
                 num_pedestrians += 1
                 frame_ids = pid_annots[pid]['frames']
-                images = [join(self._jaad_path, 'images', vid, '{:05d}.png'.format(f)) for f in
+                images = [join(self.jaad_path, 'images', vid, '{:05d}.png'.format(f)) for f in
                           pid_annots[pid]['frames']]
                 boxes = pid_annots[pid]['bbox']
                 occlusions = pid_annots[pid]['occlusion']
@@ -1143,7 +1143,7 @@ class JAAD(object):
         vehicle_seq = []
         activities = []
 
-        video_ids, _pids = self._get_data_ids(image_set, params)
+        video_ids, _pids = self.get_data_ids(image_set, params)
 
         for vid in sorted(video_ids):
             img_width = annotations[vid]['width']
@@ -1241,7 +1241,7 @@ class JAAD(object):
         image_seq, pids_seq = [], []
         box_seq, center_seq, occ_seq = [], [], []
         intent_seq = []
-        video_ids, _pids = self._get_data_ids(image_set, params)
+        video_ids, _pids = self.get_data_ids(image_set, params)
 
         for vid in sorted(video_ids):
             img_width = annotations[vid]['width']
