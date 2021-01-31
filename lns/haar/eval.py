@@ -39,7 +39,7 @@ def evaluate(data_path, model_path, num_neighbors=4, scale=1.3):
             else:
                 fpr += 1
 
-
+    # Report evaluation metrics
     precision = float(tpr) / float(tpr + fpr)
     recall = float(tpr) / float(num_valid)
 
