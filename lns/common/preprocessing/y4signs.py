@@ -69,9 +69,6 @@ def _Y4Signs(path: str) -> Dataset:
 
                 classnums[int(annotation_arr[0])] += 1
                 total_annotations += 1
-
-                
-
             
             # append the image path to list of images
             images.append(abs_image_path)
@@ -86,7 +83,7 @@ def _Y4Signs(path: str) -> Dataset:
     for i in range(len(classes)):
         print(classes[i] + ": " + str(classnums[i]))
     
-    print("\n total annotations: " + str(total_annotations))
+    print("\nTotal annotations: " + str(total_annotations))
 
     
     return Dataset(DATASET_NAME, images, classes, annotations)
