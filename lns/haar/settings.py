@@ -20,12 +20,15 @@ class HaarSettings(Settings):
     feature_size: int = 10
 
     # Number of samples to generate in setup
-    num_samples: int = 30000  # 1000
+    num_samples: int = 3000
 
     # Number of stages to train and respective number of positive and negative samples to use
     num_stages: int = 30
     num_positive: int = 1000
     num_negative: int = 500
+
+    # Minimal desired hit rate for each stage of the classifier
+    min_hit_rate: float = 0.995
 
     # Inference metrics, how much to scale the features by neighbour threshold
     scale_factor: float = 1.1
