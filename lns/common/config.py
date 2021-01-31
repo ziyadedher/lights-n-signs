@@ -38,6 +38,7 @@ POSSIBLE_DATASETS: List[str] = [
     "LyftPerception"
     "SCALE",
     "nuscenes",
+    "JAADDataset",
 ]
 
 

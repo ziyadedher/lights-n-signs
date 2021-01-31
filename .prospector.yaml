@@ -19,6 +19,8 @@ ignore-paths:
   - lns\common\preprocessing\lyft_dataset_sdk\
   - lns/common/preprocessing/nuscenes/
   - lns\common\preprocessing\nuscenes\
+  - lns/common/preprocessing/JAAD/
+  - lns\common\preprocessing\JAAD\
 
 ignore-patterns:
   - ^\..*.py$
