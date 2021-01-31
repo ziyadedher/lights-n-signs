@@ -98,11 +98,10 @@ def _Y4Signs(path: str) -> Dataset:
 
 
 class InvalidBoundingBoxError(Exception):
-    """Exception raised for errors in the input salary.
+    """Exception raised for errors in the input path.
 
     Attributes:
-        salary -- input salary which caused the error
-        message -- explanation of the error
+        path -- input path which caused the error
     """
 
     def __init__(self, path):
