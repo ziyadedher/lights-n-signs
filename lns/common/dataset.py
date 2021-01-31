@@ -165,9 +165,9 @@ class Dataset:
 
         return Dataset(self.name, images, classes, annotations, dynamic=True)
 
-    def split(self, *props: List[float]) -> List['Dataset']:
+    def split(self, *props_: List[float]) -> List['Dataset']:
         """Shuffles and partitions dataset into portions <props>."""
-        props = np.array(props)
+        props = np.array(props_)
         if np.sum(props) != 1 or np.any(props <= 0):  # type: ignore
             raise ValueError("<props> must be strictly positive and sum to 1.")
 
