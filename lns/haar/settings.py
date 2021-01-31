@@ -13,6 +13,9 @@ class HaarSettings(Settings):
     # Index of the class in the dataset used
     class_index: int = 0
 
+    # Features to use. Can be HAAR or LBP
+    feature_type: str = "LBP"
+
     # Width and height of the features to learn
     feature_size: int = 10
 

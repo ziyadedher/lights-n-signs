@@ -100,6 +100,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
         negative_annotations_file = os.path.basename(negative_annotations_file)
         command = [
             "/usr/bin/opencv_traincascade",
+            "-featureType", str(self.settings.feature_type),
             "-numPos", str(self.settings.num_positive),
             "-numNeg", str(self.settings.num_negative),
             "-numStages", str(self.settings.num_stages),
