@@ -13,38 +13,58 @@ def evaluate(data_path, model_path, num_neighbors=4, scale=1.3):
     model_path: the trained haar cascade detector.
 
     Example usage:
-    >>> evaluate('Y4Signs/annotations/No_Left_Turn_Text_positive','models/left_arrow/cascade_24_large.xml')
+    >>> evaluate('/mnt/ssd1/lns/resources/processed/haar/Y4Signs/annotations/No_Left_Turn_Text_positive',
+                 '/mnt/ssd1/lns/resources/trainers/haar/matthieu_haar_y4signs_1/cascade/cascade.xml')
     """
-    cascade = cv2.CascadeClassifier(model_path)
 
+    # Load model and data
+    cascade = cv2.CascadeClassifier(model_path)
     with open(data_path) as f:
         images_info = f.readlines()
 
-    fpr, tpr = 0, 0  # True Positive rate & False Positive rate
+    total_num_gt = 0
+    fp, tp = 0, 0
     for line in images_info:
+        print(line)
         info = line.split(" ")
-        img_path, num_detected = info[0], int(info[1])
+        img_path, num_signs = info[0], int(info[1])
 
-        if num_detected > 0:  # image has detected signs, take the 1st coordinate
-            x, y, w, h = int(info[2]), int(info[3]), int(info[4]), int(info[5])
+
+        # If the image has actual signs, get their ground-truth coordinates
+        if num_signs > 0:
+            all_gt = []
+            num_gt = int((len(info) - 2) / 4)
+            assert num_signs == num_gt, f"The number of ground-truth coordinates and of signs don't match in {img_path}"
+            total_num_gt += num_gt
+
+            for i in range(num_gt):
+                start_index = 2 + 4*i
+                gt_coordinates = (float(info[start_index]), 
+                                  float(info[start_index+1]), 
+                                  float(info[start_index+2]), 
+                                  float(info[start_index+3]))
+                all_gt.append(gt_coordinates)
         else:
             continue
 
+        # Get the model's detections
         gray_img = cv2.imread(img_path)
-        detections = cascade.detectMultiScale(gray, scale, num_neighbors)
+        detections = cascade.detectMultiScale(gray_img, scale, num_neighbors)
 
         for (x_det, y_det, w_det, h_det) in detections:
-            if IOU(x_det, y_det, w_det, h_det, x, y, w, h) > 0.5:
-                tpr += 1
+            for (x, y, w, h) in all_gt:
+                if IOU(x_det, y_det, w_det, h_det, x, y, w, h) > 0.5:
+                    tp += 1
+                    break
             else:
-                fpr += 1
+                fp += 1
 
     # Report evaluation metrics
-    precision = float(tpr) / float(tpr + fpr)
-    recall = float(tpr) / float(num_valid)
+    precision = float(tp) / float(tp + fp)
+    recall = float(tp) / float(total_num_gt)
 
-    print("TPR: {}\nFPR: {}\nPRECISION: {:.2f}\nRECALL: {:.2f}\nF1 SCORE: {:.2f}".format(tpr, fpr, precision, recall, f1_score(precision, recall)))
-    return [tpr,fpr,precision,recall,f1_score(precision, recall)]
+    print("TP: {}\FP: {}\Precision: {:.2f}\Recall: {:.2f}\nF1 score: {:.2f}".format(tp, fp, precision, recall, f1_score(precision, recall)))
+    return [tp, fp, precision, recall, f1_score(precision, recall)]
 
 
 def IOU(x, y, w, h, x1t, y1t, wt, ht):
