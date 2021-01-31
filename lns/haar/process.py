@@ -69,8 +69,11 @@ class HaarProcessor(Processor[HaarData]):
         os.makedirs(images_folder)
 
         # Open the positive and negative annotation files
-        pos_files = [open(os.path.join(annotations_folder, name + "_positive"), "w") for name in dataset.classes]
-        neg_files = [open(os.path.join(annotations_folder, name + "_negative"), "w") for name in dataset.classes]
+        positive_annotations = [os.path.join(annotations_folder, name + "_positive") for name in dataset.classes]
+        negative_annotations = [os.path.join(annotations_folder, name + "_negative") for name in dataset.classes]
+
+        pos_files = [open(annot, "w") for annot in positive_annotations]
+        neg_files = [open(annot, "w") for annot in negative_annotations]
 
         # Set up for reading annotations
         clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
@@ -103,10 +106,6 @@ class HaarProcessor(Processor[HaarData]):
             file.close()
         for file in neg_files:
             file.close()
-
-        # Generate the light type to absolute annotations path mapping
-        positive_annotations = [os.path.join(annotations_folder, file.name) for file in pos_files]
-        negative_annotations = [os.path.join(annotations_folder, file.name) for file in neg_files]
 
         return HaarData(positive_annotations, negative_annotations)
 
