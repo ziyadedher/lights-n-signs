@@ -2,7 +2,7 @@ from lns.common.preprocess import Preprocessor
 from lns.haar.train import HaarTrainer
 
 
-dataset_y4signs = Preprocessor.preprocess('Y4Signs')
+dataset_y4signs = Preprocessor.preprocess('Y4Signs_1036_584')
 print(f"Classes before merge: {dataset_y4signs.classes}")
 
 dataset_y4signs = dataset_y4signs.merge_classes({

@@ -7,7 +7,7 @@ from lns.common.preprocess import Preprocessor
 
 
 
-DATASET_NAME = "Y4Signs"
+DATASET_NAME = "Y4Signs_1036_584"
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
