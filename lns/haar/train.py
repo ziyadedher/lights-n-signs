@@ -68,6 +68,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
             print(f"No positive annotations for class index `{settings.class_index}` available.")
             return
 
+        print("\n\nSetup")
         command = [
             "/usr/bin/opencv_createsamples",
             "-info", str(annotations_file),
@@ -98,6 +99,8 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
         # Hack to get around issue with opencv_traincascade needing relative path for `-bg`
         os.chdir(os.path.dirname(negative_annotations_file))
         negative_annotations_file = os.path.basename(negative_annotations_file)
+
+        print("\n\nTraining")
         command = [
             "/usr/bin/opencv_traincascade",
             "-featureType", str(self.settings.feature_type),

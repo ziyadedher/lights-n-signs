@@ -8,6 +8,8 @@ from lns.common.preprocess import Preprocessor
 
 
 DATASET_NAME = "Y4Signs_1036_584"
+IMG_WIDTH = 1036
+IMG_HEIGHT = 584
 
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
@@ -60,10 +62,10 @@ def _Y4Signs(path: str) -> Dataset:
                 
                 # Construct and append an Object2D object
                 temp_annotations.append(Object2D(Bounds2D(
-                    float(annotation_arr[1]),
-                    float(annotation_arr[2]),
-                    float(annotation_arr[3]),
-                    float(annotation_arr[4]),
+                    int(float(annotation_arr[1]) * IMG_WIDTH),
+                    int(float(annotation_arr[2]) * IMG_HEIGHT),
+                    int(float(annotation_arr[3]) * IMG_WIDTH),
+                    int(float(annotation_arr[4]) * IMG_HEIGHT),
                 ), 
                 int(annotation_arr[0])))
 
