@@ -20,7 +20,7 @@ class HaarSettings(Settings):
     feature_size: int = 10
 
     # Number of samples to generate in setup
-    num_samples: int = 30000  # 1000
+    num_samples: int = 1500  # 1000
 
     # Number of stages to train and respective number of positive and negative samples to use
     num_stages: int = 30
