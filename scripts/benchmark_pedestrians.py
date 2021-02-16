@@ -154,15 +154,16 @@ if __name__ == '__main__':
     from lns.yolo.settings import YoloSettings
     import os
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1" #choose which GPU to use
 
     print('processing Dataset')
-    dataset = Preprocessor.preprocess('SCALE')
 
+    #choose which dataset to use
+    dataset = Preprocessor.preprocess('SCALE')
     dataset = dataset.merge_classes({"pedestrian": ["ped", "Pedestrian"]})
     
 
-    splits = dataset.split([0.1,0.9])
+    splits = dataset.split([0.1,0.9]) #can run on subset of full SCALE, since it might take too long
     scale_validation_set = splits[0]
     print(len(scale_validation_set),"images in the data set")
     #scale_validation_set._name = SCALE_SUBSET  # noqa
@@ -172,7 +173,7 @@ if __name__ == '__main__':
     #from lns.common.cv_lights import LightStateModel
     print('importing model')
     
-    trainer = YoloTrainer("yolo_ped_mbd_trial_14", scale_validation_set, load=True)
+    trainer = YoloTrainer("yolo_ped_mbd_trial_16", scale_validation_set, load=True)
     #print(type(trainer))
     #assert False
     model = trainer.model
