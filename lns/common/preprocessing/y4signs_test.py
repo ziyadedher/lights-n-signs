@@ -12,7 +12,7 @@ IMG_HEIGHT = 584
 preprocessor = Y4signs(per_class_limit=PER_CLASS_LIMIT, img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
-def _Y4Signs_train(path: str) -> Dataset:
+def _Y4Signs_test(path: str) -> Dataset:
     return preprocessor.getDataset(path=path)
 
 # @Preprocessor.register_dataset_preprocessor(DATASET_NAME)

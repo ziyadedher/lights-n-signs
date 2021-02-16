@@ -3,8 +3,14 @@ from collections import Counter
 
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
+from lns.common.preprocess import Preprocessor
+from lns.common.dataset import Dataset 
 
-DATASET_NAME = "Y4Signs_1036_584_train"
+DATASET_NAME = "Y4Signs_1036_584"
+PER_CLASS_LIMIT = 150  # PER_CLASS_LIMIT annotations per class, for testing
+IMG_WIDTH = 1036
+IMG_HEIGHT = 584
+
 
 class Y4signs:
     def __init__(self, per_class_limit, img_width, img_height):
@@ -16,11 +22,15 @@ class Y4signs:
 
         # use the same dataset for both but look for word train or test in either.
         is_train = True # default is train.
-        if("test" in path):
+        is_full = False
+        if "test" in path:
             path = path[:len(path) - len("_test")]
             is_train = False
-        else:
+        elif "train" in path:
             path = path[:len(path) - len("_train")]
+        else:
+            is_full = True
+
 
         if is_train:
             print("Path: " + path + " for training")
@@ -93,7 +103,7 @@ class Y4signs:
 
                 # flag = False signifies that the image along with annotations should go to the testbatch.
                 
-                if (flag and is_train) or (not flag and not is_train): 
+                if (flag and is_train) or (not flag and not is_train) or is_full: 
                     for key in classnums:
                         class_stats[key]+=classnums[key]
 
@@ -138,6 +148,13 @@ class InvalidBoundingBoxError(Exception):
     
     def __str__(self):
         return "invalid bounding box at: " + self.path
+
+
+preprocessor = Y4signs(per_class_limit=PER_CLASS_LIMIT, img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
+
+@Preprocessor.register_dataset_preprocessor(DATASET_NAME)
+def _Y4Signs_test(path: str) -> Dataset:
+    return preprocessor.getDataset(path=path)
 
 
 
