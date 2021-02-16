@@ -5,6 +5,7 @@ from tqdm import tqdm  # type: ignore
 
 from lns.common.model import Model
 from lns.common.structs import Bounds2D, Object2D
+from lns.common.structs import iou
 from lns.common.dataset import Dataset
 from lns.common.visualization import _put_labels_on_image #, put_predictions_on_image
 
@@ -32,57 +33,58 @@ def benchmark(model: Model, dataset: Dataset, *,
     count = 0
 
     # Flatten the images from the different datasets and iterate through each
-    image_paths = [
-        image_path for image_paths in dataset.image_split(proportion)[0].values()
-        for image_path in image_paths
-    ]
+    #print(len(dataset.images))
+    #assert False
+
+    image_paths = dataset.images
+
+    # image_paths = [
+    #     image_path for image_paths in dataset.split([proportion,1-proportion])[0].images
+    #     for image_path in image_paths
+    # ]
+    #assert False
     total_processed = 0
     for image_path in tqdm(image_paths):
         total_processed += 1
         # Grab the ground truths for this image and package them under a `PredictedObject2D`
         # to make statistics easier to work with
-        ground_truths = [Object2D(
-            Bounds2D(
-                label["x_min"], label["y_min"],
-                label["x_max"] - label["x_min"], label["y_max"] - label["y_min"]
-            ),
-            [classes[label["class"]]]
-        ) for label in annotations[image_path]]
+
+        ground_truths = [annotation for annotation in annotations[image_path]]
         # Keep track of which ground truths were found to get false negatives
         detected = [False] * len(ground_truths)
 
         # Predict on this image and iterate through each prediction to check for matches
         image = cv2.imread(image_path)
         predictions = model.predict(image)
-        image = put_labels_on_image(image, annotations[image_path])
+        image = _put_labels_on_image(image, annotations[image_path],classes)
         for prediction in predictions:
-            if 0.15*image.shape[1] > prediction.bounding_box.left or 0.85*image.shape[1] < (prediction.bounding_box.left + prediction.bounding_box.width):
+            if 0.15*image.shape[1] > prediction.bounds.left or 0.85*image.shape[1] < (prediction.bounds.left + prediction.bounds.width):
                 continue
             any_detected = False
 
             # Look through
             for i, ground_truth in enumerate(ground_truths):
-                iou = prediction.bounding_box.iou(ground_truth.bounding_box)
-                overlapping = iou >= overlap_threshold
-                same_class = prediction.predicted_classes[0] == ground_truth.predicted_classes[0]
+                iou_prediction = iou(prediction.bounds,ground_truth.bounds) #prediction.bounding_box.iou(ground_truth.bounding_box)
+                overlapping = iou_prediction >= overlap_threshold
+                same_class = prediction.class_index == ground_truth.class_index
 
                 if overlapping:
                     any_detected = True
                     if not detected[i]:
-                        confusion_matrix[ground_truth.predicted_classes[0]][prediction.predicted_classes[0]] += 1
+                        confusion_matrix[classes[ground_truth.class_index]][classes[prediction.class_index]] += 1
                         detected[i] = True
                     if same_class:
-                        total_iou += iou
+                        total_iou += iou_prediction
                         count += 1
 
             #image = put_predictions_on_image(image, [prediction])
-            image = put_labels_on_image(image, [prediction])
+            image = _put_labels_on_image(image, [prediction],classes)
             if not any_detected:
-                confusion_matrix["__none__"][prediction.predicted_classes[0]] += 1
+                confusion_matrix["__none__"][classes[prediction.class_index]] += 1
 
         for i, is_detected in enumerate(detected):
             if not is_detected:
-                confusion_matrix[ground_truths[i].predicted_classes[0]]["__none__"] += 1
+                confusion_matrix[classes[ground_truths[i].class_index]]["__none__"] += 1
         # cv2.imshow("visualization", image)
         # key = cv2.waitKey(0)
         # while key != 27:
@@ -148,19 +150,33 @@ def print_confusion_matrix(confusion_matrix: ConfusionMatrix, spaces: int = 12) 
 
 if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
+    from lns.yolo.train import YoloTrainer
+    from lns.yolo.settings import YoloSettings
+    import os
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
     print('processing Dataset')
     dataset = Preprocessor.preprocess('SCALE')
 
     dataset = dataset.merge_classes({"pedestrian": ["ped", "Pedestrian"]})
     
+
+    splits = dataset.split([0.1,0.9])
+    scale_validation_set = splits[0]
+    print(len(scale_validation_set),"images in the data set")
+    #scale_validation_set._name = SCALE_SUBSET  # noqa
     # dataset = dataset.minimum_area(0.0005)
     # dataset = dataset.remove_perpendicular_lights(0.7)
 
     #from lns.common.cv_lights import LightStateModel
     print('importing model')
-    from lns.yolo.model import YoloModel
-    model = YoloModel("/home/od/.lns-training/resources/trainers/yolo/yolo_ped_mbd_trial_14/checkpoint/model-epoch_16_step_144244_loss_0.5045_lr_1.2239e-06",'placeholder','placeholder') #.data-00000-of-00001
+    
+    trainer = YoloTrainer("yolo_ped_mbd_trial_14", scale_validation_set, load=True)
+    #print(type(trainer))
+    #assert False
+    model = trainer.model
 
-    average_iou, confusion_matrix = benchmark(model, dataset, proportion=0.1, overlap_threshold=0.1)
+    average_iou, confusion_matrix = benchmark(model, scale_validation_set, proportion=0.1, overlap_threshold=0.1)
     print_confusion_matrix(confusion_matrix)
     print(f"\naverage IOU: {average_iou:.6f}")
