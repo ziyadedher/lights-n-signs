@@ -13,7 +13,8 @@ IMG_HEIGHT = 584
 
 
 class Y4signs:
-    def __init__(self, per_class_limit, img_width, img_height):
+    def __init__(self, dataset_name, per_class_limit, img_width, img_height):
+        self.dataset_name = dataset_name
         self.per_class_limit = per_class_limit
         self.img_width = img_width
         self.img_height = img_height
@@ -131,7 +132,7 @@ class Y4signs:
         print("\nTotal annotations: " + str(total_annotations))
 
         
-        return Dataset(DATASET_NAME, images, classes, annotations)
+        return Dataset(self.dataset_name, images, classes, annotations)
 
 
 
@@ -150,7 +151,7 @@ class InvalidBoundingBoxError(Exception):
         return "invalid bounding box at: " + self.path
 
 
-preprocessor = Y4signs(per_class_limit=PER_CLASS_LIMIT, img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
+preprocessor = Y4signs(DATASET_NAME, per_class_limit=PER_CLASS_LIMIT, img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
 
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
 def _Y4Signs_test(path: str) -> Dataset:

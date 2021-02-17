@@ -7,6 +7,11 @@ from typing import Optional, Union
 import numpy as np
 import cv2 as cv
 
+# class SVMTrainerWrapper:
+#     def __init__(self, positive_folder: str, negative_folder: str, positive_np_path: str, negative_np_path: str):
+
+
+
 
 class SVMTrainer():
     """Manages the training environment.

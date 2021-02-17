@@ -30,7 +30,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
             path="cascade/cascade.xml", temporal=False, required=True, path_type=Trainer.PathType.FILE),
     }
 
-    def __init__(self, name: str, dataset: Optional[Union[str, Dataset]] = None, load: bool = True) -> None:
+    def __init__(self, name: str, dataset: Optional[Union[str, Dataset]] = None, load: bool = True, force=True) -> None:
         """Initialize a Haar trainer with the given unique <name>.
 
         Sources data from the given <dataset>, if any.

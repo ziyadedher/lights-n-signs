@@ -14,13 +14,13 @@ class HaarSettings(Settings):
     class_index: int = 0
 
     # Features to use. Can be HAAR or LBP
-    feature_type: str = "LBP"
+    feature_type: str = "LBP" # TODO: change to HAAR and check
 
     # Width and height of the features to learn
     feature_size: int = 10
 
     # Number of samples to generate in setup
-    num_samples: int = 3000
+    num_samples: int = 1500
 
     # Number of stages to train and respective number of positive and negative samples to use
     num_stages: int = 30

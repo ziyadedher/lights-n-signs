@@ -2,7 +2,7 @@ import sys
 import cv2
 import os
 import time
-
+from pathlib import Path
 
 def evaluate(data_path, model_path, num_neighbors=4, scale=1.3):
     """Validate the haar cascade detector loaded from {model_path} using positive samples from {data_path}.
@@ -22,14 +22,15 @@ def evaluate(data_path, model_path, num_neighbors=4, scale=1.3):
     with open(data_path) as f:
         images_info = f.readlines()
 
+
     total_num_gt = 0
     fp, tp = 0, 0
     for line in images_info:
-        print(line)
+        # print(line)
         info = line.split(" ")
         img_path, num_signs = info[0], int(info[1])
 
-
+        path = Path(data_path).parent
         # If the image has actual signs, get their ground-truth coordinates
         if num_signs > 0:
             all_gt = []
@@ -48,9 +49,10 @@ def evaluate(data_path, model_path, num_neighbors=4, scale=1.3):
             continue
 
         # Get the model's detections
-        gray_img = cv2.imread(img_path)
+        print((path/img_path).__str__())
+        gray_img = cv2.imread((path/img_path).__str__())
         detections = cascade.detectMultiScale(gray_img, scale, num_neighbors)
-
+        print(len(detections))
         for (x_det, y_det, w_det, h_det) in detections:
             for (x, y, w, h) in all_gt:
                 if IOU(x_det, y_det, w_det, h_det, x, y, w, h) > 0.5:

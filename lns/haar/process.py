@@ -60,17 +60,22 @@ class HaarProcessor(Processor[HaarData]):
         return "haar"
 
     @classmethod
-    def _process(cls, dataset: Dataset) -> HaarData:  # pylint:disable=too-many-locals
+    def _process(cls, dataset: Dataset, force=True) -> HaarData:  # pylint:disable=too-many-locals
         # Register all folders
         processed_data_folder = os.path.join(cls.get_processed_data_path(), dataset.name)
         annotations_folder = os.path.join(processed_data_folder, "annotations")
         images_folder = os.path.join(processed_data_folder, "images")
-        os.makedirs(annotations_folder)
-        os.makedirs(images_folder)
+
 
         # Open the positive and negative annotation files
         positive_annotations = [os.path.join(annotations_folder, name + "_positive") for name in dataset.classes]
         negative_annotations = [os.path.join(annotations_folder, name + "_negative") for name in dataset.classes]
+
+        if os.path.exists(processed_data_folder) and not force:
+            return HaarData(positive_annotations, negative_annotations) # If the directory already exists, don't waste time preprocessing again.
+
+        os.makedirs(annotations_folder)
+        os.makedirs(images_folder)
 
         pos_files = [open(annot, "w") for annot in positive_annotations]
         neg_files = [open(annot, "w") for annot in negative_annotations]
@@ -90,13 +95,15 @@ class HaarProcessor(Processor[HaarData]):
 
                 image_relative = os.path.relpath(os.path.join(images_folder, f"{i}.png"), start=annotations_folder)
 
-                # Store the annotations in a way easier to represent for Haar
+                # Store the annotations in a way easier to represent format for Haar
                 class_annotations = cls._reformat_labels(labels, dataset)
 
                 for j, annotations in enumerate(class_annotations):
                     detections_string = " ".join(
                         " ".join(str(item) for item in annotation) for annotation in annotations)
-                    pos_files[j].write(f"{image_relative} {len(annotations)} {detections_string}\n")
+                    if len(annotations) > 0:
+                        pos_files[j].write(f"{image_relative} {len(annotations)} {detections_string}\n")
+                
                 for j, _ in enumerate(dataset.classes):
                     if i not in class_annotations:
                         neg_files[j].write(f"{new_image_path}\n")
