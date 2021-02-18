@@ -49,10 +49,9 @@ def evaluate(data_path, model_path, num_neighbors=4, scale=1.3):
             continue
 
         # Get the model's detections
-        print((path/img_path).__str__())
         gray_img = cv2.imread((path/img_path).__str__())
         detections = cascade.detectMultiScale(gray_img, scale, num_neighbors)
-        print(len(detections))
+        print(len(detections) - len(all_gt))
         for (x_det, y_det, w_det, h_det) in detections:
             for (x, y, w, h) in all_gt:
                 if IOU(x_det, y_det, w_det, h_det, x, y, w, h) > 0.5:
@@ -65,7 +64,7 @@ def evaluate(data_path, model_path, num_neighbors=4, scale=1.3):
     precision = float(tp) / float(tp + fp)
     recall = float(tp) / float(total_num_gt)
 
-    print("TP: {}\FP: {}\Precision: {:.2f}\Recall: {:.2f}\nF1 score: {:.2f}".format(tp, fp, precision, recall, f1_score(precision, recall)))
+    print("TP: {}\nFP: {}\nPrecision: {:.2f}\nRecall: {:.2f}\nF1 score: {:.2f}".format(tp, fp, precision, recall, f1_score(precision, recall)))
     return [tp, fp, precision, recall, f1_score(precision, recall)]
 
 

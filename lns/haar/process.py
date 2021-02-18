@@ -60,20 +60,20 @@ class HaarProcessor(Processor[HaarData]):
         return "haar"
 
     @classmethod
-    def _process(cls, dataset: Dataset, force=True) -> HaarData:  # pylint:disable=too-many-locals
+    def _process(cls, dataset: Dataset, force=False) -> HaarData:  # pylint:disable=too-many-locals
         # Register all folders
         processed_data_folder = os.path.join(cls.get_processed_data_path(), dataset.name)
         annotations_folder = os.path.join(processed_data_folder, "annotations")
         images_folder = os.path.join(processed_data_folder, "images")
 
-
         # Open the positive and negative annotation files
         positive_annotations = [os.path.join(annotations_folder, name + "_positive") for name in dataset.classes]
         negative_annotations = [os.path.join(annotations_folder, name + "_negative") for name in dataset.classes]
-
-        if os.path.exists(processed_data_folder) and not force:
+        
+        if os.path.exists(annotations_folder) and os.path.exists(images_folder) and not force:
+            print("Found processed dataset at: " + processed_data_folder)
             return HaarData(positive_annotations, negative_annotations) # If the directory already exists, don't waste time preprocessing again.
-
+        print("Processing dataset from Scratch..")
         os.makedirs(annotations_folder)
         os.makedirs(images_folder)
 

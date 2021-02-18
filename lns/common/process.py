@@ -40,8 +40,8 @@ class Processor(Generic[ProcessedDataType]):
     def get_processed_data_path(cls) -> str:
         """Get the folder with all the processed datasets for this processor."""
         path = os.path.join(Resources.get_root(), config.PROCESSED_DATA_FOLDER_NAME, cls.method())
-        if not os.path.exists(path):
-            os.makedirs(path)
+        # if not os.path.exists(path):
+        #     os.makedirs(path)
         return path
 
     @classmethod
