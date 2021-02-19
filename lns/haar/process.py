@@ -74,6 +74,7 @@ class HaarProcessor(Processor[HaarData]):
             print("Found processed dataset at: " + processed_data_folder)
             return HaarData(positive_annotations, negative_annotations) # If the directory already exists, don't waste time preprocessing again.
         print("Processing dataset from Scratch..")
+        
         os.makedirs(annotations_folder)
         os.makedirs(images_folder)
 
@@ -104,8 +105,9 @@ class HaarProcessor(Processor[HaarData]):
                     if len(annotations) > 0:
                         pos_files[j].write(f"{image_relative} {len(annotations)} {detections_string}\n")
                 
+
                 for j, _ in enumerate(dataset.classes):
-                    if i not in class_annotations:
+                    if len(class_annotations[j]) == 0:
                         neg_files[j].write(f"{new_image_path}\n")
 
         # Close the positive and negative annotation files

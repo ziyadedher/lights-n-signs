@@ -4,7 +4,7 @@ import os
 import time
 from pathlib import Path
 
-def evaluate(data_path, model_path, num_neighbors=4, scale=1.3):
+def evaluate(data_path, model_path, num_neighbors=3, scale=1.3):
     """Validate the haar cascade detector loaded from {model_path} using positive samples from {data_path}.
 
     data_path: corresponds to the positive samples. 
