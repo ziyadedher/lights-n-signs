@@ -51,10 +51,11 @@ def evaluate(data_path, model_path, num_neighbors=3, scale=1.3):
         # Get the model's detections
         gray_img = cv2.imread((path/img_path).__str__())
         detections = cascade.detectMultiScale(gray_img, scale, num_neighbors)
-        print(len(detections) - len(all_gt))
         for (x_det, y_det, w_det, h_det) in detections:
             for (x, y, w, h) in all_gt:
-                if IOU(x_det, y_det, w_det, h_det, x, y, w, h) > 0.5:
+                overlap = IOU(x_det, y_det, w_det, h_det, x, y, w, h)
+                print(overlap)
+                if  overlap> 0.5:
                     tp += 1
                     break
             else:

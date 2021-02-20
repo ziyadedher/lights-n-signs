@@ -25,6 +25,7 @@ class HaarData(ProcessedData):
     __positive_annotations: List[str]
     __negative_annotations: List[str]
 
+
     def __init__(self, positive_annotations: List[str], negative_annotations: List[str]) -> None:
         """Initialize the data structure."""
         self.__positive_annotations = positive_annotations

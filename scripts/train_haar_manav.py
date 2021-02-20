@@ -4,7 +4,7 @@ from lns.haar.eval import evaluate
 from lns.haar.settings import HaarSettings
 
 model_name = input("Enter model name: ")
-dataset_y4signs = Preprocessor.preprocess('Y4Signs_1036_584_train', force=True)
+dataset_y4signs = Preprocessor.preprocess('Y4Signs_1036_584_train_manav', force=True)
 print(f"Classes before merge: {dataset_y4signs.classes}")
 
 dataset_y4signs = dataset_y4signs.merge_classes({

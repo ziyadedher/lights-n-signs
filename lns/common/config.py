@@ -41,7 +41,8 @@ POSSIBLE_DATASETS: List[str] = [
     "Y4Signs_1036_584",
     "Y4Signs_1036_584_train",
     "Y4Signs_1036_584_test",
-    "Y4Signs_1036_584_train_sam"
+    "Y4Signs_1036_584_train_sam",
+    "Y4Signs_1036_584_train_manav"
 ]
 
 

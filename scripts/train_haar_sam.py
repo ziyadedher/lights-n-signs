@@ -12,6 +12,7 @@ dataset_y4signs = dataset_y4signs.merge_classes({
   "nrt_nlt_sym": ['No_Right_Turn_Sym', 'No_Left_Turn_Sym']
 })
 print(f"Classes after merge: {dataset_y4signs.classes}")
+print('training model for: ' + dataset_y4signs.classes[HaarSettings.class_index])
 
 trainer = HaarTrainer(name=model_name,
                         dataset=dataset_y4signs, 
@@ -20,7 +21,9 @@ trainer = HaarTrainer(name=model_name,
 trainer.setup()
 trainer.train()
 
-results = evaluate(data_path='/home/od/.lns-training/resources/processed/haar/Y4Signs_1036_584_test/annotations/Stop_positive',
+print("Evaluating model for: " + str(dataset_y4signs.classes[HaarSettings.class_index]))
+
+results = evaluate(data_path='/home/od/.lns-training/resources/processed/haar/Y4Signs_1036_584_test/annotations/{0}_positive'.format(dataset_y4signs.classes[HaarSettings.class_index]),
                    model_path='/home/od/.lns-training/resources/trainers/haar/{0}/cascade/cascade.xml'.format(model_name),
                    num_neighbors=HaarSettings.min_neighbours)
 

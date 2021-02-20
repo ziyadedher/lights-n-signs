@@ -30,6 +30,8 @@ class Y4signs:
         elif "train" in path:
             if "sam" in path:
                 path = path[:len(path) - len("_train_sam")]
+            elif "manav" in path:
+                path = path[:len(path) - len("_train_manav")]
             else:
                 path = path[:len(path) - len("_train")]
         else:

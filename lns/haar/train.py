@@ -77,6 +77,8 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
             "-num", str(settings.num_samples),
             "-vec", str(vector_file)
         ]
+        print("vector file: " + str(vector_file))
+        
         subprocess.run(command, check=False)
 
     def train(self, settings: Optional[HaarSettings] = None) -> None:
@@ -99,6 +101,10 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
         # Hack to get around issue with opencv_traincascade needing relative path for `-bg`
         os.chdir(os.path.dirname(negative_annotations_file))
         negative_annotations_file = os.path.basename(negative_annotations_file)
+        print('\n\n')
+        print("Negative annotations: " + str(negative_annotations_file))
+        print("Vector File: " + str(vector_file))
+        print("Training model for: " + self.dataset.classes[self.settings.class_index])
 
         print("\n\nTraining")
         command = [
