@@ -40,8 +40,8 @@ POSSIBLE_DATASETS: List[str] = [
     "nuscenes",
     "Y4Signs_1036_584",
     "Y4Signs_1036_584_train",
-    "Y4Signs_1036_584_test"
-
+    "Y4Signs_1036_584_test",
+    "Y4Signs_1036_584_train_sam"
 ]
 
 

@@ -28,7 +28,10 @@ class Y4signs:
             path = path[:len(path) - len("_test")]
             is_train = False
         elif "train" in path:
-            path = path[:len(path) - len("_train")]
+            if "sam" in path:
+                path = path[:len(path) - len("_train_sam")]
+            else:
+                path = path[:len(path) - len("_train")]
         else:
             is_full = True
 
@@ -40,7 +43,7 @@ class Y4signs:
 
         
         if not os.path.isdir(path):
-            raise FileNotFoundError("Could not find Y4Signs dataset on this path.")
+            raise FileNotFoundError("Could not find Y4Signs dataset on path: " + path)
         
         images: Dataset.Images = []
         classes: Dataset.Classes = []
