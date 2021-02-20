@@ -11,6 +11,11 @@ dataset_y4signs = dataset_y4signs.merge_classes({
   "nrt_nlt_text": ['No_Right_Turn_Text', 'No_Left_Turn_Text'],
   "nrt_nlt_sym": ['No_Right_Turn_Sym', 'No_Left_Turn_Sym']
 })
+dataset_y4signs.classes[0] = 'nrt_nlt_sym'
+dataset_y4signs.classes[1] = 'nrt_nlt_text'
+dataset_y4signs.classes[2] = 'Stop'
+dataset_y4signs.classes[3] = 'Yield'
+
 print(f"Classes after merge: {dataset_y4signs.classes}")
 print('training model for: ' + dataset_y4signs.classes[HaarSettings.class_index])
 
