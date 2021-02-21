@@ -25,8 +25,8 @@ class SVMProcessor:
 
 
     def preprocess(self, force: bool = True):
-        if not os.path.exists(self.path):
-            os.mkdir(self.path)
+        if force or not os.path.exists(self.path):
+            os.makedirs(self.path, exist_ok=True)
         else:
             print("Dataset already processed")
             return
@@ -45,23 +45,24 @@ class SVMProcessor:
                         ymax = label.bounds.bottom
                         crop = gray_image[ymin:ymax, xmin:xmax]
                         self.splits[label.class_index].append(crop)
-        save_np_arrays()
+        # self.save_np_arrays()
 
     
     def save_np_arrays(self, force: bool = False):
         print("Saving pre-processed crops...")
         for class_a, class_b in self.compare:
-            zeros = np.array(self.splits[class_a], dtype='object') # all crops of class_a
-            ones = np.array(self.splits[class_b], dtype='object') # all crops of class_b
+            zeros = np.array(self.splits[class_a], dtype=object) # all crops of class_a
+            ones = np.array(self.splits[class_b], dtype=object) # all crops of class_b
             data_x = np.concatenate((zeros, ones), axis=0)
             labels = np.concatenate((np.zeros(len(zeros)), np.ones(len(ones)))) # class_a corresponds to 0 and so on
             assert len(zeros) + len(ones) == len(labels)
             subfolder = os.path.join(self.path, str(self.dataset.classes[class_a]) + '_' + self.dataset.classes[class_b])
-            os.mkdir(subfolder)
+            if not os.path.exists(subfolder):
+                os.makedirs(subfolder)
             data_path = os.path.join(subfolder, "data.npy")
             labels_path = os.path.join(subfolder, "labels.npy")
             np.save(data_path, data_x)
-            np.save(labels_path, labels)
+            np.save(labels_path, np.array(labels, dtype=np.int64))
         
         print("Save complete.")
         print("Saved at: " + self.path)
