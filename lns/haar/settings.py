@@ -17,21 +17,21 @@ class HaarSettings(Settings):
     feature_type: str = "HAAR" # TODO: change to HAAR and check
 
     # Width and height of the features to learn
-    feature_size: int = 15
+    feature_size: int = 12 #18
 
     # Number of samples to generate in setup
-    num_samples: int = 3500
+    num_samples: int = 4300
 
     # Number of stages to train and respective number of positive and negative samples to use
-    num_stages: int = 25
-    num_positive: int = 1500
-    num_negative: int = 2000
+    num_stages: int = 22
+    num_positive: int = 1200
+    num_negative: int = 6000
 
     # Minimal desired hit rate for each stage of the classifier
     min_hit_rate: float = 0.995
-    max_false_alarm: float = 0.5
+    max_false_alarm: float = 0.4
 
     # Inference metrics, how much to scale the features by neighbour threshold
-    scale_factor: float = 1.1
+    scale_factor: float = 1.08
     min_neighbours: float = 3 #3
 # pylint: enable=too-many-instance-attributes

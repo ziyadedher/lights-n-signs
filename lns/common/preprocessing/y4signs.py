@@ -93,12 +93,19 @@ class Y4signs:
                     
 
                     label_class = int(annotation_arr[0])
+                    xcent = int(float(annotation_arr[1]) * self.img_width)
+                    ycent = int(float(annotation_arr[2]) * self.img_height)
+                    width = int(float(annotation_arr[3]) * self.img_width) 
+                    height = int(float(annotation_arr[4]) * self.img_height)
+
+                    xmin = int(xcent - 0.5*width)
+                    ymin = int(ycent - 0.5*height)
                     # Construct and append an Object2D object
                     temp_annotations.append(Object2D(Bounds2D(
-                        int(float(annotation_arr[1]) * self.img_width),
-                        int(float(annotation_arr[2]) * self.img_height),
-                        int(float(annotation_arr[3]) * self.img_width),
-                        int(float(annotation_arr[4]) * self.img_height),
+                        xmin,
+                        ymin,
+                        width,
+                        height,
                     ), 
                     label_class))
 

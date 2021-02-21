@@ -119,7 +119,8 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
             "-bg", str(negative_annotations_file),
             "-w", str(self.settings.feature_size),
             "-h", str(self.settings.feature_size),
-            "-data", str(cascade_folder)
+            "-data", str(cascade_folder),
+            "-precalcValBufSize", str(256)
         ]
 
         try:

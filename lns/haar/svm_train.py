@@ -33,8 +33,6 @@ class SVMTrainer():
 
     def setup(self) -> None:
         """Load datasets required for training.
-
-        Create <num_samples> positive samples of the class represented by the <class_index> with given <feature_size>.
         """
         if self.data_path and self.labels_path:
             self.train_data = np.load(self.data_path, dtype=np.float32)
