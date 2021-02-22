@@ -1,7 +1,7 @@
 from lns.haar.eval import evaluate
 model_name = input("Enter model to evaluate: ")
 min_neighbours = int(input("Enter num_neighbours: "))
-sign = input("Enter sign to evaluate")
+sign = input("Enter sign to evaluate: ")
 
 results = evaluate(data_path='/home/od/.lns-training/resources/processed/haar/Y4Signs_1036_584_test/annotations/{0}_positive'.format(sign),
                    model_path='/home/od/.lns-training/resources/trainers/haar/{0}/cascade/cascade.xml'.format(model_name), 

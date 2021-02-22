@@ -37,6 +37,7 @@ print("Evaluating model for: " + str(dataset_y4signs.classes[HaarSettings.class_
 
 results = evaluate(data_path='/home/od/.lns-training/resources/processed/haar/Y4Signs_1036_584_test/annotations/{0}_positive'.format(class_to_classify),
                    model_path='/home/od/.lns-training/resources/trainers/haar/{0}/cascade/cascade.xml'.format(model_name),
+                   trainer_path= '/home/od/.lns-training/resources/trainers/haar/{0}'.format(model_name),
                    num_neighbors=HaarSettings.min_neighbours)
 
 file = open('/home/od/.lns-training/resources/trainers/haar/{}/results.txt'.format(model_name), "w")

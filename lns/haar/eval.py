@@ -22,11 +22,18 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.3):
     with open(data_path) as f:
         images_info = f.readlines()
     
-    to_save = os.path.join(trainer_path, 'visual')
-    ground_truth = os.path.join(to_save, 'ground_truth')
+    to_save = os.path.join(trainer_path, 'visual_{0}'.format(str(num_neighbors)))
+    
+    index_ = 1
+    while os.path.exists(to_save):
+        os.path.join(trainer_path, 'visual_{0}_{1}'.format(str(num_neighbors), str(index_)))
+        index_ += 1
+        
+
+    # ground_truth = os.path.join(to_save, 'ground_truth')
     predicted = os.path.join(to_save, 'predicted')
     os.mkdir(to_save)
-    os.mkdir(ground_truth)
+    # os.mkdir(ground_truth)
     os.mkdir(predicted)
 
     total_num_gt = 0
@@ -40,6 +47,7 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.3):
 
         # Get the model's detections
         gray_img = cv2.imread((path/img_path).__str__(), 0)
+        out_img = cv2.cvtColor(gray_img,cv2.COLOR_GRAY2RGB)
 
         im_name = img_path[str(img_path).rindex('/') + 1:]
 
@@ -62,19 +70,23 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.3):
                                   float(width), 
                                   float(height))
                 all_gt.append(gt_coordinates)
-                crop = gray_img[ int(ymin):int(ymin)+int(height),int(xmin):int(xmin)+int(width)]
-                path_save = os.path.join(ground_truth, im_name[:-len('.png')] + str(i)+'.png')
-                cv2.imwrite(path_save, crop)
+                
+
+                # crop = gray_img[ int(ymin):int(ymin)+int(height),int(xmin):int(xmin)+int(width)]
+                # path_save = os.path.join(ground_truth, im_name[:-len('.png')] + "-" + str(i)+'.png')
+                # cv2.imwrite(path_save, crop)
 
         else:
             continue
 
         
         detections = cascade.detectMultiScale(gray_img, scale, num_neighbors)
+        path_save = os.path.join(predicted, im_name)
+        
         for ind, (x_det, y_det, w_det, h_det) in enumerate(detections):
-            crop = gray_img[ y_det:y_det+h_det, x_det:x_det+w_det]
-            path_save = os.path.join(predicted, im_name[:-len('.png')] + str(ind)+'.png')
-            cv2.imwrite(path_save, crop)
+            # crop = gray_img[ y_det:y_det+h_det, x_det:x_det+w_det]
+            cv2.rectangle(out_img, (x_det, y_det), (x_det+w_det, y_det+h_det), (255, 255, 0), 2) # draw bounding box
+            
             for (x, y, w, h) in all_gt:
                 overlap = IOU(x_det, y_det, w_det, h_det, x, y, w, h)
                 print(overlap)
@@ -83,6 +95,8 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.3):
                     break
             else:
                 fp += 1
+        
+        cv2.imwrite(path_save, out_img)
 
     # Report evaluation metrics
     precision = float(tp) / float(tp + fp)
