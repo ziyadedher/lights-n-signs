@@ -14,7 +14,6 @@ from lns.haar.model import HaarModel
 from lns.haar.process import HaarData, HaarProcessor
 from lns.haar.settings import HaarSettings
 
-
 class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
     """Manages the training environment.
 
@@ -30,7 +29,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
             path="cascade/cascade.xml", temporal=False, required=True, path_type=Trainer.PathType.FILE),
     }
 
-    def __init__(self, name: str, dataset: Optional[Union[str, Dataset]] = None, load: bool = True, force=True) -> None:
+    def __init__(self, name: str, class_index: int, dataset: Optional[Union[str, Dataset]] = None, load: bool = True, force=True) -> None:
         """Initialize a Haar trainer with the given unique <name>.
 
         Sources data from the given <dataset>, if any.
@@ -39,6 +38,8 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
         super().__init__(name, dataset,
                          _processor=HaarProcessor, _settings=HaarSettings,
                          _load=load, _subpaths=HaarTrainer.SUBPATHS)
+        self.class_index = class_index
+        print("Training for: " + str(dataset.classes[class_index]))
 
     @property
     def model(self) -> Optional[HaarModel]:
@@ -49,7 +50,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
         cascade_file = self._paths["cascade_file"]
 
         model = None
-        if os.path.isfile(cascade_file) and self.settings.class_index is not None:
+        if os.path.isfile(cascade_file) and self.class_index is not None:
             model = HaarModel(cascade_file, self.settings)
         return model
 
@@ -63,9 +64,9 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
 
         vector_file = self._paths["vector_file"]
         try:
-            annotations_file = self.data.get_positive_annotation(settings.class_index)
+            annotations_file = self.data.get_positive_annotation(self.class_index)
         except IndexError:
-            print(f"No positive annotations for class index `{settings.class_index}` available.")
+            print(f"No positive annotations for class index `{self.class_index}` available.")
             return
 
         print("\n\nSetup")
@@ -93,9 +94,9 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
         vector_file = self._paths["vector_file"]
         cascade_folder = self._paths["cascade_folder"]
         try:
-            negative_annotations_file = self.data.get_negative_annotation(self.settings.class_index)
+            negative_annotations_file = self.data.get_negative_annotation(self.class_index)
         except KeyError:
-            print(f"No negative annotations for class index `{self.settings.class_index}` available.")
+            print(f"No negative annotations for class index `{self.class_index}` available.")
             return
 
         # Hack to get around issue with opencv_traincascade needing relative path for `-bg`
@@ -104,7 +105,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
         print('\n\n')
         print("Negative annotations: " + str(negative_annotations_file))
         print("Vector File: " + str(vector_file))
-        print("Training model for: " + self.dataset.classes[self.settings.class_index])
+        print("Training model for: " + self.dataset.classes[self.class_index])
 
         print("\n\nTraining")
         command = [

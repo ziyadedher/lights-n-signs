@@ -49,7 +49,7 @@ def evaluate(data_path, model_path, num_neighbors=3, scale=1.3):
             continue
 
         # Get the model's detections
-        gray_img = cv2.imread((path/img_path).__str__())
+        gray_img = cv2.imread((path/img_path).__str__(), 0)
         detections = cascade.detectMultiScale(gray_img, scale, num_neighbors)
         for (x_det, y_det, w_det, h_det) in detections:
             for (x, y, w, h) in all_gt:
