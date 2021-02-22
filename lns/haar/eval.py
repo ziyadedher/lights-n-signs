@@ -4,7 +4,7 @@ import os
 import time
 from pathlib import Path
 
-def evaluate(data_path, model_path, num_neighbors=3, scale=1.3):
+def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.3):
     """Validate the haar cascade detector loaded from {model_path} using positive samples from {data_path}.
 
     data_path: corresponds to the positive samples. 
@@ -21,7 +21,13 @@ def evaluate(data_path, model_path, num_neighbors=3, scale=1.3):
     cascade = cv2.CascadeClassifier(model_path)
     with open(data_path) as f:
         images_info = f.readlines()
-
+    
+    to_save = os.path.join(trainer_path, 'visual')
+    ground_truth = os.path.join(to_save, 'ground_truth')
+    predicted = os.path.join(to_save, 'predicted')
+    os.mkdir(to_save)
+    os.mkdir(ground_truth)
+    os.mkdir(predicted)
 
     total_num_gt = 0
     fp, tp = 0, 0
@@ -31,6 +37,13 @@ def evaluate(data_path, model_path, num_neighbors=3, scale=1.3):
         img_path, num_signs = info[0], int(info[1])
 
         path = Path(data_path).parent
+
+        # Get the model's detections
+        gray_img = cv2.imread((path/img_path).__str__(), 0)
+
+        im_name = img_path[str(img_path).rindex('/') + 1:]
+
+
         # If the image has actual signs, get their ground-truth coordinates
         if num_signs > 0:
             all_gt = []
@@ -40,18 +53,28 @@ def evaluate(data_path, model_path, num_neighbors=3, scale=1.3):
 
             for i in range(num_gt):
                 start_index = 2 + 4*i
-                gt_coordinates = (float(info[start_index]), 
-                                  float(info[start_index+1]), 
-                                  float(info[start_index+2]), 
-                                  float(info[start_index+3]))
+                xmin = info[start_index]
+                ymin = info[start_index+1]
+                width = info[start_index+2]
+                height = info[start_index+3]
+                gt_coordinates = (float(xmin), 
+                                  float(ymin), 
+                                  float(width), 
+                                  float(height))
                 all_gt.append(gt_coordinates)
+                crop = gray_img[ int(ymin):int(ymin)+int(height),int(xmin):int(xmin)+int(width)]
+                path_save = os.path.join(ground_truth, im_name[:-len('.png')] + str(i)+'.png')
+                cv2.imwrite(path_save, crop)
+
         else:
             continue
 
-        # Get the model's detections
-        gray_img = cv2.imread((path/img_path).__str__(), 0)
+        
         detections = cascade.detectMultiScale(gray_img, scale, num_neighbors)
-        for (x_det, y_det, w_det, h_det) in detections:
+        for ind, (x_det, y_det, w_det, h_det) in enumerate(detections):
+            crop = gray_img[ y_det:y_det+h_det, x_det:x_det+w_det]
+            path_save = os.path.join(predicted, im_name[:-len('.png')] + str(ind)+'.png')
+            cv2.imwrite(path_save, crop)
             for (x, y, w, h) in all_gt:
                 overlap = IOU(x_det, y_det, w_det, h_det, x, y, w, h)
                 print(overlap)
