@@ -35,9 +35,12 @@ class SVMTrainer():
         """Load datasets required for training.
         """
         if self.data_path and self.labels_path:
-            self.train_data = np.load(self.data_path, dtype=np.float32)
-            self.labels = np.load(self.labels_path, dtype=np.int64).reshape(
-                len(self.train_data), 1)
+            self.train_data = np.load(self.data_path, allow_pickle=True)
+            self.labels = np.load(self.labels_path, allow_pickle=True)
+
+            if len(self.train_data) == 0:
+                raise FileNotFoundError("Empty training data!")
+                
         else:
             raise FileNotFoundError("Training data is not provided")
 
