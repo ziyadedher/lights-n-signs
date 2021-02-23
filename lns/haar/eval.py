@@ -4,13 +4,14 @@ import os
 import time
 from pathlib import Path
 
-def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.3):
+def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.1):
     """Validate the haar cascade detector loaded from {model_path} using positive samples from {data_path}.
 
     data_path: corresponds to the positive samples. 
         - Each line in this file corresponds to info for 1 image
             <image path> <number of objects n> x_1 y_1 w_1 h_1 x_2 y_2 w_2 h_2 … x_n y_n w_n h_n
-    model_path: the trained haar cascade detector.
+    model_path: the trained haar cascade detector. xml file
+    trainer_path: path to the trainer folder
 
     Example usage:
     >>> evaluate('/mnt/ssd1/lns/resources/processed/haar/Y4Signs/annotations/No_Left_Turn_Text_positive',
@@ -22,11 +23,11 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.3):
     with open(data_path) as f:
         images_info = f.readlines()
     
-    to_save = os.path.join(trainer_path, 'visual_{0}'.format(str(num_neighbors)))
+    to_save = os.path.join(trainer_path, 'visual_{0}_{1}_0'.format(str(num_neighbors), str(scale)))
     
     index_ = 1
     while os.path.exists(to_save):
-        os.path.join(trainer_path, 'visual_{0}_{1}'.format(str(num_neighbors), str(index_)))
+        to_save = os.path.join(trainer_path, 'visual_{0}_{1}_{2}'.format(str(num_neighbors), str(scale), str(index_)))
         index_ += 1
         
 
@@ -70,7 +71,6 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.3):
                                   float(width), 
                                   float(height))
                 all_gt.append(gt_coordinates)
-                
 
                 # crop = gray_img[ int(ymin):int(ymin)+int(height),int(xmin):int(xmin)+int(width)]
                 # path_save = os.path.join(ground_truth, im_name[:-len('.png')] + "-" + str(i)+'.png')
@@ -99,10 +99,17 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.3):
         cv2.imwrite(path_save, out_img)
 
     # Report evaluation metrics
-    precision = float(tp) / float(tp + fp)
-    recall = float(tp) / float(total_num_gt)
+    try:
+        precision = float(tp) / float(tp + fp)
+        recall = float(tp) / float(total_num_gt)
+    except ZeroDivisionError e:
+        print('No bounding boxes were detected. Try decreasing num_neighbours or scale_factor. There might be a bug in the code as well.')
 
     print("TP: {}\nFP: {}\nPrecision: {:.2f}\nRecall: {:.2f}\nF1 score: {:.2f}".format(tp, fp, precision, recall, f1_score(precision, recall)))
+    file = open(os.path.join(trainer_path, 'results_{0}_{1}.txt'.format(num_neighbors, scale)), "w")
+    
+    file.write("tp: {0}\nfp: {1}\nprecision: {2}\nrecall: {3}\nf1_score: {4}".format(tp, fp, precision, recall, f1_score(precision, recall)))
+    file.close()
     return [tp, fp, precision, recall, f1_score(precision, recall)]
 
 

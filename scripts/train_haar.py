@@ -16,8 +16,7 @@ dataset_y4signs = dataset_y4signs.merge_classes({
 # dataset_y4signs.classes[0] = 'nrt_nlt_sym' # 4000 num_pos
 # dataset_y4signs.classes[1] = 'nrt_nlt_text' # 4000 num_pos
 # dataset_y4signs.classes[2] = 'Stop' # 2000
-# dataset_y4signs.classes[3] = 'Yield' #2000 
-# do not uncomment
+# dataset_y4signs.classes[3] = 'Yield' #2000
 HaarSettings.class_index = dataset_y4signs.classes.index(class_to_classify)
 index = dataset_y4signs.classes.index(class_to_classify)
 
@@ -38,8 +37,10 @@ print("Evaluating model for: " + str(dataset_y4signs.classes[HaarSettings.class_
 
 results = evaluate(data_path='/home/od/.lns-training/resources/processed/haar/Y4Signs_1036_584_test/annotations/{0}_positive'.format(class_to_classify),
                    model_path='/home/od/.lns-training/resources/trainers/haar/{0}/cascade/cascade.xml'.format(model_name),
-                   trainer_path= '/home/od/.lns-training/resources/trainers/haar/{0}'.format(model_name)
-                   num_neighbors=HaarSettings.min_neighbours)
+                   trainer_path= '/home/od/.lns-training/resources/trainers/haar/{0}'.format(model_name),
+                   num_neighbors=HaarSettings.min_neighbours,
+                   scale=HaarSettings.scale_factor
+                   )
 
 file = open('/home/od/.lns-training/resources/trainers/haar/{}/results.txt'.format(model_name), "w")
 
