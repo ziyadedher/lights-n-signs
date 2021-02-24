@@ -102,7 +102,7 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.1):
     try:
         precision = float(tp) / float(tp + fp)
         recall = float(tp) / float(total_num_gt)
-    except ZeroDivisionError e:
+    except ZeroDivisionError as e:
         print('No bounding boxes were detected. Try decreasing num_neighbours or scale_factor. There might be a bug in the code as well.')
 
     print("TP: {}\nFP: {}\nPrecision: {:.2f}\nRecall: {:.2f}\nF1 score: {:.2f}".format(tp, fp, precision, recall, f1_score(precision, recall)))
