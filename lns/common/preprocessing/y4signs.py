@@ -34,6 +34,8 @@ class Y4signs:
                 path = path[:len(path) - len("_train_manav")]
             elif "helen" in path:
                 path = path[:len(path) - len("_train_helen")]
+            elif "matthieu" in path:
+                path = path[:len(path) - len("_train_matthieu")]
             else:
                 path = path[:len(path) - len("_train")]
         else:
