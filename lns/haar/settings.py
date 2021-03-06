@@ -14,10 +14,10 @@ class HaarSettings(Settings):
     class_index: int = 0
 
     # Features to use. Can be HAAR or LBP
-    feature_type: str = "HAAR" # TODO: change to HAAR and check
+    feature_type: str = "HAAR"
 
     # Width and height of the features to learn
-    feature_size: int = 12 #18
+    feature_size: int = 12
 
     # Number of samples to generate in setup
     num_samples: int = 4300
@@ -33,5 +33,5 @@ class HaarSettings(Settings):
 
     # Inference metrics, how much to scale the features by neighbour threshold
     scale_factor: float = 1.08
-    min_neighbours: float = 3 #3
+    min_neighbours: float = 3
 # pylint: enable=too-many-instance-attributes
