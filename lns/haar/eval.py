@@ -23,35 +23,21 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.1):
     with open(data_path) as f:
         images_info = f.readlines()
     
-    to_save = os.path.join(trainer_path, 'visual_{0}_{1}_0'.format(str(num_neighbors), str(scale)))
-    
+    # Determine name of folder where to save results
+    to_save = os.path.join(trainer_path, f'visual_{num_neighbors}_{scale}_0')
     index_ = 1
     while os.path.exists(to_save):
-        to_save = os.path.join(trainer_path, 'visual_{0}_{1}_{2}'.format(str(num_neighbors), str(scale), str(index_)))
+        to_save = os.path.join(trainer_path, f'visual_{num_neighbors}_{scale}_{index_}')
         index_ += 1
         
-
-    # ground_truth = os.path.join(to_save, 'ground_truth')
-    predicted = os.path.join(to_save, 'predicted')
+    # Prepare folders to save images
     os.mkdir(to_save)
-    # os.mkdir(ground_truth)
-    os.mkdir(predicted)
 
     total_num_gt = 0
-    fp, tp = 0, 0
+    fp, tp, fn = 0, 0, 0
     for line in images_info:
-        # print(line)
         info = line.split(" ")
         img_path, num_signs = info[0], int(info[1])
-
-        path = Path(data_path).parent
-
-        # Get the model's detections
-        gray_img = cv2.imread((path/img_path).__str__(), 0)
-        out_img = cv2.cvtColor(gray_img,cv2.COLOR_GRAY2RGB)
-
-        im_name = img_path[str(img_path).rindex('/') + 1:]
-
 
         # If the image has actual signs, get their ground-truth coordinates
         if num_signs > 0:
@@ -66,51 +52,71 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.1):
                 ymin = info[start_index+1]
                 width = info[start_index+2]
                 height = info[start_index+3]
-                gt_coordinates = (float(xmin), 
-                                  float(ymin), 
-                                  float(width), 
-                                  float(height))
+                gt_coordinates = (int(xmin), 
+                                  int(ymin), 
+                                  int(width), 
+                                  int(height))
                 all_gt.append(gt_coordinates)
-
-                # crop = gray_img[ int(ymin):int(ymin)+int(height),int(xmin):int(xmin)+int(width)]
-                # path_save = os.path.join(ground_truth, im_name[:-len('.png')] + "-" + str(i)+'.png')
-                # cv2.imwrite(path_save, crop)
-
         else:
             continue
 
+
+        annotations_path = Path(data_path).parent
+        gray_img = cv2.imread(str(annotations_path/img_path), 0)
+        out_img = cv2.cvtColor(gray_img, cv2.COLOR_GRAY2RGB)
+        im_name = img_path[str(img_path).rindex('/') + 1:]
         
+        # Get the model's detections
         detections = cascade.detectMultiScale(gray_img, scale, num_neighbors)
-        path_save = os.path.join(predicted, im_name)
-        
-        for ind, (x_det, y_det, w_det, h_det) in enumerate(detections):
-            # crop = gray_img[ y_det:y_det+h_det, x_det:x_det+w_det]
-            cv2.rectangle(out_img, (x_det, y_det), (x_det+w_det, y_det+h_det), (255, 255, 0), 2) # draw bounding box
-            
-            for (x, y, w, h) in all_gt:
-                overlap = IOU(x_det, y_det, w_det, h_det, x, y, w, h)
-                print(overlap)
-                if  overlap> 0.5:
+        img_path_save = os.path.join(to_save, im_name)
+
+        # Find TP and FN
+        for (x, y, w, h) in all_gt:
+            for (x_det, y_det, w_det, h_det) in detections:
+                iou = IOU(x_det, y_det, w_det, h_det, x, y, w, h)
+                if iou > 0.5:
                     tp += 1
+                    break 
+                    # Once we find one prediction sufficiently overlapping with the gt, stop. 
+                    # This is to prevent TP from inflating due to duplicates (when min_neighbours is low).
+            else:
+                fn += 1
+        
+        # Find FP
+        for (x_det, y_det, w_det, h_det) in detections:
+            for (x, y, w, h) in all_gt:
+                iou = IOU(x_det, y_det, w_det, h_det, x, y, w, h)
+                if iou > 0.5:
                     break
             else:
                 fp += 1
+
+        # Draw bounding boxes
+        for (x, y, w, h) in all_gt:
+            # GT bounding box -> red
+            cv2.rectangle(out_img, (x, y), (x+w, y+h), (0, 0, 255), 2) 
+            for (x_det, y_det, w_det, h_det) in detections:
+                # Pred bounding box -> cyan
+                cv2.rectangle(out_img, (x_det, y_det), (x_det+w_det, y_det+h_det), (255, 255, 0), 2) 
         
-        cv2.imwrite(path_save, out_img)
+        cv2.imwrite(img_path_save, out_img)
 
     # Report evaluation metrics
     try:
         precision = float(tp) / float(tp + fp)
-        recall = float(tp) / float(total_num_gt)
+        recall = float(tp) / float(tp + fn)
+        f1 = f1_score(precision, recall)
     except ZeroDivisionError as e:
         print('No bounding boxes were detected. Try decreasing num_neighbours or scale_factor. There might be a bug in the code as well.')
 
-    print("TP: {}\nFP: {}\nPrecision: {:.2f}\nRecall: {:.2f}\nF1 score: {:.2f}".format(tp, fp, precision, recall, f1_score(precision, recall)))
-    file = open(os.path.join(trainer_path, 'results_{0}_{1}.txt'.format(num_neighbors, scale)), "w")
-    
-    file.write("tp: {0}\nfp: {1}\nprecision: {2}\nrecall: {3}\nf1_score: {4}".format(tp, fp, precision, recall, f1_score(precision, recall)))
+    msg = f"TP: {tp}\nFP: {fp}\nPrecision: {precision}\nRecall: {recall}\nF1 score: {f1}"
+
+    print(msg)
+    file = open(os.path.join(trainer_path, f'results_{num_neighbors}_{scale}.txt'), "w")
+    file.write(msg)
     file.close()
-    return [tp, fp, precision, recall, f1_score(precision, recall)]
+
+    return [tp, fp, precision, recall, f1]
 
 
 def IOU(x, y, w, h, x1t, y1t, wt, ht):
