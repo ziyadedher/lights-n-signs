@@ -32,22 +32,22 @@ HaarSettings.class_index = dataset_all.classes.index(class_to_classify)
 print('Training model for: ' + dataset_all.classes[HaarSettings.class_index])
 
 # Remove useless images to make preprocessing faster
-print(f"The dataset has {len(dataset_all)} images in total")
-irrelevant_imgs = []
-for img, labels in dataset_all.annotations.items():
-    labels = list(filter(
-        lambda label: label.class_index == HaarSettings.class_index, labels)
-        )
-    if not labels:
-        irrelevant_imgs.append(img)
-    else:
-        dataset_all.annotations[img] = labels
+# print(f"The dataset has {len(dataset_all)} images in total")
+# irrelevant_imgs = []
+# for img, labels in dataset_all.annotations.items():
+#     labels = list(filter(
+#         lambda label: label.class_index == HaarSettings.class_index, labels)
+#         )
+#     if not labels:
+#         irrelevant_imgs.append(img)
+#     else:
+#         dataset_all.annotations[img] = labels
 
-for img in irrelevant_imgs:
-    del dataset_all.annotations[img]
-    dataset_all.images.remove(img)
-print(f"The dataset contains {len(irrelevant_imgs)} irrelevant images")
-print(f"We'll keep the {len(dataset_all)} images belonging to {class_to_classify}")
+# for img in irrelevant_imgs:
+#     del dataset_all.annotations[img]
+#     dataset_all.images.remove(img)
+# print(f"The dataset contains {len(irrelevant_imgs)} irrelevant images")
+# print(f"We'll keep the {len(dataset_all)} images belonging to {class_to_classify}")
 
 
 # Train
