@@ -100,13 +100,13 @@ if __name__ == "__main__":
     img_width = 5184
     img_height = 2920
 
-    # Looked at images manually and saw that the thresholds below are reasonable
-    # The Stop sign has a dummy value since we don't care about that sign
+    # Looked at images manually and saw that the (lowerbound) thresholds below for w/h are reasonable 
+    # No need for upperbounds since the pictures weren't taken from above or below the sign
     sign2threshold = {0: 0.75, # nrt text
                     1: 0.88, # nrt sym
                     2: 0.75, # nlt text
                     3: 0.88, # nlt sym
                     4: 0.85, # yield
-                    5: -1} # stop
+                    5: -1} # stop. This sign has a dummy value since we don't care about it.
 
     remove_signs(sign2threshold, img_width, img_height)
