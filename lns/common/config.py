@@ -23,6 +23,10 @@ SUBROOT_FOLDERS = [
 
 PKL_EXTENSION = ".pkl"
 
+PER_CLASS_LIMIT = 150  # PER_CLASS_LIMIT annotations per class, for testing
+IMG_WIDTH = 1036 
+IMG_HEIGHT = 584
+
 POSSIBLE_DATASETS: List[str] = [
     "mocked",
     "LISA",
@@ -45,6 +49,10 @@ POSSIBLE_DATASETS: List[str] = [
     "Y4Signs_1036_584_train_manav",
     "Y4Signs_1036_584_train_helen",
     "Y4Signs_1036_584_train_matthieu",
+    "Y4Signs_filtered_1036_584_test_split",
+    "Y4Signs_filtered_1036_584_train_split",
+    "Y4Signs_removed_slanted", 
+    "Y4Signs"
 ]
 
 

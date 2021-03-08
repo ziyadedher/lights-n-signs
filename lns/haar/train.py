@@ -29,7 +29,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
             path="cascade/cascade.xml", temporal=False, required=True, path_type=Trainer.PathType.FILE),
     }
 
-    def __init__(self, name: str, class_index: int, dataset: Optional[Union[str, Dataset]] = None, load: bool = True, force=True) -> None:
+    def __init__(self, name: str, class_index: int, dataset: Optional[Union[str, Dataset]] = None, load: bool = True, forcePreprocessing=False) -> None:
         """Initialize a Haar trainer with the given unique <name>.
 
         Sources data from the given <dataset>, if any.
@@ -37,7 +37,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
         """
         super().__init__(name, dataset,
                          _processor=HaarProcessor, _settings=HaarSettings,
-                         _load=load, _subpaths=HaarTrainer.SUBPATHS)
+                         _load=load, _subpaths=HaarTrainer.SUBPATHS, forcePreprocessing=forcePreprocessing)
         self.class_index = class_index
         print("Training for: " + str(dataset.classes[class_index]))
 
@@ -59,6 +59,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
 
         Create <num_samples> positive samples of the class represented by the <class_index> with given <feature_size>.
         """
+        print("Setting up...")
         settings = settings if settings else self._load_settings()
         self._set_settings(settings)
 

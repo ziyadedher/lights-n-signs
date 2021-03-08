@@ -110,8 +110,9 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.1):
         print('No bounding boxes were detected. Try decreasing num_neighbours or scale_factor. There might be a bug in the code as well.')
 
     msg = f"TP: {tp}\nFP: {fp}\nPrecision: {precision}\nRecall: {recall}\nF1 score: {f1}"
-
     print(msg)
+
+    
     file = open(os.path.join(trainer_path, f'results_{num_neighbors}_{scale}.txt'), "w")
     file.write(msg)
     file.close()

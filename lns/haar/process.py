@@ -4,11 +4,16 @@ Manages all data processing for the generation of data ready to be trained
 on with OpenCV Haar training scripts.
 """
 from typing import List
-
 import os
-
 import cv2             # type: ignore
 from tqdm import tqdm  # type: ignore
+import pickle
+import shutil
+from typing import Dict, Generic, TypeVar, Union
+
+from lns.common import config
+from lns.common.preprocess import Preprocessor
+from lns.common.resources import Resources
 
 from lns.common.structs import Object2D
 from lns.common.dataset import Dataset
@@ -131,5 +136,39 @@ class HaarProcessor(Processor[HaarData]):
             annotations[class_index].append([x_min, y_min, width, height])
         return annotations
 
+    @classmethod
+    def process(cls, dataset: Union[str, Dataset], *, force: bool = False) -> HaarData:
+        """Process all required data from the given <dataset>.
+
+        Generates a processed data object and returns it.
+
+        If <force> is set to `True` then the method will force a processing of
+        the dataset even if previous data have been cached.
+
+        Raises `NoPreprocessorException` if a preprocessor for the given
+        <dataset> does not exist.
+        """
+        # Force a processing if the dataset is dynamically generated
+        # if isinstance(dataset, Dataset) and dataset.dynamic:
+        #     force = True
+
+        # Uses memoization to speed up processing acquisition
+        name = dataset if isinstance(dataset, str) else dataset.name
+        
+        if not force and name in cls._processed_data:
+            print(f"Getting data {name} from processed data cache.")
+            return cls._processed_data[name]
+
+        if isinstance(dataset, str):
+            dataset = Preprocessor.preprocess(dataset)
+
+        processed_data_path = os.path.join(cls.get_processed_data_path(), dataset.name)
+        if os.path.exists(processed_data_path):
+            shutil.rmtree(processed_data_path)
+        os.makedirs(processed_data_path)
+        processed_data: HaarData = cls._process(dataset)
+
+        cls.cache_processed_data(dataset.name, processed_data)
+        return processed_data
 
 HaarProcessor.init_cached_processed_data()

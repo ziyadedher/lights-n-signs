@@ -1,15 +1,17 @@
 import os
 from collections import Counter
 
+
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
-from lns.common.preprocess import Preprocessor
+from lns.common import config
+# from lns.common.preprocess import Preprocessor
 from lns.common.dataset import Dataset 
 
-DATASET_NAME = "Y4Signs_1036_584"
-PER_CLASS_LIMIT = 150  # PER_CLASS_LIMIT annotations per class, for testing
-IMG_WIDTH = 1036
-IMG_HEIGHT = 584
+DATASET_NAME = "Y4Signs"
+PER_CLASS_LIMIT = 0  # PER_CLASS_LIMIT annotations per class, for testing
+IMG_WIDTH = config.IMG_WIDTH
+IMG_HEIGHT = config.IMG_HEIGHT
 
 
 class Y4signs:
@@ -27,7 +29,7 @@ class Y4signs:
         if "test" in path:
             path = path[:len(path) - len("_test")]
             is_train = False
-        elif "train" in path:
+        elif "_train" in path:
             if "sam" in path:
                 path = path[:len(path) - len("_train_sam")]
             elif "manav" in path:
@@ -77,11 +79,12 @@ class Y4signs:
                 abs_image_path = os.path.join(path, set_, rel_image_path[5:])
                 # annotations file for corresponding image
                 annotation_file_path = abs_image_path[:-4] + ".txt"
+
                 try:
                     annotation_file = open(annotation_file_path)
                 except FileNotFoundError:
-                    print("annotation file " + annotation_file_path + " missing")
-                    continue
+                    print("annotation file " + annotation_file_path + " missing...skipping")
+                    continue # continue inner loop
 
                 temp_annotations = []
 

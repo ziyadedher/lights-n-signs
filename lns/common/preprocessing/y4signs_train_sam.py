@@ -2,6 +2,8 @@ from lns.common.preprocessing.y4signs import Y4signs
 from lns.common.preprocess import Preprocessor
 from lns.common.dataset import Dataset
 
+from lns.common import config
+
 
 
 DATASET_NAME = "Y4Signs_1036_584_train_sam"

@@ -67,7 +67,7 @@ class Trainer(Generic[ModelType, ProcessedDataType, SettingsType]):
 
     def __init__(self, name: str, dataset: Optional[Union[str, Dataset]] = None, *,
                  _processor: Type[Processor[ProcessedDataType]], _settings: Type[SettingsType],
-                 _load: bool, _subpaths: Dict[str, Subpath]) -> None:
+                 _load: bool, _subpaths: Dict[str, Subpath], forcePreprocessing=False) -> None:
         """Initialize a trainer.
 
         Generates a trainer with the given <name> on the given <dataset> if given.
@@ -85,7 +85,7 @@ class Trainer(Generic[ModelType, ProcessedDataType, SettingsType]):
         self.__settings_class = _settings
 
         self._generate_filestructure(_load, _processor.method(), {**Trainer.BUILTIN_SUBPATHS, **_subpaths})
-        self._acquire_data(dataset, _processor)
+        self._acquire_data(dataset, _processor, forcePreprocessing=forcePreprocessing)
 
         self.__settings = self._load_settings()
 
@@ -155,7 +155,7 @@ class Trainer(Generic[ModelType, ProcessedDataType, SettingsType]):
                     os.makedirs(path)
 
     def _acquire_data(self, dataset: Optional[Union[Dataset, str]],
-                      _processor: Type[Processor[ProcessedDataType]]) -> None:
+                      _processor: Type[Processor[ProcessedDataType]], forcePreprocessing=False) -> None:
         if dataset:
             # Get preprocess data if required
             if isinstance(dataset, str):
@@ -165,7 +165,7 @@ class Trainer(Generic[ModelType, ProcessedDataType, SettingsType]):
             else:
                 raise ValueError(f"<dataset> may only be `str` or `Dataset`, not {type(dataset)}")
             # Get processed data from the preprocessed dataset
-            self.__data = _processor.process(self.__dataset)
+            self.__data = _processor.process(self.__dataset, force=forcePreprocessing)
 
             with open(self._paths["_dataset"], "wb") as dataset_file:
                 pickle.dump(self.__dataset, dataset_file)

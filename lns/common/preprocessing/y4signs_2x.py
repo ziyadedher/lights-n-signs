@@ -2,12 +2,10 @@ import os
 from collections import Counter
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
-from lns.common.preprocess import Preprocessor
 from lns.common.dataset import Dataset 
 import pickle
 
-class Y4Signs_2072_1168:
-
+class Y4Signs_2x:
     def __init__(self, dataset_name):
         self.dataset_name = dataset_name
 

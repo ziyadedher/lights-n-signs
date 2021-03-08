@@ -1,13 +1,14 @@
 from lns.common.preprocessing.y4signs import Y4signs
 from lns.common.preprocess import Preprocessor
 from lns.common.dataset import Dataset
+from lns.common import config
 
 
 
 DATASET_NAME = "Y4Signs_1036_584_train_helen"
-PER_CLASS_LIMIT = 150  # PER_CLASS_LIMIT annotations per class, for testing
-IMG_WIDTH = 1036
-IMG_HEIGHT = 584
+PER_CLASS_LIMIT = config.PER_CLASS_LIMIT
+IMG_WIDTH = config.IMG_WIDTH
+IMG_HEIGHT = config.IMG_HEIGHT
 
 preprocessor = Y4signs(DATASET_NAME, per_class_limit=PER_CLASS_LIMIT, img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
 
