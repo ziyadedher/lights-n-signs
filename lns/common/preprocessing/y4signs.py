@@ -5,7 +5,7 @@ from collections import Counter
 from lns.common.dataset import Dataset
 from lns.common.structs import Object2D, Bounds2D
 from lns.common import config
-# from lns.common.preprocess import Preprocessor
+from lns.common.preprocess import Preprocessor
 from lns.common.dataset import Dataset 
 
 DATASET_NAME = "Y4Signs"
@@ -170,10 +170,9 @@ class InvalidBoundingBoxError(Exception):
         return "invalid bounding box at: " + self.path
 
 
-preprocessor = Y4signs(DATASET_NAME, per_class_limit=PER_CLASS_LIMIT, img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
-
 @Preprocessor.register_dataset_preprocessor(DATASET_NAME)
 def _Y4Signs_test(path: str) -> Dataset:
+    preprocessor = Y4signs(DATASET_NAME, per_class_limit=PER_CLASS_LIMIT, img_width=IMG_WIDTH, img_height=IMG_HEIGHT)
     return preprocessor.getDataset(path=path)
 
 
