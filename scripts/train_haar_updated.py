@@ -84,12 +84,11 @@ if not os.path.exists(eval_preprocessed_folder):
   print("Preprocessing complete! Evaluating...")
   
 
-
-
-
+# Evaluate only on NRT and NLT (not on RTO and LTO)
+class_to_evaluate = "nrt_nlt_text"
 
 # evaluate model after training and save visualisations and numeric data
-results = evaluate(data_path=f'/home/od/.lns-training/resources/processed/haar/{eval_preprocessed_folder}/annotations/{class_to_classify}_positive',
+results = evaluate(data_path=f'/home/od/.lns-training/resources/processed/haar/{eval_preprocessed_folder}/annotations/{class_to_evaluate}_positive',
                    model_path=f'/home/od/.lns-training/resources/trainers/haar/{model_name}/cascade/cascade.xml',
                    trainer_path=f'/home/od/.lns-training/resources/trainers/haar/{model_name}',
                    num_neighbors=HaarSettings.min_neighbours,
