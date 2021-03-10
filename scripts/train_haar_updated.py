@@ -58,12 +58,8 @@ trainer = HaarTrainer(name=model_name,
                         class_index=HaarSettings.class_index,
                         dataset=dataset_all, 
                         load=False, # Training from scratch
-<<<<<<< HEAD
-                        forcePreprocessing=FORCE_PREPROCESSING) 
-=======
                         forcePreprocessing=FORCE_PREPROCESSING) # True means preprocessing from scratch
 
->>>>>>> 3026ae12abdf61eda6f07e12f0a629a6fe1d421e
 trainer.setup()
 trainer.train()
 
