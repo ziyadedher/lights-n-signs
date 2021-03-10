@@ -97,24 +97,29 @@ class HaarProcessor(Processor[HaarData]):
                 tqdm_bar.update()
 
                 # Create gray images
-                new_image_path = os.path.join(images_folder, f"{i}.png")
-                cv2.imwrite(new_image_path, clahe.apply(cv2.imread(image_path, 0)))
+                try:
+                    new_image_path = os.path.join(images_folder, f"{i}.png")
+                    cv2.imwrite(new_image_path, clahe.apply(cv2.imread(image_path, 0)))
 
-                image_relative = os.path.relpath(os.path.join(images_folder, f"{i}.png"), start=annotations_folder)
+                    image_relative = os.path.relpath(os.path.join(images_folder, f"{i}.png"), start=annotations_folder)
 
-                # Store the annotations in a way easier to represent format for Haar
-                class_annotations = cls._reformat_labels(labels, dataset)
+                    # Store the annotations in a way easier to represent format for Haar
+                    class_annotations = cls._reformat_labels(labels, dataset)
 
-                for j, annotations in enumerate(class_annotations):
-                    detections_string = " ".join(
-                        " ".join(str(item) for item in annotation) for annotation in annotations)
-                    if len(annotations) > 0:
-                        pos_files[j].write(f"{image_relative} {len(annotations)} {detections_string}\n")
+                    for j, annotations in enumerate(class_annotations):
+                        detections_string = " ".join(
+                            " ".join(str(item) for item in annotation) for annotation in annotations)
+                        if len(annotations) > 0:
+                            pos_files[j].write(f"{image_relative} {len(annotations)} {detections_string}\n")
+                    
+
+                    for j, _ in enumerate(dataset.classes):
+                        if len(class_annotations[j]) == 0:
+                            neg_files[j].write(f"{new_image_path}\n")
+                except Exception as e:
+                    print(e)
+                    print(f"Image that caused the error: {image_path}")
                 
-
-                for j, _ in enumerate(dataset.classes):
-                    if len(class_annotations[j]) == 0:
-                        neg_files[j].write(f"{new_image_path}\n")
 
         # Close the positive and negative annotation files
         for file in pos_files:
