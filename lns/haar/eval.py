@@ -109,7 +109,7 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.1):
     except ZeroDivisionError as e:
         print('No bounding boxes were detected. Try decreasing num_neighbours or scale_factor. There might be a bug in the code as well.')
 
-    msg = f"TP: {tp}\nFP: {fp}\nPrecision: {precision}\nRecall: {recall}\nF1 score: {f1}"
+    msg = f"TP: {tp}\nFP: {fp}\nFN: {fn}\nPrecision: {precision}\nRecall: {recall}\nF1 score: {f1}"
     print(msg)
 
     

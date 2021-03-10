@@ -9,6 +9,3 @@ results = evaluate(data_path='/home/od/.lns-training/resources/processed/haar/Y4
                    trainer_path='/home/od/.lns-training/resources/trainers/haar/{0}'.format(model_name),
                    scale=scale,
                    num_neighbors=min_neighbours)
-
-tp, fp, precision, recall, f1_score = results
-# print("tp: {0}\nfp: {1}\nprecision: {2}\nrecall: {3}\nf1_score: {4}".format(tp, fp, precision, recall, f1_score))
