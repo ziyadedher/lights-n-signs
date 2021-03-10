@@ -9,53 +9,51 @@ from lns.haar.settings import HaarSettings
 # Can only be True if no other training instances are running
 FORCE_PREPROCESSING = False
 
-
-class_to_classify = ['nrt_nlt_sym', 'nrt_nlt_text', 'Stop', 'Yield'][HaarSettings.class_index]
+# class_index 0 = 'nrt_nlt_sym' # 4000 num_pos
+# class_index 1 = 'nrt_nlt_rto_lto_text' # 7000 num_pos
+# class_index 2 = 'Stop' # 2000 num_pos
+# class_index 3 = 'Yield' # 2000 num_pos
+class_to_classify = ['nrt_nlt_sym', 'nrt_nlt_rto_lto_text', 'Stop', 'Yield'][HaarSettings.class_index]
 model_name = input("Enter model name: ")
 
+# Get and merge data
 dataset_y4signs = Preprocessor.preprocess('Y4Signs_filtered_1036_584_train_split', force=True) # force = True will give stats
-print(f"Classes before merge: {dataset_y4signs.classes}")
+dataset_scalesigns = Preprocessor.preprocess('ScaleSigns')
+print(f"\nY4Signs classes before merge: {dataset_y4signs.classes}")
+print(f"ScaleSigns classes before merge: {dataset_scalesigns.classes}\n")
 
-# merge classes
-dataset_y4signs = dataset_y4signs.merge_classes({
-  "nrt_nlt_text": ['No_Right_Turn_Text', 'No_Left_Turn_Text'],
+dataset_all = dataset_y4signs + dataset_scalesigns
+dataset_all = dataset_all.merge_classes({
+  "nrt_nlt_rto_lto_text": ['No_Right_Turn_Text', 'No_Left_Turn_Text', 'Right Turn Only (words)', 'Left Turn Only (words)'],
   "nrt_nlt_sym": ['No_Right_Turn_Sym', 'No_Left_Turn_Sym']
 })
-# dataset_y4signs.classes[0] = 'nrt_nlt_sym' # 2000 num_pos
-# dataset_y4signs.classes[1] = 'nrt_nlt_text' # 2000 num_pos
-# dataset_y4signs.classes[2] = 'Stop' # 2000
-# dataset_y4signs.classes[3] = 'Yield' #2000
+print(f"Combined dataset classes after merge: {dataset_all.classes}\n")
 
-new_class_index = dataset_y4signs.classes.index(class_to_classify)
-HaarSettings.class_index = new_class_index
-
-print(f"Classes after merge: {dataset_y4signs.classes}")
-
-# training routine
-print('Training model for: ' + dataset_y4signs.classes[new_class_index])
+HaarSettings.class_index = dataset_all.classes.index(class_to_classify)
+print('Training model for: ' + dataset_all.classes[HaarSettings.class_index])
 
 trainer = HaarTrainer(name=model_name,
-                        class_index = new_class_index,
-                        dataset=dataset_y4signs, 
+                        class_index=HaarSettings.class_index,
+                        dataset=dataset_all, 
                         load=False, # Training from scratch
-                        forcePreprocessing = FORCE_PREPROCESSING) 
+                        forcePreprocessing=FORCE_PREPROCESSING) 
 
 trainer.setup()
 trainer.train()
 
 
 # evaluation routine
-print("Evaluating model for: " + str(dataset_y4signs.classes[HaarSettings.class_index]))
+print("Evaluating model for: " + str(dataset_all.classes[HaarSettings.class_index]))
 
 # IMPORTANT: must preprocess the test folder before running this script. This name should exist in '/home/od/.lns-training/resources/processed/haar/'
 eval_preprocessed_folder = 'Y4Signs_filtered_1036_584_test_split'
 
 # evaluate model after training and save visualisations and numeric data
-results = evaluate(data_path='/home/od/.lns-training/resources/processed/haar/{0}/annotations/{1}_positive'.format(eval_preprocessed_folder, class_to_classify),
-                   model_path='/home/od/.lns-training/resources/trainers/haar/{0}/cascade/cascade.xml'.format(model_name),
-                   trainer_path= '/home/od/.lns-training/resources/trainers/haar/{0}'.format(model_name),
+results = evaluate(data_path=f'/home/od/.lns-training/resources/processed/haar/{eval_preprocessed_folder}/annotations/{class_to_classify}_positive',
+                   model_path=f'/home/od/.lns-training/resources/trainers/haar/{model_name}/cascade/cascade.xml',
+                   trainer_path=f'/home/od/.lns-training/resources/trainers/haar/{model_name}',
                    num_neighbors=HaarSettings.min_neighbours,
                    scale=HaarSettings.scale_factor)
 
 
-print('Training Completed Successfully. You can find trainer and results at: \n' + '/home/od/.lns-training/resources/trainers/haar/'+ model_name)
+print('Training Completed Successfully. You can find trainer and results at: \n' + f'/home/od/.lns-training/resources/trainers/haar/{model_name}')
