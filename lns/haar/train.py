@@ -119,10 +119,11 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
             "-maxfalsealarm", str(self.settings.max_false_alarm),
             "-vec", str(vector_file),
             "-bg", str(negative_annotations_file),
-            "-w", str(self.settings.feature_size),
-            "-h", str(self.settings.feature_size),
+            "-w", str(self.settings.width),
+            "-h", str(self.settings.height),
             "-data", str(cascade_folder),
-            "-precalcValBufSize", str(256)
+            "-precalcValBufSize", str(256),
+            "-acceptanceRatioBreakValue", str(self.settings.acceptance_ratio_break_value)
         ]
 
         try:

@@ -18,21 +18,25 @@ class HaarSettings(Settings):
     feature_type: str = "LBP"
 
     # Width and height of the features to learn
-    feature_size: int = 15
+    width: int = 24
+    height: int = 32
 
     # Number of samples to generate in setup
-    num_samples: int = 6000
+    num_samples: int = 7000
 
     # Number of stages to train and respective number of positive and negative samples to use
-    num_stages: int = 20
-    num_positive: int = 4000
-    num_negative: int = 6000
+    num_stages: int = 24
+    num_positive: int = 5000
+    num_negative: int = 8000
 
     # Minimal desired hit rate for each stage of the classifier
-    min_hit_rate: float = 0.999
-    max_false_alarm: float = 0.4
+    min_hit_rate: float = 0.996217
+    max_false_alarm: float = 0.3908
+
+    # Guideline: Train no further than 10e-5 to prevent overfitting
+    acceptance_ratio_break_value: float = 1.352559e-6 # 10e-5
 
     # Inference metrics, how much to scale the features by neighbour threshold
     scale_factor: float = 1.08
-    min_neighbours: float = 1
+    min_neighbours: float = 0
 # pylint: enable=too-many-instance-attributes
