@@ -39,7 +39,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
                          _processor=HaarProcessor, _settings=HaarSettings,
                          _load=load, _subpaths=HaarTrainer.SUBPATHS, forcePreprocessing=forcePreprocessing)
         self.class_index = class_index
-        print("Training for: " + str(dataset.classes[class_index]))
+        print("Class: " + str(dataset.classes[class_index]))
 
     @property
     def model(self) -> Optional[HaarModel]:
@@ -74,8 +74,8 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
         command = [
             "/usr/bin/opencv_createsamples",
             "-info", str(annotations_file),
-            "-w", str(settings.feature_size),
-            "-h", str(settings.feature_size),
+            "-w", str(settings.width),
+            "-h", str(settings.height),
             "-num", str(settings.num_samples),
             "-vec", str(vector_file)
         ]
