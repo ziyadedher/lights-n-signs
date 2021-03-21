@@ -82,6 +82,7 @@ class SVMTrainer():
 
         print("\n\nTraining")
         svm_model.train(self.train_data, cv.ml.ROW_SAMPLE, self.labels)
+        
         # svm_model.train(samples=self.train_data,
         #                 layout=cv.ml.ROW_SAMPLE, responses=self.labels)
         print("\nTraining completed")

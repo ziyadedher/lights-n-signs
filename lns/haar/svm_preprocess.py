@@ -37,7 +37,7 @@ class SVMProcessor:
             for image_path, labels in self.dataset.annotations.items():
                 tqdm_bar.update()
                 
-                #gray_image = cv.imread(image_path,0)
+                colour_image = cv.imread(image_path)
                 
                 gray_image = np.array(cv.cvtColor(colour_image, cv.COLOR_BGR2GRAY)) # load gray image in numpy array
                 
