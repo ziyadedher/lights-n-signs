@@ -14,7 +14,6 @@ class SVMClassifier():
 
     def __init__(self, model_path: str) -> None:
         """Initialize a SVM Classifier."""
-        print(model_path)
         self._model = cv.ml.SVM_load(model_path + "/svm.xml")
 
     def predict(self, image: np.ndarray) -> np.int64:
