@@ -60,10 +60,10 @@ class SVMProcessor:
                         #     need_print = False
                         self.splits[label.class_index].append(np.array(img, dtype=np.float32))
         
-        for class_x, crop in self.splits.items():
-            self.splits[class_x] = np.array(crop, dtype='float32')
+        for class_x, crops in self.splits.items():
+            self.splits[class_x] = np.array(crops, dtype='float32')
         
-        self.save_np_arrays()
+        # self.save_np_arrays()
 
     
     def save_np_arrays(self, force: bool = False):
@@ -73,9 +73,9 @@ class SVMProcessor:
             ones = None
             for class_x in background:
                 if ones is None:
-                    ones = np.expand_dims(self.splits[class_x], axis=0)
+                    ones = self.splits[class_x]
                 else:
-                    np.append(ones, np.expand_dims(self.splits[class_x], axis=0))
+                    np.append(ones, self.splits[class_x], axis=0)
             
             
             data_x = np.concatenate((zeros, ones), axis=0)
