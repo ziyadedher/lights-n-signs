@@ -153,7 +153,7 @@ with tf.Session() as sess:
             loss_class.update(__loss[4], len(__y_pred[0]))
 
             if __global_step % args.train_evaluation_step == 0 and __global_step > 0:
-                recall, precision = evaluate_on_cpu(__y_pred, __y_true, args.class_num, args.nms_topk, args.score_threshold, args.nms_threshold)
+                recall, precision = evaluate_on_cpu(__y_pred, __y_true, args.class_num, True, args.nms_topk, args.score_threshold, args.nms_threshold)
                 # recall, precision = evaluate_on_gpu(sess, gpu_nms_op, pred_boxes_flag, pred_scores_flag, __y_pred, __y_true, args.class_num, args.nms_threshold)
 
                 info = "Epoch: {}, global_step: {} | loss: total: {:.2f}, xy: {:.2f}, wh: {:.2f}, conf: {:.2f}, class: {:.2f} | ".format(
