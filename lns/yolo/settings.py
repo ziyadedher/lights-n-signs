@@ -37,9 +37,9 @@ class YoloSettings(Settings):
     initial_weights: Optional[str] = None
 
     # Number of images to train on per step
-    batch_size: int = 8
+    batch_size: int = 32
     # Base size of the image to train on (overriden by multi_scale_train)
-    img_size: Tuple[int, int] = (416, 416)
+    img_size: Tuple[int, int] = (640, 416)
     # Whether to preserve image aspect ratio when resizing or not by using letterboxing
     letterbox_resize: bool = True
 
@@ -48,9 +48,9 @@ class YoloSettings(Settings):
     # Number of steps between evaluating the current model on the current training batch
     train_evaluation_step: int = 100
     # Number of epochs between evaluating on the entire validation dataset
-    val_evaluation_epoch: int = 5
+    val_evaluation_epoch: int = 2
     # Number of epochs between saving a model checkpoint
-    save_epoch: int = 5
+    save_epoch: int = 2
 
     # Percentage of data to use for validation
     val_split: float = 0.1
@@ -105,16 +105,16 @@ class YoloSettings(Settings):
     # Whether or not to start off with this number of warm-up epochs
     use_warm_up: bool = True
     # Number of epochs for warmup
-    warm_up_epoch: int = 5
+    warm_up_epoch: int = 3
 
     # Number of final outputs from non-maximal suppression
     nms_topk: int = 8
     # Threshold for non-maximal suppression overlap
-    nms_threshold: float = 0.25
+    nms_threshold: float = 0.01
     # Threshold for class probability in non-maximal suppresion
-    score_threshold: float = 0.1
+    score_threshold: float = 0.15
     # Thresholds for a detection to be considered correct in evaluation
-    eval_threshold: float = 0.25
+    eval_threshold: float = 0.01
     # Whether or not to use 11-point VOC07 evaluation metric
     use_voc_07_metric: bool = False
 
