@@ -108,7 +108,6 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
         print("Vector File: " + str(vector_file))
         print("Training model for: " + self.dataset.classes[self.class_index])
 
-        print("\n\nTraining")
         command = [
             "/usr/bin/opencv_traincascade",
             "-featureType", str(self.settings.feature_type),
@@ -124,6 +123,7 @@ class HaarTrainer(Trainer[HaarModel, HaarData, HaarSettings]):
             "-data", str(cascade_folder),
             "-precalcValBufSize", str(256)
         ]
+        print(f"\n\nTraining with command: {command}")
 
         try:
             subprocess.run(command, check=False)
