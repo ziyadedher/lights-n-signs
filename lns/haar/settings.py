@@ -25,16 +25,13 @@ class HaarSettings(Settings):
     num_samples: int = 7000
 
     # Number of stages to train and respective number of positive and negative samples to use
-    num_stages: int = 24
+    num_stages: int = 16
     num_positive: int = 5000
     num_negative: int = 8000
 
     # Minimal desired hit rate for each stage of the classifier
     min_hit_rate: float = 0.996217
     max_false_alarm: float = 0.3908
-
-    # Guideline: Train no further than 10e-5 to prevent overfitting
-    acceptance_ratio_break_value: float = 1.352559e-6 # 10e-5
 
     # Inference metrics, how much to scale the features by neighbour threshold
     scale_factor: float = 1.08
