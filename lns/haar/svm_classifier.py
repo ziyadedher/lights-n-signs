@@ -30,13 +30,12 @@ class SVMClassifier():
         predicted_results = self.predict(val_data)[1]
 
         tp, fp = 0, 0
-        count = 0
         for i in range(val_data.shape[0]):
             if predicted_results[i] == val_labels[i]:
                 tp += 1
             else:
                 fp += 1
-        print(count)
+
         precision = float(tp) / float(fp + tp)
         recall = float(tp) / float(val_data.shape[0])
 
