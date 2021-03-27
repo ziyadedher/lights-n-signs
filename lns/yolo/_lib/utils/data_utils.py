@@ -168,6 +168,18 @@ def parse_data(line, class_num, img_size, anchors, mode, letterbox_resize):
 
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32)
 
+    # # Visualize
+    # print("line:", line)
+    # print("boxes:", boxes)
+    # img_copy = img
+    # for box in boxes:
+    #     x1, y1, x2, y2 = box[0], box[1], box[2], box[3]
+    #     start = (x1, y1)
+    #     end = (x2, y2)
+    #     cv2.rectangle(img_copy, start, end, (0, 0, 255), 5)
+    # img_name = f"{str(line).replace('/', '=')}.png" # Remove slashes so we can save
+    # cv2.imwrite(img_name, img_copy)
+
     # the input of yolo_v3 should be in range 0~1
     img = img / 255.
 
