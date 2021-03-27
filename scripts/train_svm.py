@@ -13,7 +13,7 @@ nlrt_text_data = 'No_Right_Turn_Text_No_Left_Turn_Text/data.npy'
 nlrt_text_label = 'No_Right_Turn_Text_No_Left_Turn_Text/labels.npy'
 PROCESS_TRAIN, PROCESS_TEST = False, False
 TRAIN_SYM, TRAIN_TEXT = True, False
-TEST_SYM, TEST_TEXT = False, False
+TEST_SYM, TEST_TEXT = True, False
 
 if PROCESS_TRAIN:
     dataset = Preprocessor.preprocess('Y4Signs_filtered_1036_584_train_split', force=True)

@@ -8,11 +8,6 @@ import numpy as np
 import cv2 as cv
 import os
 
-# class SVMTrainerWrapper:
-#     def __init__(self, positive_folder: str, negative_folder: str, positive_np_path: str, negative_np_path: str):
-
-
-
 
 class SVMTrainer():
     """Manages the training environment.
@@ -59,7 +54,6 @@ class SVMTrainer():
             # print(type(self.train_data[0][0][0]))
             # print(type(self.labels[0]))
             # print(self.labels.shape)
-
 
 
             if len(self.train_data) == 0:
