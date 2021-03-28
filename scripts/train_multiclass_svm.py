@@ -8,12 +8,13 @@ from lns.common.preprocess import Preprocessor
 MODEL_OUTPUT_PATH = '/home/od/.lns-training/resources/trainers/haar'
 PATH_TRAIN = '/home/od/.lns-training/resources/processed/haar/y4Signs_train_text_svm'
 PATH_TEST = '/home/od/.lns-training/resources/processed/haar/y4Signs_test_text_svm'
+MODEL_PATH = 'some_model_name'
 
-def get_classes_to_classify():
+def get_classes_to_classify(y4_signs_folder='Y4Signs_filtered_1036_584_train_split'):
     """
     Function to merge datasets and get classes indices to train
     """
-    dataset_y4signs = Preprocessor.preprocess('Y4Signs_filtered_1036_584_train_split')
+    dataset_y4signs = Preprocessor.preprocess(y4_signs_folder)
     dataset_scalesigns = Preprocessor.preprocess('ScaleSigns')
     dataset = dataset_y4signs + dataset_scalesigns
 
@@ -63,7 +64,15 @@ TRAIN, TEST = False, False
 
 if PROCESS_TRAIN:
     dataset, to_classify = get_classes_to_classify()
+    processed_path_train = PATH_TRAIN
     processor = SVMProcessor(processed_path_train, dataset, to_classify)
+    processor.preprocess(force=True)
+    processor.save_np_arrays()
+
+if PROCESS_TEST:
+    dataset, to_classify = get_classes_to_classify(y4_signs_folder='Y4Signs_filtered_1036_584_test_split')
+    processed_path_test = PATH_TEST
+    processor = SVMProcessor(processed_path_test, dataset, to_classify)
     processor.preprocess(force=True)
     processor.save_np_arrays()
 

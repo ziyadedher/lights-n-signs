@@ -5,6 +5,7 @@ import cv2 as cv # type: ignore
 import numpy as np
 import os
 from tqdm import tqdm # type: ignore
+from pathlib import Path
 
 class SVMProcessor:
     def __init__(self, path: str, dataset: Dataset, compare: List[tuple]):
@@ -39,13 +40,18 @@ class SVMProcessor:
             for image_path, labels in self.dataset.annotations.items():
                 tqdm_bar.update()
                 
-                colour_image = cv.imread(image_path)
-                
-                gray_image = np.array(cv.cvtColor(colour_image, cv.COLOR_BGR2GRAY)) # load gray image in numpy array
-                
+                img_sz = Path(image_path).stat().st_size  # image size in bytes
+                # ./speed_limit_20/IMG_20181007_152311-1.jpg
+                # ./speed_limit_20/IMG_20181007_151246.jpg
+                # ./speed_limit_15/IMG_20181007_145412.jpg
+                if img_sz < 100000:
+                    print(f"skipping {image_path}")
+                    continue  # skip all images less than 100kB (corrupt) (there should only be 3)
                 
                 for label in labels:
                     if label.class_index in self.splits:
+                        colour_image = cv.imread(image_path)
+                        gray_image = np.array(cv.cvtColor(colour_image, cv.COLOR_BGR2GRAY)) # load gray image in numpy array
                         xmin = label.bounds.left
                         xmax = label.bounds.right
                         ymin = label.bounds.top
