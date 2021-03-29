@@ -4,11 +4,9 @@ from lns.haar.svm_preprocess_one_v_all import SVMProcessor
 from lns.haar.svm_train import SVMTrainer
 from lns.common.preprocess import Preprocessor
 
-# TODO: update these constants after finished with data processing.
 MODEL_OUTPUT_PATH = '/home/od/.lns-training/resources/trainers/haar'
 PATH_TRAIN = '/home/od/.lns-training/resources/processed/haar/y4Signs_train_text_svm'
 PATH_TEST = '/home/od/.lns-training/resources/processed/haar/y4Signs_test_text_svm'
-MODEL_PATH = 'some_model_name'
 
 def get_classes_to_classify(y4_signs_folder='Y4Signs_filtered_1036_584_train_split'):
     """
@@ -38,29 +36,39 @@ def train_one_vs_all(train_data, labels, model_name,
     in {processed_data_path}/{train_data} or /{labels}. 
     Output model will be saved under {model_path}/{model_name}/svm.xml
     """
-    print(f"Training {model_name}")
+    print(f"\nTraining {model_name}")
     trainer = SVMTrainer(os.path.join(processed_data_path, train_data),
                          os.path.join(processed_data_path, labels),
                          os.path.join(model_path, model_name))
     trainer.setup()
     trainer.train()
-    print("Done")
 
 
-def evaluate_svm_models(test_data, labels, model_name, processed_data_path=PATH_TEST, model_path=MODEL_PATH):
+def evaluate_svm_models(test_data, labels, model_name, processed_data_path=PATH_TEST, model_path=MODEL_OUTPUT_PATH):
     """
     Evaluate a one vs all SVM model with test data already partitioned properly located 
     in {processed_data_path}/{test_data} or /{labels}. Results will be printed out. 
     Load trained model from {model_path}/{model_name}/svm.xml
     """
-    test = SVMClassifier(os.path.join(model_path, model_name))
-    print(f"Evaluating {model_name} SVM")
+    path = os.path.join(model_path, model_name)
+    print(f"\nEvaluating {model_name} SVM at {path}")
+    test = SVMClassifier(path)
     test.eval(os.path.join(processed_data_path, test_data),
               os.path.join(processed_data_path, labels))
 
 
-PROCESS_TRAIN, PROCESS_TEST = True, False
-TRAIN, TEST = False, False
+def _data_path(i):
+    signs = ["No_Right_Turn_Text", "No_Left_Turn_Text", "Right Turn Only (words)", "Left Turn Only (words)"]
+    models = ["nrt", "nlt", "rto", "lto"]
+    return [
+        os.path.join(signs[i], "data.npy"),
+        os.path.join(signs[i], "labels.npy"),
+        "heddy_text_{}_vs_rest".format(models[i])
+    ]
+
+
+PROCESS_TRAIN, PROCESS_TEST = False, False  # DO NOT TURN ON, only if data re-processing is required
+TRAIN, TEST = True, True
 
 if PROCESS_TRAIN:
     dataset, to_classify = get_classes_to_classify()
@@ -77,17 +85,35 @@ if PROCESS_TEST:
     processor.save_np_arrays()
 
 if TRAIN:
-    train_one_vs_all("", "", 'heddy_text_nrt_vs_all')
+    # SVM 1: No Right Turn Text vs. rest
+    files_path = _data_path(0)
+    train_one_vs_all(files_path[0], files_path[1], files_path[2])
 
+    # SVM 2: No Left Turn Text vs. rest
+    files_path = _data_path(1)
+    train_one_vs_all(files_path[0], files_path[1], files_path[2])
 
+    # SVM 3: Right Turn Only Text vs. rest
+    files_path = _data_path(2)
+    train_one_vs_all(files_path[0], files_path[1], files_path[2])
 
-# dataset_1 = dataset_all.merge_classes({
-#   "nrt_rest": ['No_Left_Turn_Text', 'Right Turn Only (words)', 'Left Turn Only (words)'],
-# })
-# print(dataset_1.classes.index('No_Right_Turn_Text'))
-# print(dataset_1.annotations)
+    # SVM 4: Left Turn Only Text vs. rest
+    files_path = _data_path(3)
+    train_one_vs_all(files_path[0], files_path[1], files_path[2])
 
+if TEST:
+    # Test: No Right Turn Text vs. rest
+    files_path = _data_path(0)
+    evaluate_svm_models(files_path[0], files_path[1], files_path[2])
 
-# -------- Class index constants --------
-# ['No_Right_Turn_Text', 'No_Right_Turn_Sym', 'No_Left_Turn_Text', 'No_Left_Turn_Sym', 'Yield', 'Stop']
-# ['25 mph', 'Regular Parking', 'Stop', 'Handicap Parking', 'arrow', '15 mph', 'Do Not Enter', '20 mph', 'words', '5 mph', '10 mph', 'Railroad Light Pair On', 'Railroad Sign', 'Railroad Light Pair Off', 'Speed Limit 20', 'Speed Limit 15', 'Speed Limit 10', 'Speed Limit 5', 'Right Turn Only (words)', 'Right Turn Only (arrow)', 'Left Turn Only (words)', 'Left Turn Only (arrow)']
+    # Test: No Left Turn Text vs. rest
+    files_path = _data_path(1)
+    evaluate_svm_models(files_path[0], files_path[1], files_path[2])
+
+    # Test: Right Turn Only Text vs. rest
+    files_path = _data_path(2)
+    evaluate_svm_models(files_path[0], files_path[1], files_path[2])
+
+    # Test: Left Turn Only Text vs. rest
+    files_path = _data_path(3)
+    evaluate_svm_models(files_path[0], files_path[1], files_path[2])

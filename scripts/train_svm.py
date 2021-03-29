@@ -63,15 +63,9 @@ if TEST_SYM:
     print("Evaluating NoRight Turn Sym NoLeft Turn Sym")
     test.eval(os.path.join(processed_path_test, nlrt_signs_data),
               os.path.join(processed_path_test, nlrt_signs_label))
+
 if TEST_TEXT:
     test = SVMClassifier(os.path.join(model_path, 'heddy_lrt_text'))
     print("Evaluating NoRight Turn Text NoLeft Turn Text")
     test.eval(os.path.join(processed_path_test, nlrt_text_data),
               os.path.join(processed_path_test, nlrt_text_label))
-
-
-# test_dataset = Preprocessor.preprocess('Y4Signs_1036_584_test', force=True)
-
-# test_processor = SVMProcessor(processed_path_test, test_dataset, to_classify)
-# test_processor.preprocess()
-# test_processor.save_np_arrays()
