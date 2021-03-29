@@ -12,7 +12,7 @@ nlrt_signs_label = 'No_Right_Turn_Sym_No_Left_Turn_Sym/labels.npy'
 nlrt_text_data = 'No_Right_Turn_Text_No_Left_Turn_Text/data.npy'
 nlrt_text_label = 'No_Right_Turn_Text_No_Left_Turn_Text/labels.npy'
 PROCESS_TRAIN, PROCESS_TEST = False, False
-TRAIN_SYM, TRAIN_TEXT = True, False
+TRAIN_SYM, TRAIN_TEXT = False, False
 TEST_SYM, TEST_TEXT = True, False
 
 if PROCESS_TRAIN:
@@ -36,14 +36,6 @@ if TRAIN_SYM:
     trainer.setup()
     trainer.train()
     print("Done")
-if TRAIN_TEXT:
-    print("Training No_Right_Turn_Text_No_Left_Turn_Text")
-    trainer = SVMTrainer(os.path.join(processed_path_train, nlrt_text_data),
-                         os.path.join(processed_path_train, nlrt_text_label),
-                         os.path.join(model_path, 'heddy_lrt_text'))
-    trainer.setup()
-    trainer.train()
-    print("Done")
 
 if PROCESS_TEST:
     dataset = Preprocessor.preprocess('Y4Signs_filtered_1036_584_test_split', force=True)
@@ -63,9 +55,3 @@ if TEST_SYM:
     print("Evaluating NoRight Turn Sym NoLeft Turn Sym")
     test.eval(os.path.join(processed_path_test, nlrt_signs_data),
               os.path.join(processed_path_test, nlrt_signs_label))
-
-if TEST_TEXT:
-    test = SVMClassifier(os.path.join(model_path, 'heddy_lrt_text'))
-    print("Evaluating NoRight Turn Text NoLeft Turn Text")
-    test.eval(os.path.join(processed_path_test, nlrt_text_data),
-              os.path.join(processed_path_test, nlrt_text_label))
