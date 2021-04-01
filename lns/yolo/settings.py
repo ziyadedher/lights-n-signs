@@ -44,7 +44,7 @@ class YoloSettings(Settings):
     letterbox_resize: bool = True
 
     # Number of epochs until the trainer automatically terminates
-    num_epochs: int = 100
+    total_epoches: int = 200
     # Number of steps between evaluating the current model on the current training batch
     train_evaluation_step: int = 100
     # Number of epochs between evaluating on the entire validation dataset
@@ -112,7 +112,7 @@ class YoloSettings(Settings):
     # Threshold for non-maximal suppression overlap
     nms_threshold: float = 0.01
     # Threshold for class probability in non-maximal suppresion
-    score_threshold: float = 0.15
+    score_threshold: float = 0.25
     # Thresholds for a detection to be considered correct in evaluation
     eval_threshold: float = 0.01
     # Whether or not to use 11-point VOC07 evaluation metric
