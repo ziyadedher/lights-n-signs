@@ -9,7 +9,7 @@ from lns.haar.process import HaarProcessor
 
 # Must be False if you don't want to disrupt any other training.
 # Can only be True if no other training instances are running
-FORCE_PREPROCESSING = False
+FORCE_PREPROCESSING = True
 
 # class_index 0 = 'nrt_nlt_sym' # 4000 num_pos
 # class_index 1 = 'nrt_nlt_rto_lto_text' # 5000 num_pos

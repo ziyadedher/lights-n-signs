@@ -31,7 +31,7 @@ class HaarSettings(Settings):
 
     # Minimal desired hit rate for each stage of the classifier
     min_hit_rate: float = 0.996217
-    max_false_alarm: float = 0.3908
+    max_false_alarm: float = 0.6
 
     # Inference metrics, how much to scale the features by neighbour threshold
     scale_factor: float = 1.08
