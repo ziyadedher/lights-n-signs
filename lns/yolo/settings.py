@@ -39,14 +39,14 @@ class YoloSettings(Settings):
     # Number of images to train on per step
     batch_size: int = 8
     # Base size of the image to train on (overriden by multi_scale_train)
-    img_size: Tuple[int, int] = (416, 416)
+    img_size: Tuple[int, int] = (832,256) #(416, 416)
     # Whether to preserve image aspect ratio when resizing or not by using letterboxing
     letterbox_resize: bool = True
 
     # Number of epochs until the trainer automatically terminates
-    num_epochs: int = 100
+    total_epoches: int = 40 # num_epochs: int = 40
     # Number of steps between evaluating the current model on the current training batch
-    train_evaluation_step: int = 100
+    train_evaluation_step: int = 100 #100
     # Number of epochs between evaluating on the entire validation dataset
     val_evaluation_epoch: int = 5
     # Number of epochs between saving a model checkpoint
@@ -69,14 +69,14 @@ class YoloSettings(Settings):
     # Whether or not to store the optimizer in the checkpoint
     save_optimizer: bool = True
     # Initial learning rate, will be built up to in warmup and decayed after
-    learning_rate_init: float = 1e-4
+    learning_rate_init: float = 1e-6
     lr_type: LearningRateType = LearningRateType.PIECEWISE
     # Number of epochs between decaying the learning rate
     lr_decay_epoch: int = 5
     # Exponential factor to decay learning rate by
     lr_decay_factor: float = 0.96
     # Lower bound on the learning rate
-    lr_lower_bound: float = 1e-6
+    lr_lower_bound: float = 1e-7
     # Epoch-based boundaries
     pw_boundaries: Tuple[int, int] = (30, 50)
     pw_values: Tuple[float, float, float] = (learning_rate_init, 3e-5, 1e-5)
