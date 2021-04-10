@@ -39,7 +39,7 @@ class YoloSettings(Settings):
     # Number of images to train on per step
     batch_size: int = 32
     # Base size of the image to train on (overriden by multi_scale_train)
-    img_size: Tuple[int, int] = (640, 416)
+    img_size: Tuple[int, int] = (832, 256)
     # Whether to preserve image aspect ratio when resizing or not by using letterboxing
     letterbox_resize: bool = True
 

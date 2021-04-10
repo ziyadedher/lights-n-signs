@@ -12,5 +12,5 @@ dataset_all = dataset_all.merge_classes({
   "off": ["OFF", "off", "3-off", "3-other", "4-off", "4-other", "5-off", "5-other"]
 })
 
-trainer = YoloTrainer(name="matthieu_darknet53_416_1", dataset=dataset_all, load=False) # Training from scratch
+trainer = YoloTrainer(name="matthieu_darknet53_256_1", dataset=dataset_all, load=False) # Training from scratch
 trainer.train()
