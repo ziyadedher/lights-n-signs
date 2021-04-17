@@ -33,32 +33,13 @@ class SVMTrainer():
         if self.data_path and self.labels_path:
             self.train_data = np.load(self.data_path, allow_pickle=True)
             self.train_data = np.float32(self.train_data)
-            print('Train Shape ',self.train_data.shape)
-            print(self.train_data[0])
-            #print('type',type(self.train_data[0][0][0]))
-            # for i in range(self.train_data.shape[0]):
-            #     self.train_data[i] = np.int32(self.train_data[i])
-            
-            
+
             self.labels = np.load(self.labels_path, allow_pickle=True)
             self.labels = np.int32(self.labels)
-            self.labels = np.reshape(self.labels,(self.labels.shape[0],1))
-            print('Shape ',self.labels.shape)
-            # for i in range(self.labels.shape[0]):
-            #     self.labels[i] = np.int32(self.labels[i])
-            
-            # self.labels = np.array(labels, dtype=np.float32)
-
-            # print(type(self.train_data))
-            # print(self.train_data.shape)
-            # print(type(self.train_data[0][0][0]))
-            # print(type(self.labels[0]))
-            # print(self.labels.shape)
-
+            self.labels = np.reshape(self.labels,(self.labels.shape[0], 1))
 
             if len(self.train_data) == 0:
                 raise FileNotFoundError("Empty training data!")
-                
         else:
             raise FileNotFoundError("Training data is not provided")
 
@@ -74,14 +55,8 @@ class SVMTrainer():
         svm_model.setKernel(cv.ml.SVM_LINEAR)
         svm_model.setTermCriteria((cv.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
 
-        print("\n\nTraining")
         svm_model.train(self.train_data, cv.ml.ROW_SAMPLE, self.labels)
-        
-        # svm_model.train(samples=self.train_data,
-        #                 layout=cv.ml.ROW_SAMPLE, responses=self.labels)
-        print("\nTraining completed")
-        print(self.model_path+'/svm.xml')
-        
+
         if not os.path.exists(self.model_path):
             os.makedirs(self.model_path)
         svm_model.save(self.model_path+'/svm.xml')

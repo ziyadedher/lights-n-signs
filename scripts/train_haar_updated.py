@@ -9,7 +9,7 @@ from lns.haar.process import HaarProcessor
 
 # Must be False if you don't want to disrupt any other training.
 # Can only be True if no other training instances are running
-FORCE_PREPROCESSING = False
+FORCE_PREPROCESSING = True
 
 # class_index 0 = 'nrt_nlt_sym' # 4000 num_pos
 # class_index 1 = 'nrt_nlt_rto_lto_text' # 5000 num_pos
@@ -68,13 +68,13 @@ trainer.train()
 print("Evaluating model for: " + str(dataset_all.classes[HaarSettings.class_index]))
 
 # IMPORTANT: must preprocess the test folder before running this script. This name should exist in '/home/od/.lns-training/resources/processed/haar/'
-eval_preprocessed_folder = 'Y4Signs_filtered_1036_584_test_split'
+eval_preprocessed_folder = 'Y4Signs_filtered_1036_584_test_split_removed_small_nrt_nlt_text'
 
 processed_path_for_eval = '/home/od/.lns-training/resources/processed/haar/{0}'.format(eval_preprocessed_folder)
 
 if not os.path.exists(eval_preprocessed_folder):
   print("did not find preprocessed test dataset, preprocessing from scratch")
-  dataset_y4signs_eval = Preprocessor.preprocess('Y4Signs_filtered_1036_584_test_split', force=True) # force = True will give stats
+  dataset_y4signs_eval = Preprocessor.preprocess(eval_preprocessed_folder, force=True) # force = True will give stats
   dataset_y4signs_eval = dataset_y4signs_eval.merge_classes({
   "nrt_nlt_text": ['No_Right_Turn_Text', 'No_Left_Turn_Text'],
   "nrt_nlt_sym": ['No_Right_Turn_Sym', 'No_Left_Turn_Sym']
