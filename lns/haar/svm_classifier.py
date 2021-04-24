@@ -12,9 +12,10 @@ import numpy as np  # type: ignore
 class SVMClassifier():
     """A SVM classifier."""
 
-    def __init__(self, model_path: str) -> None:
+    def __init__(self, model_path: str, input_size=(32, 32)) -> None:
         """Initialize a SVM Classifier."""
         self._model = cv.ml.SVM_load(model_path + "/svm.xml")
+        self.input_size = input_size
 
     def predict(self, image: np.ndarray) -> np.int64:
         """Predict the class of a given image."""
@@ -23,7 +24,7 @@ class SVMClassifier():
     def eval(self, val_path: str, labels_path: str) -> None:
         """Evaluate the performance of classifier with validate data."""
         val_data = np.load(val_path, allow_pickle=True)
-        val_data = np.float32(val_data).reshape((-1, 1024))
+        val_data = np.float32(val_data).reshape((-1, self.input_size[0] * self.input_size[1]))
         val_labels = np.load(labels_path, allow_pickle=True)
         val_labels = np.int32(val_labels).reshape((val_labels.shape[0],1))
 
