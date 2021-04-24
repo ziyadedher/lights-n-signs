@@ -12,5 +12,27 @@ dataset_all = dataset_all.merge_classes({
   "off": ["OFF", "off", "3-off", "3-other", "4-off", "4-other", "5-off", "5-other"]
 })
 
-trainer = YoloTrainer(name="matthieu_darknet53_256_1", dataset=dataset_all, load=False) # Training from scratch
+# Get all bbox areas
+all_areas = []
+all_list_obj2d = list(dataset_all.annotations.values())
+for list_obj2d in all_list_obj2d:
+    for obj2d in list_obj2d:
+        all_areas.append(obj2d.bounds.width * obj2d.bounds.height)
+
+# Get 85th percentile
+all_areas.sort()
+eighty_fifth = int(0.85 * len(all_areas))
+threshold = all_areas[eighty_fifth]
+
+# Remove images with any bbox bigger than 85th percentile
+for annotation in list(dataset_all.annotations):
+    list_obj2d = dataset_all.annotations[annotation]
+    for obj2d in list_obj2d:
+        area = obj2d.bounds.width * obj2d.bounds.height
+        if area > threshold:
+            del dataset_all.annotations[annotation]
+            dataset_all.images.remove(annotation)
+            break
+
+trainer = YoloTrainer(name="matthieu_darknet53_256_5", dataset=dataset_all, load=False) # Training from scratch
 trainer.train()
