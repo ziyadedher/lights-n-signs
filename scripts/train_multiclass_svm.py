@@ -92,11 +92,14 @@ def _test_joint(input_size=(48, 48)):
             predicted_results = trained_model.predict(val_data)[1]
             res.append(predicted_results)
 
+        bad_count = 0  # the number of samples where the number of SVMs that classify "positive" != 1
         for v in range(val_data.shape[0]):  # loop through all val samples
             if val_labels[v] == 0:  # if the label is 0 which means is a ground truth positive sample
     
                 results_to_verify = [res[0][v], res[1][v], res[2][v], res[3][v]]  # for this sample, the values outputted by each SVM
                 # print(results_to_verify)  # debug note: res[0] mostly giving 1, res[1] mostly 0 but some 1, res[2] / res[3] are basically all 0 from what I see (3 is worst)
+                if np.sum(results_to_verify) != 3:
+                    bad_count += 1
                 predicted = np.argmin(results_to_verify)  # 0 is positive so take minimum confidence
                 if predicted == i:  # if predicted is the ground truth
                     # if i == 2:
@@ -105,6 +108,7 @@ def _test_joint(input_size=(48, 48)):
                 else:
                     fp += 1
                 # total += 1
+        print("BAD COUNT:", bad_count)  # around 10% of NT predictions are bad, 25% of TO predictions are bad
 
 
     precision = float(tp) / float(fp + tp)
@@ -115,7 +119,7 @@ def _test_joint(input_size=(48, 48)):
 
 
 PROCESS_TRAIN, PROCESS_TEST = False, False  # DO NOT TURN ON, only if data re-processing is required
-TRAIN, TEST, TEST_JOINT = True, True, True
+TRAIN, TEST, TEST_JOINT = False, True, True
 
 if PROCESS_TRAIN:
     dataset, to_classify = get_classes_to_classify()

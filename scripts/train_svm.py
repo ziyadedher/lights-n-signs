@@ -5,15 +5,15 @@ from lns.haar.svm_train import SVMTrainer
 from lns.common.preprocess import Preprocessor
 
 model_path = '/home/od/.lns-training/resources/trainers/haar'
-processed_path_train = '/home/od/.lns-training/resources/processed/haar/y4Signs_train_svm'
-processed_path_test = '/home/od/.lns-training/resources/processed/haar/y4Signs_test_svm'
+processed_path_train = '/home/od/.lns-training/resources/processed/haar/y4Signs_train_svm_noise'
+processed_path_test = '/home/od/.lns-training/resources/processed/haar/y4Signs_test_svm_noise'
 nlrt_signs_data = 'No_Right_Turn_Sym_No_Left_Turn_Sym/data.npy'
 nlrt_signs_label = 'No_Right_Turn_Sym_No_Left_Turn_Sym/labels.npy'
 nlrt_text_data = 'No_Right_Turn_Text_No_Left_Turn_Text/data.npy'
 nlrt_text_label = 'No_Right_Turn_Text_No_Left_Turn_Text/labels.npy'
 PROCESS_TRAIN, PROCESS_TEST = False, False
-TRAIN_SYM, TRAIN_TEXT = False, False
-TEST_SYM, TEST_TEXT = True, False
+TRAIN_SYM, TRAIN_TEXT = True, True
+TEST_SYM, TEST_TEXT = True, True
 
 if PROCESS_TRAIN:
     dataset = Preprocessor.preprocess('Y4Signs_filtered_1036_584_train_split', force=True)
@@ -32,7 +32,7 @@ if TRAIN_SYM:
     print("Training No_Right_Turn_Sym_No_Left_Turn_Sym")
     trainer = SVMTrainer(os.path.join(processed_path_train, nlrt_signs_data),
                          os.path.join(processed_path_train, nlrt_signs_label),
-                         os.path.join(model_path, 'heddy_lrt_sign'))
+                         os.path.join(model_path, 'tiffany_lrt_sign'))
     trainer.setup()
     trainer.train()
     print("Done")
@@ -51,7 +51,7 @@ if PROCESS_TEST:
     processor.save_np_arrays()
 
 if TEST_SYM:
-    test = SVMClassifier(os.path.join(model_path, 'heddy_lrt_sign'))
+    test = SVMClassifier(os.path.join(model_path, 'tiffany_lrt_sign'))
     print("Evaluating NoRight Turn Sym NoLeft Turn Sym")
     test.eval(os.path.join(processed_path_test, nlrt_signs_data),
               os.path.join(processed_path_test, nlrt_signs_label))
