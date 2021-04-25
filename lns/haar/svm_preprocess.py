@@ -5,6 +5,7 @@ import cv2 as cv # type: ignore
 import numpy as np
 import os
 from tqdm import tqdm # type: ignore
+import random
 
 class SVMProcessor:
     def __init__(self, path: str, dataset: Dataset, compare: List[tuple]):
@@ -23,8 +24,21 @@ class SVMProcessor:
             self.splits[a] = []
             self.splits[b] = []
 
+    @staticmethod
+    def _add_noise(xmin, xmax, ymin, ymax, img_dims, noise_level=0.15):
+        x_range = abs(xmax - xmin)
+        y_range = abs(ymax - ymin)
+        xmin_noise = random.uniform(-noise_level * x_range, noise_level * x_range)
+        xmax_noise = random.uniform(-noise_level * x_range, noise_level * x_range)
+        ymin_noise = random.uniform(-noise_level * y_range, noise_level * y_range)
+        ymax_noise = random.uniform(-noise_level * y_range, noise_level * y_range)
+        xmin = max(int(xmin + xmin_noise), 0)
+        xmax = min(int(xmax + xmax_noise), img_dims[1])
+        ymin = max(int(ymin + ymin_noise), 0)
+        ymax = min(int(ymax + ymax_noise), img_dims[0])
+        return xmin, xmax, ymin, ymax
 
-    def preprocess(self, force: bool = True):
+    def preprocess(self, force: bool = True, add_noise: bool = True):
         if force or not os.path.exists(self.path):
             os.makedirs(self.path, exist_ok=True)
         else:
@@ -48,6 +62,9 @@ class SVMProcessor:
                         xmax = label.bounds.right
                         ymin = label.bounds.top
                         ymax = label.bounds.bottom
+                        if add_noise:
+                            xmin, xmax, ymin, ymax = self._add_noise(xmin, xmax, ymin, ymax, gray_image.shape)
+
                         crop = gray_image[ymin:ymax, xmin:xmax]
                         if need_print:
                             print('stage 1',crop)
