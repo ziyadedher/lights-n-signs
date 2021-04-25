@@ -7,6 +7,9 @@ import os
 from tqdm import tqdm # type: ignore
 from pathlib import Path
 import random
+import matplotlib.pyplot as plt
+from collections import Counter
+
 
 class SVMProcessor:
     def __init__(self, path: str, dataset: Dataset, compare: List[tuple], crop_size: tuple = (48, 48)):
@@ -43,6 +46,7 @@ class SVMProcessor:
         return xmin, xmax, ymin, ymax
 
     def preprocess(self, force: bool = True, add_noise: bool = True):
+        stats = Counter()
         if force or not os.path.exists(self.path):
             os.makedirs(self.path, exist_ok=True)
         else:
@@ -51,7 +55,6 @@ class SVMProcessor:
 
         print("Creating crops...")
         with tqdm(desc="Processing", total=len(self.dataset.annotations.keys()), miniters=1) as tqdm_bar:
-            # need_print = 1
             for image_path, labels in self.dataset.annotations.items():
                 tqdm_bar.update()
                 
@@ -65,6 +68,7 @@ class SVMProcessor:
                 
                 for label in labels:
                     if label.class_index in self.splits:
+                        stats[label.class_index] += 1
                         colour_image = cv.imread(image_path)
                         gray_image = np.array(cv.cvtColor(colour_image, cv.COLOR_BGR2GRAY)) # load gray image in numpy array
                         xmin = label.bounds.left
@@ -75,13 +79,11 @@ class SVMProcessor:
                             xmin, xmax, ymin, ymax = self._add_noise(xmin, xmax, ymin, ymax, gray_image.shape)
 
                         crop = gray_image[ymin:ymax, xmin:xmax]
-                        # if need_print:
-                        #     print('stage 1',crop)
                         img = cv.resize(crop, self.crop_size)
                         img = cv.equalizeHist(img)
-                        # if need_print:
-                        #     print('stage 2', img)
-                        #     need_print = False
+
+                        # plt.imshow(crop, cmap = 'gray')
+                        # plt.savefig('test.png')
                         self.splits[label.class_index].append(np.array(img, dtype=np.float32))
         
         for class_x, crops in self.splits.items():
@@ -95,13 +97,18 @@ class SVMProcessor:
         for class_a, background in self.compare:
             zeros = self.splits[class_a]
             ones = None
+            print(self.dataset.classes[class_a]+": "+str(len(zeros)))
+            num_images = int(len(zeros) / len(background))  # number of samples we need per background class
             for class_x in background:
                 if ones is None:
                     ones = self.splits[class_x]
+                    ones = random.choices(ones, k=num_images)
                 else:
-                    np.append(ones, self.splits[class_x], axis=0)
-            
-            
+                    background = random.choices(self.splits[class_x], k=num_images)
+                    ones = np.append(ones, background, axis=0)
+
+                # print(f"Background {self.dataset.classes[class_x]}: {len(self.splits[class_x])}")
+
             data_x = np.concatenate((zeros, ones), axis=0)
             labels = np.concatenate((np.zeros(len(zeros)), np.ones(len(ones)))) # class_a corresponds to 0 and so on
             labels = np.array(labels, dtype=np.int32)
