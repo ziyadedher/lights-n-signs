@@ -258,7 +258,10 @@ def label_video_from_file(frame_folder_path: str, *,
         class_label = ["pedestrians"]
     else:
         # class_label = ['5-red-yellow','yellow','green','off','5-red-green','4-red-green','red']
-        class_label = ['off', '5-red-green','4-red-green','green','yellow','5-red-yellow','red']
+        class_label = ['off', '5-red-green','4-red-green','green','yellow','5-red-yellow','red'] #640x416 no removal
+        # class_label = ['yellow','off','red', '5-red-yellow', '5-red-green','4-red-green','green'] #640x416 removal
+        # class_label = ['5-red-yellow','5-red-green','4-red-green','off','red','yellow','green']
+        #class_label = ['green','red','5-red-green','yellow','4-red-green','off','5-red-yellow']
         trainer_color_mapping = dict(zip(['5-red-yellow','yellow','green','off','5-red-green','4-red-green','red'],
                              ['red'] + ['yellow'] + ['green'] + ['off'] + ['red'] * 3 ))
         '''

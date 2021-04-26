@@ -17,18 +17,19 @@ def gen_frames(fps=5,GPU=0):
 
     # Video file structure is as follows: ../ped_dummy_vides_2021/timestamped folder/videos
     # Each timestamped folder contains 4 videos, 1 from each camera on Zeus.
-    video_parent_path = "/mnt/ssd2/od/datasets/lights_vids/"
-    frames_folder_parent = "/mnt/ssd2/od/datasets/lights_vids/frames_cropped"
+    video_parent_path = "/mnt/ssd2/od/datasets/20210418" #"/mnt/ssd2/od/datasets/lights_vids/"
+    frames_folder_parent = "/mnt/ssd2/od/datasets/20210418/frames" #"/mnt/ssd2/od/datasets/lights_vids/frames" #_cropped"
 
 
     if gen_frames:
         print("Generating image frames from video file")
         for video_folder in os.listdir(video_parent_path):
-            if video_folder in ['traffic_control','intersection_challenge']:
-                for video_file in os.listdir(os.path.join(video_parent_path,video_folder)):
-                    output_folder_path = os.path.join(frames_folder_parent,video_folder,video_file[:-4])
-                    Path(output_folder_path).mkdir(parents=True,exist_ok = True)
-                    convert_video_to_frames(os.path.join(video_parent_path, video_folder, video_file),output_folder_path,frame_rate = fps,crop = [0.25,0.75,0.175,0.5])
+            # if video_folder in ['traffic_control','intersection_challenge']:
+            for video_file in os.listdir(os.path.join(video_parent_path,video_folder)):
+                output_folder_path = os.path.join(frames_folder_parent,video_folder,video_file[:-4])
+                Path(output_folder_path).mkdir(parents=True,exist_ok = True)
+                convert_video_to_frames(os.path.join(video_parent_path, video_folder, video_file),output_folder_path,frame_rate = fps)
+                    # convert_video_to_frames(os.path.join(video_parent_path, video_folder, video_file),output_folder_path,frame_rate = fps,crop = [0.25,0.75,0.175,0.5])
 
 if __name__ == '__main__':
     fps = 5 #how many frames per second to generate frames at
