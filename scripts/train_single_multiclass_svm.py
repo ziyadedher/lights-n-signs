@@ -118,7 +118,7 @@ def _test_joint(input_size=(48, 48)):
     print("TP: {}\FP: {}\Precision: {:.2f}\Recall: {:.2f}\nF1 score: {:.2f}".format(tp, fp, precision, recall, f1_score(precision, recall)))
 
 
-PROCESS_TRAIN, PROCESS_TEST = False, True # DO NOT TURN ON, only if data re-processing is required
+PROCESS_TRAIN, PROCESS_TEST = False, False # DO NOT TURN ON, only if data re-processing is required
 TRAIN, TEST, TEST_JOINT = False, True, False
 
 if PROCESS_TRAIN:
@@ -139,41 +139,10 @@ if TRAIN:
     # SVM Multi-Class
     files_path = _data_path()
     train_multiclass(files_path[0],files_path[1],files_path[2])
-    # SVM 1: No Right Turn Text vs. rest
-    # files_path = _data_path(0)
-    # train_one_vs_all(files_path[0], files_path[1], files_path[2])
-
-    # # SVM 2: No Left Turn Text vs. rest
-    # files_path = _data_path(1)
-    # train_one_vs_all(files_path[0], files_path[1], files_path[2])
-
-    # # SVM 3: Right Turn Only Text vs. rest
-    # files_path = _data_path(2)
-    # train_one_vs_all(files_path[0], files_path[1], files_path[2])
-
-    # # SVM 4: Left Turn Only Text vs. rest
-    # files_path = _data_path(3)
-    # train_one_vs_all(files_path[0], files_path[1], files_path[2])
 
 if TEST:
     files_path = _data_path()
     evaluate_svm_models(files_path[0],files_path[1],files_path[2])
-
-    # # Test: No Right Turn Text vs. rest
-    # files_path = _data_path(0)
-    # evaluate_svm_models(files_path[0], files_path[1], files_path[2])
-
-    # # Test: No Left Turn Text vs. rest
-    # files_path = _data_path(1)
-    # evaluate_svm_models(files_path[0], files_path[1], files_path[2])
-
-    # # Test: Right Turn Only Text vs. rest
-    # files_path = _data_path(2)
-    # evaluate_svm_models(files_path[0], files_path[1], files_path[2])
-
-    # # Test: Left Turn Only Text vs. rest
-    # files_path = _data_path(3)
-    # evaluate_svm_models(files_path[0], files_path[1], files_path[2])
 
 if TEST_JOINT:
     _test_joint()
