@@ -5,6 +5,8 @@ from lns.haar.svm_train import SVMTrainer
 from lns.common.preprocess import Preprocessor
 import cv2 as cv
 import numpy as np
+from collections import Counter
+import pickle
 
 MODEL_OUTPUT_PATH = '/home/od/.lns-training/resources/trainers/haar'
 PATH_TRAIN = '/home/od/.lns-training/resources/processed/haar/y4Signs_train_text_svm_48_singleModel'
@@ -56,9 +58,39 @@ def evaluate_svm_models(test_data, labels, model_name, processed_data_path=PATH_
     path = os.path.join(model_path, model_name)
     print(f"\nEvaluating {model_name} SVM at {path}")
     test = SVMClassifier(path, input_size=(48, 48))
-    test.eval(os.path.join(processed_data_path, test_data),
-              os.path.join(processed_data_path, labels))
 
+    test_data_path = os.path.join(processed_data_path, test_data)
+    test_label_path = os.path.join(processed_data_path, labels) # absolute paths
+    test_mapping_path = os.path.join(processed_data_path, "labels_mapping.pkl") 
+
+    label_mapping = pickle.load(open(test_mapping_path, 'rb')) # mapping of labels and their respective classes.
+
+    val_data = np.load(test_data_path, allow_pickle=True) # load test data
+    val_data = np.float32(val_data).reshape((-1, test.input_size[0] * test.input_size[1]))
+    val_labels = np.load(test_label_path, allow_pickle=True) # load labels
+    val_labels = np.int32(val_labels).reshape((val_labels.shape[0],1))
+
+    # counters for metrics of individual class labels
+    tps = Counter()
+    fps = Counter()
+    fns = Counter()
+
+    predicted_results = test.predict(val_data)[1]
+
+    tp, fp = 0, 0
+    for i in range(val_data.shape[0]):
+        if predicted_results[i] == val_labels[i]:
+            tps[predicted_results[i]] += 1 # add to the true positives of the predicted label
+        else:
+            fps[predicted_results[i]] += 1 # add to the false positives of the predicted label
+            fns[val_labels[i]] += 1 # add to the false negatives of the ground truth label
+
+    for lab in label_mapping.keys()):
+        print("label: " + str(label_mapping[lab]))
+        precision = float(tps[lab]) / float(fps[lab] + tps[lab])
+        recall = float(tps[lab]) / float(fns[lab] + tps[lab])
+        print("TP: {}\FP: {}\Precision: {:.2f}\Recall: {:.2f}\nF1 score: {:.2f}".format(tps[lab], fps[lab], precision, recall, f1_score(precision, recall)))
+    
 
 def _data_path():
     # signs = ["No_Right_Turn_Text", "No_Left_Turn_Text", "Right Turn Only (words)", "Left Turn Only (words)"]
@@ -108,6 +140,7 @@ def _test_joint(input_size=(48, 48)):
                 else:
                     fp += 1
                 # total += 1
+        
         print("BAD COUNT:", bad_count)  # around 10% of NT predictions are bad, 25% of TO predictions are bad
 
 
@@ -118,7 +151,7 @@ def _test_joint(input_size=(48, 48)):
     print("TP: {}\FP: {}\Precision: {:.2f}\Recall: {:.2f}\nF1 score: {:.2f}".format(tp, fp, precision, recall, f1_score(precision, recall)))
 
 
-PROCESS_TRAIN, PROCESS_TEST = False, False # DO NOT TURN ON, only if data re-processing is required
+PROCESS_TRAIN, PROCESS_TEST = False, True # DO NOT TURN ON, only if data re-processing is required
 TRAIN, TEST, TEST_JOINT = False, True, False
 
 if PROCESS_TRAIN:

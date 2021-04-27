@@ -9,6 +9,7 @@ from pathlib import Path
 import random
 import matplotlib.pyplot as plt
 from collections import Counter
+import pickle
 
 
 class SVMProcessor:
@@ -92,6 +93,7 @@ class SVMProcessor:
     
     def save_np_arrays(self, force: bool = False):
         print("Saving pre-processed crops...")
+        label_mapping = {}
         label = 0
         labels = np.array([])
         data_x = np.array([])
@@ -102,6 +104,7 @@ class SVMProcessor:
                 labels = np.ones(len(class_pics))*label
             else:
                 labels = np.concatenate((labels,np.ones(len(class_pics))*label))
+            label_mapping[label] = self.dataset.classes[class_index]
             label+=1
             if data_x.size == 0:
                 data_x = class_pics
@@ -116,9 +119,11 @@ class SVMProcessor:
             os.makedirs(subfolder)
         data_path = os.path.join(subfolder, "data.npy")
         labels_path = os.path.join(subfolder, "labels.npy")
+        labels_mapping_path = os.path.join(subfolder, "labels_mapping.pkl")
         data_x = np.reshape(data_x,(data_x.shape[0],data_x.shape[1]*data_x.shape[2]))
         np.save(data_path, data_x)
         np.save(labels_path, np.array(labels, dtype=np.int32))
+        pickle.dump(label_mapping, open(labels_mapping_path, 'wb')) # store the mapping of the class index to 
         
         print("Save complete.")
         print("Saved at: " + self.path)
