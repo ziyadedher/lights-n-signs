@@ -80,12 +80,12 @@ def evaluate_svm_models(test_data, labels, model_name, processed_data_path=PATH_
     tp, fp = 0, 0
     for i in range(val_data.shape[0]):
         if predicted_results[i] == val_labels[i]:
-            tps[predicted_results[i]] += 1 # add to the true positives of the predicted label
+            tps[predicted_results[i][0]] += 1 # add to the true positives of the predicted label
         else:
-            fps[predicted_results[i]] += 1 # add to the false positives of the predicted label
-            fns[val_labels[i]] += 1 # add to the false negatives of the ground truth label
+            fps[predicted_results[i][0]] += 1 # add to the false positives of the predicted label
+            fns[val_labels[i][0]] += 1 # add to the false negatives of the ground truth label
 
-    for lab in label_mapping.keys()):
+    for lab in label_mapping.keys():
         print("label: " + str(label_mapping[lab]))
         precision = float(tps[lab]) / float(fps[lab] + tps[lab])
         recall = float(tps[lab]) / float(fns[lab] + tps[lab])
@@ -151,7 +151,7 @@ def _test_joint(input_size=(48, 48)):
     print("TP: {}\FP: {}\Precision: {:.2f}\Recall: {:.2f}\nF1 score: {:.2f}".format(tp, fp, precision, recall, f1_score(precision, recall)))
 
 
-PROCESS_TRAIN, PROCESS_TEST = False, True # DO NOT TURN ON, only if data re-processing is required
+PROCESS_TRAIN, PROCESS_TEST = False, False # DO NOT TURN ON, only if data re-processing is required
 TRAIN, TEST, TEST_JOINT = False, True, False
 
 if PROCESS_TRAIN:
