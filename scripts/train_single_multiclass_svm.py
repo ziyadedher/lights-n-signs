@@ -98,7 +98,7 @@ def _data_path():
     return [
         os.path.join("data.npy"),
         os.path.join("labels.npy"),
-        "helen_text_multiclass"]
+        "helen_text_multiclass_linear_100000iter"]
 
 
 def _test_joint(input_size=(48, 48)):
@@ -152,7 +152,7 @@ def _test_joint(input_size=(48, 48)):
 
 
 PROCESS_TRAIN, PROCESS_TEST = False, False # DO NOT TURN ON, only if data re-processing is required
-TRAIN, TEST, TEST_JOINT = False, True, False
+TRAIN, TEST, TEST_JOINT = True, True, False
 
 if PROCESS_TRAIN:
     dataset, to_classify = get_classes_to_classify()

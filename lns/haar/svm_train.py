@@ -49,8 +49,10 @@ class SVMTrainer():
         Train for <num_stages> stages before automatically stopping and generating the trained model.
         Train on <num_positive> positive samples and <num_negative> negative samples.
         """
-
         svm_model = cv.ml.SVM_create()
+        svm_model.setKernel(cv.ml.SVM_LINEAR)
+        svm_model.setTermCriteria((cv.TERM_CRITERIA_MAX_ITER, 100000, 1e-6))
+        '''
         svm_model.setType(cv.ml.SVM_C_SVC)
         svm_model.setKernel(cv.ml.SVM_POLY)
         svm_model.setDegree(4)
@@ -58,6 +60,7 @@ class SVMTrainer():
         svm_model.setCoef0(0)
         svm_model.setC(3.9373763856992907e-05)
         svm_model.setTermCriteria((cv.TERM_CRITERIA_MAX_ITER, 100000, 1e-6))
+        '''
         # print(np.sum(self.labels), np.shape(self.labels))
         svm_model.train(self.train_data, cv.ml.ROW_SAMPLE, self.labels)
 
