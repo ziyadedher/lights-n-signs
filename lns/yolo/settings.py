@@ -44,7 +44,7 @@ class YoloSettings(Settings):
     letterbox_resize: bool = True
 
     # Number of epochs until the trainer automatically terminates
-    total_epoches: int = 200
+    total_epoches: int = 100
     # Number of steps between evaluating the current model on the current training batch
     train_evaluation_step: int = 100
     # Number of epochs between evaluating on the entire validation dataset

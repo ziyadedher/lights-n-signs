@@ -34,5 +34,5 @@ for annotation in list(dataset_all.annotations):
             dataset_all.images.remove(annotation)
             break
 
-trainer = YoloTrainer(name="matthieu_darknet53_256_5", dataset=dataset_all, load=False) # Training from scratch
+trainer = YoloTrainer(name="matthieu_darknet53_416_4_copy", dataset=dataset_all, load=True) # Training from scratch
 trainer.train()
