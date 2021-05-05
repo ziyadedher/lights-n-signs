@@ -9,8 +9,8 @@ from collections import Counter
 import pickle
 
 MODEL_OUTPUT_PATH = '/home/od/.lns-training/resources/trainers/haar'
-PATH_TRAIN = '/home/od/.lns-training/resources/processed/haar/y4Signs_train_text_svm_48_singleModel'
-PATH_TEST = '/home/od/.lns-training/resources/processed/haar/y4Signs_test_text_svm_48_singleModel'
+PATH_TRAIN = '/home/od/.lns-training/resources/processed/haar/y4Signs_train_text_svm_48_singleModel_noNoise'
+PATH_TEST = '/home/od/.lns-training/resources/processed/haar/y4Signs_test_text_svm_48_singleModel_noNoise'
 
 def get_classes_to_classify(y4_signs_folder='Y4Signs_filtered_1036_584_train_split'):
     """
@@ -90,7 +90,29 @@ def evaluate_svm_models(test_data, labels, model_name, processed_data_path=PATH_
         precision = float(tps[lab]) / float(fps[lab] + tps[lab])
         recall = float(tps[lab]) / float(fns[lab] + tps[lab])
         print("TP: {}\FP: {}\Precision: {:.2f}\Recall: {:.2f}\nF1 score: {:.2f}".format(tps[lab], fps[lab], precision, recall, f1_score(precision, recall)))
-    
+
+def test_svm_models(test_data, model_name, model_path=MODEL_OUTPUT_PATH,crop_size = (48,48)):
+    '''
+    Function to output labels associated to images at test_data
+    '''
+    path = os.path.join(model_path, model_name)
+    print(f"\nEvaluating {model_name} SVM at {path}")
+    test = SVMClassifier(path, input_size=crop_size)
+
+    image_paths = os.listdir(test_data)
+    splits = []
+    for image_path in image_paths:
+        colour_image = cv.imread(os.path.join(test_data,image_path))
+        gray_image = np.array(cv.cvtColor(colour_image, cv.COLOR_BGR2GRAY)) # load gray image in numpy array
+        img = cv.resize(gray_image, crop_size)
+        img = cv.equalizeHist(img)
+        splits.append(np.array(img, dtype=np.float32))
+    splits = np.array(splits, dtype='float32')
+    data_x = np.reshape(splits,(splits.shape[0],splits.shape[1]*splits.shape[2]))
+
+    predicted_results = test.predict(data_x)[1]
+    for index, result in enumerate(predicted_results):
+        print(image_paths[index],': ', result)
 
 def _data_path():
     # signs = ["No_Right_Turn_Text", "No_Left_Turn_Text", "Right Turn Only (words)", "Left Turn Only (words)"]
@@ -98,7 +120,7 @@ def _data_path():
     return [
         os.path.join("data.npy"),
         os.path.join("labels.npy"),
-        "helen_text_multiclass_linear_100000iter"]
+        'helen_text_multiclass']#"helen_text_multiclass_nonoise_linear_100iter"]
 
 
 def _test_joint(input_size=(48, 48)):
@@ -152,20 +174,20 @@ def _test_joint(input_size=(48, 48)):
 
 
 PROCESS_TRAIN, PROCESS_TEST = False, False # DO NOT TURN ON, only if data re-processing is required
-TRAIN, TEST, TEST_JOINT = True, True, False
+TRAIN, TEST, TEST_JOINT, TEST_REAL = False, False, False, True
 
 if PROCESS_TRAIN:
     dataset, to_classify = get_classes_to_classify()
     processed_path_train = PATH_TRAIN
     processor = SVMProcessor(processed_path_train, dataset, to_classify)
-    processor.preprocess(force=True)
+    processor.preprocess(force=True, add_noise=False)
     processor.save_np_arrays()
 
 if PROCESS_TEST:
     dataset, to_classify = get_classes_to_classify(y4_signs_folder='Y4Signs_filtered_1036_584_test_split')
     processed_path_test = PATH_TEST
     processor = SVMProcessor(processed_path_test, dataset, to_classify)
-    processor.preprocess(force=True)
+    processor.preprocess(force=True, add_noise=FalseS)
     processor.save_np_arrays()
 
 if TRAIN:
@@ -179,4 +201,9 @@ if TEST:
 
 if TEST_JOINT:
     _test_joint()
+
+if TEST_REAL:
+    files_path = _data_path()
+    test_svm_models(test_data='/home/lns/helen/lights-n-signs-training/zeus_haar_output', model_name=files_path[2])
+
 
