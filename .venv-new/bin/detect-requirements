@@ -1,0 +1,3 @@
+#!/mnt/ssd2/od/brian/lights-n-signs-training/.venv-new/bin/python3
+from requirements_detector.run import run
+run()

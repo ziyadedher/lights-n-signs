@@ -12,10 +12,11 @@ import os
 import pickle
 
 import tensorflow as tf
+import tensorboard as tb
 
-import keras.backend as K
-from keras import optimizers
-from keras.callbacks import (LearningRateScheduler, ModelCheckpoint,
+import tensorflow.compat.v1.keras.backend as K
+from tensorflow.keras import optimizers
+from tensorflow.keras.callbacks import (LearningRateScheduler, ModelCheckpoint,
                              ReduceLROnPlateau, TensorBoard)
 from keras.utils import multi_gpu_model
 from lns.squeezedet._lib.config.create_config import load_dict
@@ -34,7 +35,7 @@ init_file = "imagenet.h5"
 EPOCHS = 100
 STEPS = None
 OPTIMIZER = "default"
-CUDA_VISIBLE_DEVICES = "0"
+CUDA_VISIBLE_DEVICES = "1"
 GPUS = 1
 PRINT_TIME = 0
 REDUCELRONPLATEAU = True
@@ -55,14 +56,17 @@ def train():
 
 
     #delete old checkpoints and tensorboard stuff
-    if tf.gfile.Exists(checkpoint_dir):
-        tf.gfile.DeleteRecursively(checkpoint_dir)
+    # note for TF1, replace tf.io.gfile with tf.gfile
+    #tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
+    
+    if tf.io.gfile.exists(checkpoint_dir):
+        tf.io.gfile.DeleteRecursively(checkpoint_dir)
 
-    if tf.gfile.Exists(tb_dir):
-        tf.gfile.DeleteRecursively(tb_dir)
+    if tf.io.gfile.exists(tb_dir):
+        tf.io.gfile.DeleteRecursively(tb_dir)
 
-    tf.gfile.MakeDirs(tb_dir)
-    tf.gfile.MakeDirs(checkpoint_dir)
+    tf.io.gfile.makedirs(tb_dir)
+    tf.io.gfile.makedirs(checkpoint_dir)
 
 
 
@@ -99,7 +103,7 @@ def train():
     if GPUS < 2:
 
         os.environ['CUDA_VISIBLE_DEVICES'] = CUDA_VISIBLE_DEVICES
-
+        print("using GPU")
     else:
 
         gpus = ""
@@ -126,8 +130,8 @@ def train():
     print("Batch size: {}".format(cfg.BATCH_SIZE))
 
     #tf config and session
-    config = tf.ConfigProto(allow_soft_placement=True)
-    sess = tf.Session(config=config)
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
+    sess = tf.compat.v1.Session(config=config)
     K.set_session(sess)
 
 
