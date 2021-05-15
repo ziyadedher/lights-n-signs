@@ -2,6 +2,7 @@ import sys
 import cv2
 import os
 import time
+import numpy as np
 from pathlib import Path
 
 def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.1):
@@ -90,6 +91,17 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.1):
                     break
             else:
                 fp += 1
+        
+        # Find maximum IOU TODO: integrate with TP, FN so get rid of redundant IOU calls
+        all_ious = []
+        for (x, y, w, h) in all_gt:
+            best_det_iou = 0
+            for (x_det, y_det, w_det, h_det) in detections:
+                iou = IOU(x_det, y_det, w_det, h_det, x, y, w, h)
+                if iou > best_det_iou:
+                    best_det_iou = iou
+            all_ious.append(best_det_iou)
+        avg_iou = np.mean(all_ious)
 
         # Draw bounding boxes
         for (x, y, w, h) in all_gt:
@@ -109,7 +121,7 @@ def evaluate(data_path, model_path, trainer_path, num_neighbors=3, scale=1.1):
     except ZeroDivisionError as e:
         print('No bounding boxes were detected. Try decreasing num_neighbours or scale_factor. There might be a bug in the code as well.')
 
-    msg = f"TP: {tp}\nFP: {fp}\nFN: {fn}\nPrecision: {precision}\nRecall: {recall}\nF1 score: {f1}"
+    msg = f"TP: {tp}\nFP: {fp}\nFN: {fn}\nPrecision: {precision}\nRecall: {recall}\nF1 score: {f1}\nIoU: {avg_iou}"
     print(msg)
 
     

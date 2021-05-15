@@ -72,7 +72,7 @@ eval_preprocessed_folder = 'Y4Signs_filtered_1036_584_test_split_removed_small_n
 
 processed_path_for_eval = '/home/od/.lns-training/resources/processed/haar/{0}'.format(eval_preprocessed_folder)
 
-if not os.path.exists(eval_preprocessed_folder):
+if not os.path.exists(processed_path_for_eval):
   print("did not find preprocessed test dataset, preprocessing from scratch")
   dataset_y4signs_eval = Preprocessor.preprocess(eval_preprocessed_folder, force=True) # force = True will give stats
   dataset_y4signs_eval = dataset_y4signs_eval.merge_classes({
