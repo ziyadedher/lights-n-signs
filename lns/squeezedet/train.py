@@ -24,11 +24,11 @@ class SqueezedetTrainer(Trainer[SqueezedetModel, SqueezedetData, SqueezedetSetti
 
     SUBPATHS = {
         "log_folder": Trainer.Subpath(
-            path="log", temporal=True, required=True, path_type=Trainer.PathType.FOLDER),
+            path="log", temporal=False, required=True, path_type=Trainer.PathType.FOLDER),
         "anchors_file": Trainer.Subpath(
             path="anchors", temporal=False, required=False, path_type=Trainer.PathType.FILE),
         "config_file": Trainer.Subpath(
-            path="config", temporal=True, required=False, path_type=Trainer.PathType.FILE),
+            path="config", temporal=False, required=False, path_type=Trainer.PathType.FILE),
     }
 
     INITIAL_WEIGHTS_NAME = "imagenet.h5"
@@ -42,10 +42,13 @@ class SqueezedetTrainer(Trainer[SqueezedetModel, SqueezedetData, SqueezedetSetti
         Sources data from the <dataset> given, if any.
         If <load> is set to False removes any existing training files before training.
         """
+        # cfg = "/home/od/.lns-training/resources/trainers/squeezedet/helen_squeezedet_1248_384_1/config"
+        # print(cfg,os.path.exists(cfg),1)
+
         super().__init__(name, dataset,
                          _processor=SqueezedetProcessor, _settings=SqueezedetSettings,
                          _load=load, _subpaths=SqueezedetTrainer.SUBPATHS)
-
+        # print(cfg,os.path.exists(cfg),2)
         # TODO: dynamically generate k-means
         self._paths["anchors_file"] = os.path.join(config.RESOURCES_ROOT, config.WEIGHTS_FOLDER_NAME, "yolo_anchors")
 
@@ -56,9 +59,9 @@ class SqueezedetTrainer(Trainer[SqueezedetModel, SqueezedetData, SqueezedetSetti
         Model may be `None` if there is no currently available model.
         """
         cfg = self._paths["config_file"]
-
         model = None
         if os.path.exists(cfg):
+            print('exists')
             model = SqueezedetModel(cfg, self.settings)
         return model
 

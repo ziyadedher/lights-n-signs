@@ -28,6 +28,8 @@ labelled_videos_parent = "/home/od/files/datasets/20210418/labelled_videos"
 # "/home/od/files/datasets/ped_dummy_vids_2021/labelled_videos"
 
 trainer_name = 'helen_squeezedet_1248_384_1' #'matthieu_darknet53_256_1'#'matthieu_darknet53_384_1' #'matthieu_darknet53_416_4'#'matthieu_darknet53_416_3' #'new_dataset_ac_small_3' #'new_dataset_ac_medium_1' #'smaller_800x640_1' #'new_dataset_ac_small_3' #'new_dataset_ac_1' # "yolo_ped_mbd_trial_29"
+print(os.path.exists("/home/od/.lns-training/resources/trainers/squeezedet/helen_squeezedet_1248_384_1/config"), 0)
+
 trainer = SqueezedetTrainer(trainer_name)
 model = trainer.model
 

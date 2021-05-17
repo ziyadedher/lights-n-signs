@@ -25,6 +25,7 @@ def visualize_image(image_path: str, *,
     imaged_cropped = image
     if crop:
         h,w,channels = image.shape
+        print(h,w)
         x_min = crop[0]
         x_max = crop[1]
         y_min = crop[2]
@@ -44,7 +45,7 @@ def visualize_image(image_path: str, *,
     if visualize_model:
         if model is None:
             raise ValueError("Need to set a trainer if <visualize_model> is Optional[] set to `True`.")
-        image = _put_labels_on_image(image, model.predict(image_cropped), classes, is_pred=True, color_mapping=color_mapping,
+        image = _put_labels_on_image(image, model.predict(np.expand_dims(image_cropped, axis=0)), classes, is_pred=True, color_mapping=color_mapping,
                                      threshold=threshold,crop = crop)
     return image
 

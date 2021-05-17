@@ -115,6 +115,7 @@ def read_image_and_gt(img_files, gt_files, config):
 
         # scale image
         img = cv2.resize( img, (config.IMAGE_WIDTH, config.IMAGE_HEIGHT))
+        # want to 
 
         #subtract means
         img = (img - np.mean(img))/ np.std(img)
