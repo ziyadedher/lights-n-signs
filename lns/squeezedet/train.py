@@ -108,9 +108,31 @@ class SqueezedetTrainer(Trainer[SqueezedetModel, SqueezedetData, SqueezedetSetti
         train.REDUCELRONPLATEAU = self.settings.reduce_lr_on_plateau
         train.VERBOSE = self.settings.verbose
         train.CONFIG = self._paths["config_file"]
+        """
+        # Hack the code to eval instead
+        from lns.squeezedet._lib import eval
+        eval.img_file = self.data.get_images()
+        eval.gt_file = self.data.get_labels()
+        eval.img_file_test = self.data.get_images()
+        eval.gt_file_test = self.data.get_labels()
+        eval.log_dir_name = self._paths["log_folder"]
+        eval.checkpoint_dir = self._paths["log_folder"] + "/checkpoints"
+        eval.tensorboard_dir = self._paths["log_folder"] + "/tensorboard_val"
+        eval.tensorboard_dir_test = self._paths["log_folder"] + "/tensorboard_test"
+        
+        eval.EPOCHS = self.settings.num_epochs
+        # Tiffany
+        # eval.STARTWITH = "model.05-86.73.hdf5"
+        eval.STARTWITH = "model.95-212.43.hdf5"
 
+        # `first-real`
+        # eval.STARTWITH = "model.70-165.13.hdf5"
+        eval.CUDA_VISIBLE_DEVICES = self.settings.cuda_visible_devices
+        eval.CONFIG = self._paths["config_file"]
+        """
         try:
             train.train()
+            # eval.eval()
         except KeyboardInterrupt:
             print("Training interrupted")
         else:

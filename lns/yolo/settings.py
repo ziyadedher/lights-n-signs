@@ -39,7 +39,7 @@ class YoloSettings(Settings):
     # Number of images to train on per step
     batch_size: int = 32
     # Base size of the image to train on (overriden by multi_scale_train)
-    img_size: Tuple[int, int] = (832,256) #(416, 416)
+    img_size: Tuple[int, int] = (1248,832) # (640,416), (624, 416), (912, 608), (1248,832), (1280,720)
     # Whether to preserve image aspect ratio when resizing or not by using letterboxing
     letterbox_resize: bool = True
 
@@ -116,7 +116,7 @@ class YoloSettings(Settings):
     # Thresholds for a detection to be considered correct in evaluation
     eval_threshold: float = 0.01
     # Whether or not to use 11-point VOC07 evaluation metric
-    use_voc_07_metric: bool = False
+    use_voc_07_metric: bool = True
 
     # Number of k-means clusters to compute and use
     num_clusters: int = 9

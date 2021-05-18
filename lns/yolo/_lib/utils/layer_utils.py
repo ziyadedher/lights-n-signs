@@ -15,7 +15,7 @@ def conv2d(inputs, filters, kernel_size, strides=1):
         padded_inputs = tf.pad(inputs, [[0, 0], [pad_beg, pad_end],
                                         [pad_beg, pad_end], [0, 0]], mode='CONSTANT')
         return padded_inputs
-    if strides > 1: 
+    if strides > 1:
         inputs = _fixed_padding(inputs, kernel_size)
     inputs = slim.conv2d(inputs, filters, kernel_size, stride=strides,
                          padding=('SAME' if strides == 1 else 'VALID'))
@@ -30,7 +30,7 @@ def darknet53_body(inputs):
         net = net + shortcut
 
         return net
-    
+
     # first two conv2d layers
     net = conv2d(inputs, 32,  3, strides=1)
     net = conv2d(net, 64,  3, strides=2)
@@ -47,21 +47,21 @@ def darknet53_body(inputs):
     net = conv2d(net, 256, 3, strides=2)
 
     # res_block * 8
-    for i in range(8):
+    for i in range(2):
         net = res_block(net, 128)
 
     route_1 = net
     net = conv2d(net, 512, 3, strides=2)
 
     # res_block * 8
-    for i in range(8):
+    for i in range(2):
         net = res_block(net, 256)
 
     route_2 = net
     net = conv2d(net, 1024, 3, strides=2)
 
     # res_block * 4
-    for i in range(4):
+    for i in range(2):
         net = res_block(net, 512)
     route_3 = net
 

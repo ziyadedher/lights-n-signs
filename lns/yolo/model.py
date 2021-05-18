@@ -51,9 +51,9 @@ class YoloModel(Model[YoloSettings]):
         with tf.variable_scope('yolov3'):
             pred_feature_maps = yolo_model.forward(self._image, is_training=self._is_training)
         self._y_pred = yolo_model.predict(pred_feature_maps)
-
         self._session = tf.Session()
         self._session.run([tf.global_variables_initializer()])
+        print(f"\n\n\nargs.restore_path: {args.restore_path}\n\n\n")
         tf.train.Saver().restore(self._session, args.restore_path)
 
     def predict(self, image: np.ndarray) -> List[Object2D]:  # pylint:disable=too-many-locals
