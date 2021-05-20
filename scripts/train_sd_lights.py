@@ -34,6 +34,6 @@ for annotation in list(dataset_all.annotations):
             dataset_all.images.remove(annotation)
             break
 print("dataset size:", len(dataset_all))
-trainer = SqueezedetTrainer(name="brian_squeezedet2", dataset=dataset_all, load=True) # Training from scratch
-print("trainger instantiated, beginning training")
+trainer = SqueezedetTrainer(name="brian_squeezedet3", dataset=dataset_all, load=True) # Training from scratch
+print("trainer instantiated, beginning training")
 trainer.train()

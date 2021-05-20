@@ -11,7 +11,7 @@ import gc
 import os
 import pickle
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import tensorboard as tb
 
 import tensorflow.compat.v1.keras.backend as K
@@ -60,10 +60,10 @@ def train():
     #tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
     
     if tf.io.gfile.exists(checkpoint_dir):
-        tf.io.gfile.DeleteRecursively(checkpoint_dir)
+        tf.gfile.DeleteRecursively(checkpoint_dir)
 
     if tf.io.gfile.exists(tb_dir):
-        tf.io.gfile.DeleteRecursively(tb_dir)
+        tf.gfile.DeleteRecursively(tb_dir)
 
     tf.io.gfile.makedirs(tb_dir)
     tf.io.gfile.makedirs(checkpoint_dir)
@@ -130,8 +130,8 @@ def train():
     print("Batch size: {}".format(cfg.BATCH_SIZE))
 
     #tf config and session
-    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
-    sess = tf.compat.v1.Session(config=config)
+    config = tf.ConfigProto(allow_soft_placement=True)
+    sess = tf.Session(config=config)
     K.set_session(sess)
 
 
