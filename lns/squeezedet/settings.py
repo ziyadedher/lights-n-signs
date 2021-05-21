@@ -42,6 +42,7 @@ class SqueezedetSettings(Settings):
     image_width: int = 1248
     image_height: int = 384
     n_channels: int = 3
+    letterbox: bool = True
 
     # Number of images to train on per step
     batch_size: int = 8

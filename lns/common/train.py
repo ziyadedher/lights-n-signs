@@ -14,6 +14,7 @@ import shutil
 import pickle
 import dataclasses
 from enum import Enum
+from pathlib import Path
 
 from lns.common import config
 from lns.common.settings import SettingsType
@@ -166,7 +167,6 @@ class Trainer(Generic[ModelType, ProcessedDataType, SettingsType]):
                 raise ValueError(f"<dataset> may only be `str` or `Dataset`, not {type(dataset)}")
             # Get processed data from the preprocessed dataset
             self.__data = _processor.process(self.__dataset)
-
             with open(self._paths["_dataset"], "wb") as dataset_file:
                 pickle.dump(self.__dataset, dataset_file)
             with open(self._paths["_data"], "wb") as data_file:

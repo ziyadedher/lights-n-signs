@@ -114,19 +114,40 @@ def read_image_and_gt(img_files, gt_files, config):
 
 
         # scale image
-        img = cv2.resize( img, (config.IMAGE_WIDTH, config.IMAGE_HEIGHT))
-
-        #subtract means
-        img = (img - np.mean(img))/ np.std(img)
+        # img = cv2.resize( img, (config.IMAGE_WIDTH, config.IMAGE_HEIGHT))
+        
+        target_width = config.IMAGE_WIDTH
+        target_height = config.IMAGE_HEIGHT
 
         #store original height and width?
         orig_h, orig_w, _ = [float(v) for v in img.shape]
 
+        # resizing image
+        if config.LETTERBOX: # keeps aspect ratio
 
-        #print(orig_h, orig_w)
+            resize_ratio = min(target_width / orig_w, target_height / orig_h)
+
+            resize_w = int(resize_ratio * orig_w)
+            resize_h = int(resize_ratio * orig_h)
+
+            img = cv2.resize(img, (resize_w, resize_h), interpolation=1)
+            image_padded = np.full((target_height, target_width, 3), 128, np.uint8)
+
+            dw = int((target_width - resize_w) / 2)
+            dh = int((target_height - resize_h) / 2)
+
+            image_padded[dh: resize_h + dh, dw: resize_w + dw, :] = img
+            img = image_padded
+
+        else: # warp image to fit desired shape
+            img = cv2.resize( img, (config.IMAGE_WIDTH, config.IMAGE_HEIGHT))
+
+
+        #subtract means
+        img = (img - np.mean(img))/ np.std(img)
+
         # load annotations
         annotations = load_annotation(gt_name)
-
 
         #split in classes and boxes
         labels_per_file = [a[4] for a in annotations]
@@ -134,6 +155,24 @@ def read_image_and_gt(img_files, gt_files, config):
 
         bboxes_per_file = np.array([a[0:4]for a in annotations])
 
+        # scale annotation
+
+        if config.LETTERBOX:
+            # xmin, xmax
+            bboxes_per_file[:, [0, 2]] = bboxes_per_file[:, [0, 2]] * resize_ratio + dw
+            # ymin, ymax
+            bboxes_per_file[:, [1, 3]] = bboxes_per_file[:, [1, 3]] * resize_ratio + dh
+
+        else:
+            x_scale = config.IMAGE_WIDTH / orig_w
+            y_scale = config.IMAGE_HEIGHT / orig_h
+
+            #scale boxes
+            bboxes_per_file[:, 0::2] = bboxes_per_file[:, 0::2] * x_scale
+            bboxes_per_file[:, 1::2] = bboxes_per_file[:, 1::2] * y_scale
+
+
+        bboxes.append(bboxes_per_file)
 
         #TODO enable dynamic Data Augmentation
         """
@@ -174,31 +213,13 @@ def read_image_and_gt(img_files, gt_files, config):
 
         """
 
-
-
-
-
         #and store
         imgs[img_idx] = np.asarray(img)
 
         img_idx += 1
 
-
-        # scale annotation
-        x_scale = config.IMAGE_WIDTH / orig_w
-        y_scale = config.IMAGE_HEIGHT / orig_h
-
-
-        #scale boxes
-        bboxes_per_file[:, 0::2] = bboxes_per_file[:, 0::2] * x_scale
-        bboxes_per_file[:, 1::2] = bboxes_per_file[:, 1::2] * y_scale
-
-
-        bboxes.append(bboxes_per_file)
-
         aidx_per_image, delta_per_image = [], []
         aidx_set = set()
-
 
         #iterate all bounding boxes for a file
         for i in range(len(bboxes_per_file)):
