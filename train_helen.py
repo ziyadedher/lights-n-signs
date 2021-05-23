@@ -1,4 +1,5 @@
 from lns.common.preprocess import Preprocessor
+import os
 dataset_scale = Preprocessor.preprocess('ScaleLights')
 dataset_utias = Preprocessor.preprocess('ScaleLights_New_Utias')
 dataset_youtube = Preprocessor.preprocess('ScaleLights_New_Youtube')
@@ -16,8 +17,10 @@ dataset_all = dataset_all.merge_classes({
 # from lns.yolo.train import YoloTrainer
 # trainer = YoloTrainer('darknet25_640_416_helen',dataset_all)
 
+# os.environ["CUDA_VISIBLE_DEVICES"]="2"
+
 from lns.squeezedet.train import SqueezedetTrainer
-trainer = SqueezedetTrainer('helen_squeezedet_1248_384_1',dataset_all,load=False)
+trainer = SqueezedetTrainer('brian_lights_trial2',dataset_all,load=False)
 
 trainer.train()
 
