@@ -34,8 +34,8 @@ init_file = "imagenet.h5"
 EPOCHS = 100
 STEPS = None
 OPTIMIZER = "default"
-CUDA_VISIBLE_DEVICES = "0"
-GPUS = 1
+CUDA_VISIBLE_DEVICES = "01" # which gpu to use
+GPUS = 2 # number of GPU
 PRINT_TIME = 0
 REDUCELRONPLATEAU = True
 VERBOSE=False
@@ -91,9 +91,6 @@ def train():
     cfg.CUDA_VISIBLE_DEVICES = CUDA_VISIBLE_DEVICES
     cfg.GPUS = GPUS
     cfg.REDUCELRONPLATEAU = REDUCELRONPLATEAU
-
-
-
 
     #set gpu
     if GPUS < 2:
@@ -219,7 +216,6 @@ def train():
     #create train generator
     train_generator = generator_from_data_path(img_names, gt_names, config=cfg)
 
-    #make model parallel if specified
     if GPUS > 1:
 
         #use multigpu model checkpoint
@@ -257,6 +253,7 @@ def train():
         #compile model from squeeze object, loss is not a function of model directly
         squeeze.model.compile(optimizer=opt,
                               loss=[squeeze.loss], metrics=[squeeze.loss_without_regularization, squeeze.bbox_loss, squeeze.class_loss, squeeze.conf_loss])
+
 
         #actually do the training
         squeeze.model.fit_generator(train_generator, epochs=EPOCHS,

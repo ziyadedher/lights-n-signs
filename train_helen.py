@@ -17,7 +17,7 @@ dataset_all = dataset_all.merge_classes({
 # from lns.yolo.train import YoloTrainer
 # trainer = YoloTrainer('darknet25_640_416_helen',dataset_all)
 
-os.environ["CUDA_VISIBLE_DEVICES"]="2"
+# os.environ["CUDA_VISIBLE_DEVICES"]="2"
 
 from lns.squeezedet.train import SqueezedetTrainer
 trainer = SqueezedetTrainer('brian_lights_trial2',dataset_all,load=False)
