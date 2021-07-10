@@ -258,7 +258,6 @@ def train():
         squeeze.model.compile(optimizer=opt,
                               loss=[squeeze.loss], metrics=[squeeze.loss_without_regularization, squeeze.bbox_loss, squeeze.class_loss, squeeze.conf_loss])
 
-
         #actually do the training
         squeeze.model.fit_generator(train_generator, epochs=EPOCHS,
                                         steps_per_epoch=nbatches_train, callbacks=cb)

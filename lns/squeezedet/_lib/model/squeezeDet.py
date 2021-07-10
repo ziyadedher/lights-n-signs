@@ -11,12 +11,12 @@ import numpy as np
 import tensorflow as tf
 
 import lns.squeezedet._lib.utils.utils as utils
-from tensorflow.keras import backend as K
-from tensorflow.keras.initializers import TruncatedNormal
-from tensorflow.keras.layers import (AveragePooling2D, Conv2D, Dropout, Input, Lambda,
+from keras import backend as K
+from keras.initializers import TruncatedNormal
+from keras.layers import (AveragePooling2D, Conv2D, Dropout, Input, Lambda,
                           MaxPool2D, Reshape, concatenate)
-from tensorflow.keras.models import Model
-from tensorflow.keras.regularizers import l2
+from keras.models import Model
+from keras.regularizers import l2
 
 
 #class that wraps config and model
