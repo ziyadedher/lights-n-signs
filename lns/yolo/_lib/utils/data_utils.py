@@ -197,7 +197,7 @@ def get_batch_data(batch_line, class_num, img_size, anchors, mode, multi_scale=F
         img_size: the image size to be resized to. format: [width, height].
         anchors: anchors. shape: [9, 2].
         mode: 'train' or 'val'. if set to 'train', data augmentation will be applied.
-        multi_scale: whether to use multi_scale training, img_size varies from [320, 320] to [640, 640] by default. Note that it will take effect only when mode is set to 'train'.
+        multi_scale: whether to use multi_scale training, img_size varies from [320, 320] to [1280, 1280] by default. Note that it will take effect only when mode is set to 'train'.
         letterbox_resize: whether to use the letterbox resize, i.e., keep the original aspect ratio in the resized image.
         interval: change the scale of image every interval batches. Note that it's indeterministic because of the multi threading.
     '''
@@ -205,7 +205,7 @@ def get_batch_data(batch_line, class_num, img_size, anchors, mode, multi_scale=F
     # multi_scale training
     if multi_scale and mode == 'train':
         random.seed(iter_cnt // interval)
-        random_img_size = [[x * 32, x * 32] for x in range(10, 20)]
+        random_img_size = [[x * 32, x * 32] for x in range(10, 40)]
         img_size = random.sample(random_img_size, 1)[0]
     iter_cnt += 1
 

@@ -25,6 +25,7 @@ def visualize_image(image_path: str, *,
     imaged_cropped = image
     if crop:
         h,w,channels = image.shape
+        print(h,w)
         x_min = crop[0]
         x_max = crop[1]
         y_min = crop[2]
@@ -44,7 +45,7 @@ def visualize_image(image_path: str, *,
     if visualize_model:
         if model is None:
             raise ValueError("Need to set a trainer if <visualize_model> is Optional[] set to `True`.")
-        image = _put_labels_on_image(image, model.predict(image_cropped), classes, is_pred=True, color_mapping=color_mapping,
+        image = _put_labels_on_image(image, model.predict(np.expand_dims(image_cropped, axis=0)), classes, is_pred=True, color_mapping=color_mapping,
                                      threshold=threshold,crop = crop)
     return image
 
@@ -307,24 +308,10 @@ def label_video_from_file(frame_folder_path: str, *,
 
 if __name__ == '__main__':
     from lns.common.preprocess import Preprocessor
-    BOSCH = Preprocessor.preprocess("Bosch")
-    DATASET = BOSCH
-    DATASET = DATASET.merge_classes({
-        "green": [
-            "GreenLeft", "Green", "GreenRight", "GreenStraight",
-            "GreenStraightRight", "GreenStraightLeft", "Green traffic light"
-        ],
-        "red": [
-            "Yellow", "RedLeft", "Red", "RedRight", "RedStraight",
-            "RedStraightLeft", "Red traffic light", "Yellow traffic light"
-        ],
-        "off": ["off"]
-    })
+    SCALE = Preprocessor.preprocess("SCALE")
+    DATASET = SCALE
 
     from lns.yolo import YoloTrainer
-    TRAINER = YoloTrainer('new_dataset_ac_1')
-    # pred_class: any("red", "green", "yellow", "off") # This for coloring only
-    COLOR_MAPPING = dict(zip(['5-red-green', '4-red-green', 'red', '5-red-yellow', 'green', 'yellow', 'off'],
-                             ['red'] * 4 + ['green'] + ['yellow'] + ['off']))
+    TRAINER = YoloTrainer('pedestrian_5')
 
-    generate_video_stream(DATASET, trainer=TRAINER, trainer_color_mapping=COLOR_MAPPING)
+    generate_video_stream(DATASET, trainer=TRAINER)

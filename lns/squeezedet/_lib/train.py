@@ -11,11 +11,12 @@ import gc
 import os
 import pickle
 
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+import tensorboard as tb
 
-import keras.backend as K
-from keras import optimizers
-from keras.callbacks import (LearningRateScheduler, ModelCheckpoint,
+import tensorflow.compat.v1.keras.backend as K
+from tensorflow.keras import optimizers
+from tensorflow.keras.callbacks import (LearningRateScheduler, ModelCheckpoint,
                              ReduceLROnPlateau, TensorBoard)
 from keras.utils import multi_gpu_model
 from lns.squeezedet._lib.config.create_config import load_dict
@@ -34,8 +35,8 @@ init_file = "imagenet.h5"
 EPOCHS = 100
 STEPS = None
 OPTIMIZER = "default"
-CUDA_VISIBLE_DEVICES = "0"
-GPUS = 1
+CUDA_VISIBLE_DEVICES = "01" # which gpu to use
+GPUS = 2 # number of GPU
 PRINT_TIME = 0
 REDUCELRONPLATEAU = True
 VERBOSE=False
@@ -55,14 +56,17 @@ def train():
 
 
     #delete old checkpoints and tensorboard stuff
-    if tf.gfile.Exists(checkpoint_dir):
+    # note for TF1, replace tf.io.gfile with tf.gfile
+    #tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
+    
+    if tf.io.gfile.exists(checkpoint_dir):
         tf.gfile.DeleteRecursively(checkpoint_dir)
 
-    if tf.gfile.Exists(tb_dir):
+    if tf.io.gfile.exists(tb_dir):
         tf.gfile.DeleteRecursively(tb_dir)
 
-    tf.gfile.MakeDirs(tb_dir)
-    tf.gfile.MakeDirs(checkpoint_dir)
+    tf.io.gfile.makedirs(tb_dir)
+    tf.io.gfile.makedirs(checkpoint_dir)
 
 
 
@@ -92,14 +96,11 @@ def train():
     cfg.GPUS = GPUS
     cfg.REDUCELRONPLATEAU = REDUCELRONPLATEAU
 
-
-
-
     #set gpu
     if GPUS < 2:
 
         os.environ['CUDA_VISIBLE_DEVICES'] = CUDA_VISIBLE_DEVICES
-
+        print("using GPU")
     else:
 
         gpus = ""
@@ -219,7 +220,6 @@ def train():
     #create train generator
     train_generator = generator_from_data_path(img_names, gt_names, config=cfg)
 
-    #make model parallel if specified
     if GPUS > 1:
 
         #use multigpu model checkpoint

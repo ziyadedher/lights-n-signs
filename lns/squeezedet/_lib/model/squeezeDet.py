@@ -40,6 +40,8 @@ class SqueezeDet():
         #builds the Keras model from config
         #return: squeezeDet in Keras
         """
+        tf.compat.v1.disable_eager_execution()
+
         input_layer = Input(shape=( self.config.IMAGE_HEIGHT, self.config.IMAGE_WIDTH, self.config.N_CHANNELS), name="input")
 
         conv1 = Conv2D(filters=64, kernel_size=(3, 3), strides=(2, 2), padding="SAME", activation='relu',
@@ -150,7 +152,7 @@ class SqueezeDet():
         #return K.concatenate( [input, pad], axis=-1)
 
 
-        padding = np.zeros((3,2))
+        padding = np.zeros((3,2), dtype=np.int64)
         padding[2,1] = 4
         return tf.pad(input, padding ,"CONSTANT")
 
