@@ -1,8 +1,8 @@
-before_script:
-  - pip install tox
+# before_script:
+#   - pip install tox
 
-lint:
-  image: jjanzic/docker-python3-opencv:latest
-  script:
-    - cd /builds/aUToronto/autonomy/lights-n-signs-training
-    - tox
+# lint:
+#   image: jjanzic/docker-python3-opencv:latest
+#   script:
+#     - cd /builds/aUToronto/autonomy/lights-n-signs-training
+#     - tox
