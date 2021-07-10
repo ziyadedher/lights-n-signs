@@ -1,8 +1,7 @@
-before_script:
-  - pip install tox
+# before_script:
+#   - pip install tox
 
-lint:
-  image: jjanzic/docker-python3-opencv:latest
+build: 
+  stage: build
   script:
-    - cd /builds/aUToronto/autonomy/lights-n-signs-training
-    - tox
+    - echo "Hello, $GITLAB_USER_LOGIN!"
