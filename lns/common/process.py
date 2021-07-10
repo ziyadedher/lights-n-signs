@@ -106,5 +106,5 @@ class Processor(Generic[ProcessedDataType]):
         return processed_data
 
     @classmethod
-    def _process(cls, dataset: Dataset) -> ProcessedDataType:
+    def _process(cls, dataset: Dataset, force=False) -> ProcessedDataType:
         raise NotImplementedError

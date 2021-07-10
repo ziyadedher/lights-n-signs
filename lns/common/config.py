@@ -23,6 +23,10 @@ SUBROOT_FOLDERS = [
 
 PKL_EXTENSION = ".pkl"
 
+PER_CLASS_LIMIT = 150  # PER_CLASS_LIMIT annotations per class, for testing
+IMG_WIDTH = 1036 
+IMG_HEIGHT = 584
+
 POSSIBLE_DATASETS: List[str] = [
     "mocked",
     "LISA",
@@ -38,7 +42,16 @@ POSSIBLE_DATASETS: List[str] = [
     "LyftPerception"
     "SCALE",
     "nuscenes",
-    "JAADDataset",
+    "Y4Signs_1036_584", # resized full dataset 
+    # "Y4Signs_1036_584_train",
+    # "Y4Signs_1036_584_test", 
+    # "Y4Signs_1036_584_train_sam",
+    # "Y4Signs_1036_584_train_helen",
+    # "Y4Signs_1036_584_train_matthieu",
+    "Y4Signs_filtered_1036_584_test_split", # resized test datasets without slanted signs
+    "Y4Signs_filtered_1036_584_train_split", # resized training dataset without slanted signs
+    "Y4Signs_removed_slanted",  # full res dataset without slanting signs
+    "Y4Signs" # raw full res dataset
 ]
 
 
