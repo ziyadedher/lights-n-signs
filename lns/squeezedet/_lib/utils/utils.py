@@ -12,7 +12,7 @@
 import numpy as np
 import time
 import tensorflow as tf
-import keras.backend as K
+import tensorflow.keras.backend as K
 
 
 def iou(box1, box2):
@@ -276,13 +276,13 @@ def boxes_from_deltas(pred_box_delta, config):
 
     # as we only predict the deltas, we need to transform the anchor box values before computing the loss
 
-    box_center_x = K.identity(
+    box_center_x = tf.identity(
         anchor_x + delta_x * anchor_w)
-    box_center_y = K.identity(
+    box_center_y = tf.identity(
         anchor_y + delta_y * anchor_h)
-    box_width = K.identity(
+    box_width = tf.identity(
         anchor_w * safe_exp(delta_w, config.EXP_THRESH))
-    box_height = K.identity(
+    box_height = tf.identity(
         anchor_h * safe_exp(delta_h, config.EXP_THRESH))
 
     # tranform into a real box with four coordinates

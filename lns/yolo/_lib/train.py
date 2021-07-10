@@ -16,6 +16,11 @@ from lns.yolo._lib.utils.nms_utils import gpu_nms
 
 from lns.yolo._lib.model import yolov3
 
+import os
+
+# Specify what GPU you want to train on, possible values {"0", "1", "2", "3"}
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 # setting loggers
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S', filename=args.progress_log_path, filemode='a')
@@ -78,7 +83,7 @@ y_pred = yolo_model.predict(pred_feature_maps)
 l2_loss = tf.losses.get_regularization_loss()
 
 # setting restore parts and vars to update
-saver_to_restore = tf.train.Saver(var_list=tf.contrib.framework.get_variables_to_restore(include=args.restore_include, exclude=args.restore_exclude))
+# saver_to_restore = tf.train.Saver(var_list=tf.contrib.framework.get_variables_to_restore(include=args.restore_include, exclude=args.restore_exclude))
 update_vars = tf.contrib.framework.get_variables_to_restore(include=args.update_part)
 
 tf.summary.scalar('train_batch_statistics/total_loss', loss[0])
@@ -121,7 +126,7 @@ if args.save_optimizer:
 
 with tf.Session() as sess:
     sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
-    saver_to_restore.restore(sess, args.restore_path)
+    # saver_to_restore.restore(sess, args.restore_path)
     merged = tf.summary.merge_all()
     writer = tf.summary.FileWriter(args.log_dir, sess.graph)
 
@@ -148,8 +153,8 @@ with tf.Session() as sess:
             loss_class.update(__loss[4], len(__y_pred[0]))
 
             if __global_step % args.train_evaluation_step == 0 and __global_step > 0:
-                # recall, precision = evaluate_on_cpu(__y_pred, __y_true, args.class_num, args.nms_topk, args.score_threshold, args.nms_threshold)
-                recall, precision = evaluate_on_gpu(sess, gpu_nms_op, pred_boxes_flag, pred_scores_flag, __y_pred, __y_true, args.class_num, args.nms_threshold)
+                recall, precision = evaluate_on_cpu(__y_pred, __y_true, args.class_num, True, args.nms_topk, args.score_threshold, args.nms_threshold)
+                # recall, precision = evaluate_on_gpu(sess, gpu_nms_op, pred_boxes_flag, pred_scores_flag, __y_pred, __y_true, args.class_num, args.nms_threshold)
 
                 info = "Epoch: {}, global_step: {} | loss: total: {:.2f}, xy: {:.2f}, wh: {:.2f}, conf: {:.2f}, class: {:.2f} | ".format(
                         epoch, int(__global_step), loss_total.average, loss_xy.average, loss_wh.average, loss_conf.average, loss_class.average)
