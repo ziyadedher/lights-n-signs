@@ -39,10 +39,10 @@ def _nuscenes(path: str) -> Dataset:  # noqa
         for box in boxes:
             img_corners = view_points(box.corners(), camera_intrinsic, normalize=True)[:2, :]
             # Take an outer rect of the 3d projection
-            xmin = img_corners[0].min()
-            xmax = img_corners[0].max()
-            ymin = img_corners[1].min()
-            ymax = img_corners[1].max()
+            xmin = img_corners[0].min() if img_corners[0].min() >= 0 else 0  # 1224x1024
+            xmax = img_corners[0].max() if img_corners[0].max() <= 1600 else 1600
+            ymin = img_corners[1].min() if img_corners[1].min() >= 0 else 0
+            ymax = img_corners[1].max() if img_corners[1].max() <= 900 else 900
 
             bounds = Bounds2D(xmin, ymin, xmax - xmin, ymax - ymin)
             label = category_to_detection_name(str(box.name))
